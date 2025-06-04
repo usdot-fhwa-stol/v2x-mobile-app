@@ -1,4 +1,14 @@
 # CV MEC Release Notes
+## Version 41 - (June 2025)
+- Updated CV-MEC to use 2024 version of J2735 standard
+- Added vehicle and pedestrian modes
+- Added in PSM support
+- Added vehicle type support for BSM's
+- Added SDSM support
+- Refactored received message system
+- Added ability to turn on lights and sirens for specific vehicle types
+- UI Overhaul
+
 
 ## Version 34 - 5GAA Demo (Feb 2025)
 - Added MAP message decoding
