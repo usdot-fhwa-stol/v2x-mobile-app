@@ -1,4 +1,4 @@
-import 'package:cv_mec/models/j2735/heading_slice.dart';
+import 'package:asn1_plugin/j2735/2024/common/heading_slice.dart';
 import 'package:dart_jts/dart_jts.dart';
 
 class GeometryDirection {

@@ -1,26 +1,25 @@
-import 'package:cv_mec/models/j2735/connection.dart';
-import 'package:cv_mec/models/j2735/connects_to_list.dart';
-import 'package:cv_mec/models/j2735/generic_lane.dart';
-import 'package:cv_mec/models/j2735/intersection_geometry.dart';
-import 'package:cv_mec/models/j2735/intersection_reference_id.dart';
-import 'package:cv_mec/models/j2735/map_data.dart';
-import 'package:cv_mec/models/j2735/signal_group_id.dart';
+import 'package:asn1_plugin/j2735/2024/common/intersection_reference_id.dart';
+import 'package:asn1_plugin/j2735/2024/common/signal_group_id.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/connection.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/connects_to_list.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/intersection_geometry.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
 import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:dart_jts/dart_jts.dart';
 
 class MapManager {
-  Map<IntersectionReferenceID, GeoMap> storedMaps =
-      <IntersectionReferenceID, GeoMap>{};
+  Map<IntersectionReferenceID, GeoMap> storedMaps = <IntersectionReferenceID, GeoMap>{};
   final GeometryService _geometryService = GeometryService();
+
+  final margin = 0.00001;
 
   void addOrUpdate(MapData map) {
     if (map.intersections != null) {
-      for (IntersectionGeometry geo
-          in map.intersections!.intersectionGeometryList) {
+      for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
         if (storedMaps.containsKey(geo.id)) {
-          if (map.msgIssueRevision.msgCount >
-              storedMaps[geo.id]!.map.msgIssueRevision.msgCount) {
+          if (map.msgIssueRevision.msgCount > storedMaps[geo.id]!.map.msgIssueRevision.msgCount) {
             storedMaps[geo.id] = GeoMap(map, geo);
           }
         } else {
@@ -38,8 +37,7 @@ class MapManager {
 
   void removeMap(MapData map) {
     if (map.intersections != null) {
-      for (IntersectionGeometry geo
-          in map.intersections!.intersectionGeometryList) {
+      for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
         if (storedMaps.containsKey(geo.id)) {
           storedMaps.remove(geo.id);
         }
@@ -60,13 +58,11 @@ class MapManager {
     return activeMaps;
   }
 
-  List<Geometry> getActiveLaneGeometries(
-      GeoMap map, double longitude, double latitude) {
+  List<Geometry> getActiveLaneGeometries(GeoMap map, double longitude, double latitude) {
     List<Geometry> activeLanes = [];
-    if (_geometryService.isPointInPolygon(
-        map.mapBoundingBox, longitude, latitude)) {
+    if (_geometryService.isPointInPolygonWithMargin(map.mapBoundingBox, longitude, latitude, margin)) {
       for (Geometry lane in map.laneBoundaries.values) {
-        if (_geometryService.isPointInPolygon(lane, longitude, latitude)) {
+        if (_geometryService.isPointInPolygonWithMargin(lane, longitude, latitude, margin)) {
           activeLanes.add(lane);
         }
       }
@@ -76,11 +72,10 @@ class MapManager {
 
   List<int> getActiveLaneIds(GeoMap map, double longitude, double latitude) {
     List<int> activeLanes = [];
-    if (_geometryService.isPointInPolygon(
-        map.mapBoundingBox, longitude, latitude)) {
+    if (_geometryService.isPointInPolygonWithMargin(map.mapBoundingBox, longitude, latitude, margin)) {
       for (int laneId in map.laneBoundaries.keys) {
         Geometry lane = map.laneBoundaries[laneId]!;
-        if (_geometryService.isPointInPolygon(lane, longitude, latitude)) {
+        if (_geometryService.isPointInPolygonWithMargin(lane, longitude, latitude, margin)) {
           activeLanes.add(laneId);
         }
       }
@@ -108,8 +103,7 @@ class MapManager {
 
   List<int> getActiveLaneID(GeoMap map, double longitude, double latitude) {
     List<int> activeLanes = [];
-    if (_geometryService.isPointInPolygon(
-        map.mapBoundingBox, longitude, latitude)) {
+    if (_geometryService.isPointInPolygon(map.mapBoundingBox, longitude, latitude)) {
       for (int laneID in map.laneBoundaries.keys) {
         Geometry lane = map.laneBoundaries[laneID]!;
         if (_geometryService.isPointInPolygon(lane, longitude, latitude)) {

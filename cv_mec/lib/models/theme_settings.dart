@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+/*
 final ThemeData appThemeData = ThemeData(
   primarySwatch: Colors.blue,
   appBarTheme: const AppBarTheme(backgroundColor: Colors.blue),
@@ -16,4 +16,4 @@ final ThemeData darkAppThemeData = ThemeData(
     shape: ContinuousRectangleBorder(),
   ),
   scaffoldBackgroundColor: Colors.black87,
-);
+);*/

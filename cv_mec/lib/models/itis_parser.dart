@@ -1,20 +1,18 @@
 import 'dart:core';
-
-import 'package:cv_mec/models/j2735/choice_content.dart';
-import 'package:cv_mec/models/j2735/exit_service.dart';
-import 'package:cv_mec/models/j2735/generic_signage.dart';
-import 'package:cv_mec/models/j2735/itis_phrase.dart';
-import 'package:cv_mec/models/j2735/itis_itis_codes_and_text.dart';
-import 'package:cv_mec/models/j2735/itis_codes.dart';
+import 'package:asn1_plugin/j2735/2024/choice/choice_content.dart';
+import 'package:asn1_plugin/j2735/2024/common/speed_limit.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_codes.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_itis_codes_and_text.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_text.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_phrase.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/exit_service.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/generic_signage.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
 import 'package:cv_mec/models/itis_code.dart';
-import 'package:cv_mec/models/j2735/speed_limit.dart';
-import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
-import 'package:cv_mec/models/j2735/work_zone.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
-
-import 'j2735/itis_text.dart';
 
 class ItisParser {
   final int speedLimit = 268;
@@ -97,124 +95,111 @@ class ItisParser {
 
   ItisParser() {
     basicAdvisioryCodeMap = {
-      accident: ItisCode.withImage(
-          accident, "Accident", AssetImage("$imageDirectory/$accident.png")),
-      incident: ItisCode.withImage(
-          incident, "Incident", AssetImage("$imageDirectory/$incident.png")),
-      hazardousMaterialSpill: ItisCode.withImage(
-          hazardousMaterialSpill,
-          "Hazardous Material Spill",
-          AssetImage("$imageDirectory/$hazardousMaterialSpill.png")),
-      closed: ItisCode.withImage(
-          closed, "Closed", AssetImage("$imageDirectory/$closed.png")),
-      closedForTheSeason: ItisCode.withImage(
-          closedForTheSeason,
-          "Closed for the Season",
-          AssetImage("$imageDirectory/$closedForTheSeason.png")),
-      avalancheControlActivities: ItisCode.withImage(
-          avalancheControlActivities,
-          "Avalanche Control Activities",
-          AssetImage("$imageDirectory/$avalancheControlActivities.png")),
-      accident: ItisCode.withImage(
-          accident, "Accident", AssetImage("$imageDirectory/$accident.png")),
-      herdOfAnimalsOnRoadway: ItisCode.withImage(
-          herdOfAnimalsOnRoadway,
-          "Herd of Animals on Roadway",
-          AssetImage("$imageDirectory/$herdOfAnimalsOnRoadway.png")),
-      rockFall: ItisCode(rockFall, "Rock Fall"),
+      accident:
+          ItisCode.withImage(accident, "Accident", [ITIScodes(accident)], AssetImage("$imageDirectory/$accident.png")),
+      incident:
+          ItisCode.withImage(incident, "Incident", [ITIScodes(accident)], AssetImage("$imageDirectory/$incident.png")),
+      hazardousMaterialSpill: ItisCode.withImage(hazardousMaterialSpill, "Hazardous Material Spill",
+          [ITIScodes(hazardousMaterialSpill)], AssetImage("$imageDirectory/$hazardousMaterialSpill.png")),
+      closed: ItisCode.withImage(closed, "Closed", [ITIScodes(closed)], AssetImage("$imageDirectory/$closed.png")),
+      closedForTheSeason: ItisCode.withImage(closedForTheSeason, "Closed for the Season",
+          [ITIScodes(closedForTheSeason)], AssetImage("$imageDirectory/$closedForTheSeason.png")),
+      avalancheControlActivities: ItisCode.withImage(avalancheControlActivities, "Avalanche Control Activities",
+          [ITIScodes(avalancheControlActivities)], AssetImage("$imageDirectory/$avalancheControlActivities.png")),
+      accident:
+          ItisCode.withImage(accident, "Accident", [ITIScodes(accident)], AssetImage("$imageDirectory/$accident.png")),
+      herdOfAnimalsOnRoadway: ItisCode.withImage(herdOfAnimalsOnRoadway, "Herd of Animals on Roadway",
+          [ITIScodes(herdOfAnimalsOnRoadway)], AssetImage("$imageDirectory/$herdOfAnimalsOnRoadway.png")),
+      rockFall: ItisCode(
+        rockFall,
+        "Rock Fall",
+        [ITIScodes(rockFall)],
+      ),
       landSlide: ItisCode.withImage(
-          landSlide, "Landslide", AssetImage("$imageDirectory/$landSlide.png")),
-      wideLoad: ItisCode.withImage(
-          wideLoad, "Wide Load", AssetImage("$imageDirectory/$wideLoad.png")),
-      noTrailers: ItisCode.withImage(noTrailers, "Wide Load",
-          AssetImage("$imageDirectory/$noTrailers.png")),
-      wildFire: ItisCode.withImage(
-          wildFire, "Wild Fire", AssetImage("$imageDirectory/$wildFire.png")),
-      weatherEmergency: ItisCode.withImage(weatherEmergency, "Wild Fire",
+          landSlide, "Landslide", [ITIScodes(landSlide)], AssetImage("$imageDirectory/$landSlide.png")),
+      wideLoad:
+          ItisCode.withImage(wideLoad, "Wide Load", [ITIScodes(wideLoad)], AssetImage("$imageDirectory/$wideLoad.png")),
+      noTrailers: ItisCode.withImage(
+          noTrailers, "Wide Load", [ITIScodes(noTrailers)], AssetImage("$imageDirectory/$noTrailers.png")),
+      wildFire:
+          ItisCode.withImage(wildFire, "Wild Fire", [ITIScodes(wildFire)], AssetImage("$imageDirectory/$wildFire.png")),
+      weatherEmergency: ItisCode.withImage(weatherEmergency, "Wild Fire", [ITIScodes(weatherEmergency)],
           AssetImage("$imageDirectory/$weatherEmergency.png")),
-      majorEvent: ItisCode.withImage(majorEvent, "Major Event",
-          AssetImage("$imageDirectory/$majorEvent.png")),
-      severeWeather: ItisCode.withImage(severeWeather, "Severe Weather",
+      majorEvent: ItisCode.withImage(
+          majorEvent, "Major Event", [ITIScodes(majorEvent)], AssetImage("$imageDirectory/$majorEvent.png")),
+      severeWeather: ItisCode.withImage(severeWeather, "Severe Weather", [ITIScodes(severeWeather)],
           AssetImage("$imageDirectory/$severeWeather.png")),
-      snow: ItisCode.withImage(
-          snow, "Snow", AssetImage("$imageDirectory/$snow.png")),
-      winterStorm: ItisCode.withImage(winterStorm, "Winter Storm",
-          AssetImage("$imageDirectory/$winterStorm.png")),
-      rain: ItisCode.withImage(
-          rain, "Rain", AssetImage("$imageDirectory/$rain.png")),
-      strongWinds: ItisCode.withImage(strongWinds, "Strong Winds",
-          AssetImage("$imageDirectory/$strongWinds.png")),
-      fog: ItisCode.withImage(
-          fog, "Fog", AssetImage("$imageDirectory/$fog.png")),
-      visibilityReduced: ItisCode.withImage(
-          visibilityReduced,
-          "Visibility Reduced",
+      snow: ItisCode.withImage(snow, "Snow", [ITIScodes(snow)], AssetImage("$imageDirectory/$snow.png")),
+      winterStorm: ItisCode.withImage(
+          winterStorm, "Winter Storm", [ITIScodes(winterStorm)], AssetImage("$imageDirectory/$winterStorm.png")),
+      rain: ItisCode.withImage(rain, "Rain", [ITIScodes(rain)], AssetImage("$imageDirectory/$rain.png")),
+      strongWinds: ItisCode.withImage(
+          strongWinds, "Strong Winds", [ITIScodes(strongWinds)], AssetImage("$imageDirectory/$strongWinds.png")),
+      fog: ItisCode.withImage(fog, "Fog", [ITIScodes(fog)], AssetImage("$imageDirectory/$fog.png")),
+      visibilityReduced: ItisCode.withImage(visibilityReduced, "Visibility Reduced", [ITIScodes(visibilityReduced)],
           AssetImage("$imageDirectory/$visibilityReduced.png")),
       blowingSnow: ItisCode.withImage(
-          blowingSnow, "Rain", AssetImage("$imageDirectory/$blowingSnow.png")),
-      blackIce: ItisCode.withImage(
-          blackIce, "Black Ice", AssetImage("$imageDirectory/$blackIce.png")),
-      wetPavement: ItisCode.withImage(wetPavement, "Wet Pavement",
-          AssetImage("$imageDirectory/$wetPavement.png")),
-      ice: ItisCode.withImage(
-          ice, "Ice", AssetImage("$imageDirectory/$ice.png")),
-      icyPatches: ItisCode.withImage(icyPatches, "Icy Patches",
-          AssetImage("$imageDirectory/$icyPatches.png")),
-      snowDrifts: ItisCode.withImage(snowDrifts, "Snow Drifts",
-          AssetImage("$imageDirectory/$snowDrifts.png")),
-      dryPavement: ItisCode.withImage(dryPavement, "Dry Pavement",
-          AssetImage("$imageDirectory/$dryPavement.png")),
-      dirtRoadSurface: ItisCode.withImage(dirtRoadSurface, "Dirt Road Surface",
+          blowingSnow, "Rain", [ITIScodes(blowingSnow)], AssetImage("$imageDirectory/$blowingSnow.png")),
+      blackIce:
+          ItisCode.withImage(blackIce, "Black Ice", [ITIScodes(blackIce)], AssetImage("$imageDirectory/$blackIce.png")),
+      wetPavement: ItisCode.withImage(
+          wetPavement, "Wet Pavement", [ITIScodes(wetPavement)], AssetImage("$imageDirectory/$wetPavement.png")),
+      ice: ItisCode.withImage(ice, "Ice", [ITIScodes(ice)], AssetImage("$imageDirectory/$ice.png")),
+      icyPatches: ItisCode.withImage(
+          icyPatches, "Icy Patches", [ITIScodes(icyPatches)], AssetImage("$imageDirectory/$icyPatches.png")),
+      snowDrifts: ItisCode.withImage(
+          snowDrifts, "Snow Drifts", [ITIScodes(snowDrifts)], AssetImage("$imageDirectory/$snowDrifts.png")),
+      dryPavement: ItisCode.withImage(
+          dryPavement, "Dry Pavement", [ITIScodes(dryPavement)], AssetImage("$imageDirectory/$dryPavement.png")),
+      dirtRoadSurface: ItisCode.withImage(dirtRoadSurface, "Dirt Road Surface", [ITIScodes(dirtRoadSurface)],
           AssetImage("$imageDirectory/$dirtRoadSurface.png")),
-      milledRoadSurface: ItisCode.withImage(
-          milledRoadSurface,
-          "Milled Road Surface",
+      milledRoadSurface: ItisCode.withImage(milledRoadSurface, "Milled Road Surface", [ITIScodes(milledRoadSurface)],
           AssetImage("$imageDirectory/$milledRoadSurface.png")),
-      snowTiresOrChainsRequired: ItisCode.withImage(
-          snowTiresOrChainsRequired,
-          "Snow Tires or Chaines Required",
-          AssetImage("$imageDirectory/$snowTiresOrChainsRequired.png")),
-      icyPatches: ItisCode.withImage(icyPatches, "Icy Patches",
-          AssetImage("$imageDirectory/$icyPatches.png")),
-      driveCarefully: ItisCode.withImage(driveCarefully, "Drive Carefully",
+      snowTiresOrChainsRequired: ItisCode.withImage(snowTiresOrChainsRequired, "Snow Tires or Chaines Required",
+          [ITIScodes(snowTiresOrChainsRequired)], AssetImage("$imageDirectory/$snowTiresOrChainsRequired.png")),
+      icyPatches: ItisCode.withImage(
+          icyPatches, "Icy Patches", [ITIScodes(icyPatches)], AssetImage("$imageDirectory/$icyPatches.png")),
+      driveCarefully: ItisCode.withImage(driveCarefully, "Drive Carefully", [ITIScodes(driveCarefully)],
           AssetImage("$imageDirectory/$driveCarefully.png")),
-      driveWithExtremeCaution: ItisCode.withImage(
-          driveWithExtremeCaution,
-          "Drive with Extreme Caution",
-          AssetImage("$imageDirectory/$driveWithExtremeCaution.png")),
+      driveWithExtremeCaution: ItisCode.withImage(driveWithExtremeCaution, "Drive with Extreme Caution",
+          [ITIScodes(driveWithExtremeCaution)], AssetImage("$imageDirectory/$driveWithExtremeCaution.png")),
       increaseNormalFollowingDistance: ItisCode.withImage(
           increaseNormalFollowingDistance,
           "Increase Normal Following Distance",
+          [ITIScodes(increaseNormalFollowingDistance)],
           AssetImage("$imageDirectory/$increaseNormalFollowingDistance.png")),
-      prepareToStop: ItisCode.withImage(prepareToStop, "Prepare to Stop",
+      prepareToStop: ItisCode.withImage(prepareToStop, "Prepare to Stop", [ITIScodes(prepareToStop)],
           AssetImage("$imageDirectory/$prepareToStop.png")),
-      stopAtNextSafePlace: ItisCode.withImage(
-          stopAtNextSafePlace,
-          "Stop at Next Safe Place",
-          AssetImage("$imageDirectory/$stopAtNextSafePlace.png")),
+      stopAtNextSafePlace: ItisCode.withImage(stopAtNextSafePlace, "Stop at Next Safe Place",
+          [ITIScodes(stopAtNextSafePlace)], AssetImage("$imageDirectory/$stopAtNextSafePlace.png")),
       onlyTravelIfAbsolutelyNecessary: ItisCode.withImage(
           onlyTravelIfAbsolutelyNecessary,
           "Only travel if absolutely necessary",
+          [ITIScodes(onlyTravelIfAbsolutelyNecessary)],
           AssetImage("$imageDirectory/$onlyTravelIfAbsolutelyNecessary.png")),
-      fallingRocks: ItisCode.withImage(fallingRocks, "Falling Rocks",
-          AssetImage("$imageDirectory/$fallingRocks.png")),
+      fallingRocks: ItisCode.withImage(
+          fallingRocks, "Falling Rocks", [ITIScodes(fallingRocks)], AssetImage("$imageDirectory/$fallingRocks.png")),
     };
 
     basicWorkZoneCodeMap = {
-      reducedToOneLane: ItisCode.withImage(
-          rightLaneClosedAhead,
-          "Reduce to one Lane",
+      reducedToOneLane: ItisCode.withImage(rightLaneClosedAhead, "Reduce to one Lane", [ITIScodes(reducedToOneLane)],
           AssetImage("$imageDirectory/$rightLaneClosedAhead.png")),
-      roadConstruction: ItisCode.withImage(
-          roadConstruction,
-          "Road Construction",
+      roadConstruction: ItisCode.withImage(roadConstruction, "Road Construction", [ITIScodes(roadConstruction)],
           AssetImage("$imageDirectory/$roadConstruction.png")),
-      gravelRoadSurface: ItisCode(gravelRoadSurface, "Gravel Road Surface"),
-      lookOutForWorkers: ItisCode(lookOutForWorkers, "Look Out for Workers"),
-      keepToRight: ItisCode.withImage(keepToRight, "Keep to Right",
-          AssetImage("$imageDirectory/$keepToRight.png")),
-      keepToLeft: ItisCode.withImage(keepToLeft, "Keep to Left",
-          AssetImage("$imageDirectory/$keepToLeft.png")),
+      gravelRoadSurface: ItisCode(
+        gravelRoadSurface,
+        "Gravel Road Surface",
+        [ITIScodes(gravelRoadSurface)],
+      ),
+      lookOutForWorkers: ItisCode(
+        lookOutForWorkers,
+        "Look Out for Workers",
+        [ITIScodes(lookOutForWorkers)],
+      ),
+      keepToRight: ItisCode.withImage(
+          keepToRight, "Keep to Right", [ITIScodes(keepToRight)], AssetImage("$imageDirectory/$keepToRight.png")),
+      keepToLeft: ItisCode.withImage(
+          keepToLeft, "Keep to Left", [ITIScodes(keepToLeft)], AssetImage("$imageDirectory/$keepToLeft.png")),
     };
 
     basicGenericSignageCodeMap = {};
@@ -246,13 +231,11 @@ class ItisParser {
       // Advisory
       return parseItisCodeFromITISCodesAndText(content);
     } else {
-      return ItisCode.error(
-          "Traveler Information Frame Content is not a Known Type");
+      return ItisCode.error("Traveler Information Frame Content is not a Known Type");
     }
   }
 
-  Future<ItisCode> parseItisCodeFromITISCodesAndText(
-      ITIS_ITIScodesAndText itis) async {
+  Future<ItisCode> parseItisCodeFromITISCodesAndText(ITIS_ITIScodesAndText itis) async {
     if (itis.item.isNotEmpty) {
       if (itis.item.first is ITIScodes) {
         int code = (itis.item.first as ITIScodes).itisCode;
@@ -261,8 +244,8 @@ class ItisParser {
         } else if (itis.item.length >= 2 &&
             (itis.item[0] as ITIScodes).itisCode == pedestrian &&
             (itis.item[1] as ITIScodes).itisCode == crossing) {
-          return ItisCode.withImage(pedestrian, "Pedestrian Crossing",
-              AssetImage("$imageDirectory/pedcrossing.png"));
+          return ItisCode.withImage(
+              pedestrian, "Pedestrian Crossing", itis.item, AssetImage("$imageDirectory/pedcrossing.png"));
         } else if (code == speedLimit) {
           if (itis.item.length == 3) {
             // Basic Speed Limit
@@ -274,36 +257,28 @@ class ItisParser {
 
               ImageProvider? image = await getSpeedAdvisoryImage(speed);
               if (image != null) {
-                ItisCode code =
-                    ItisCode.withImage(speedLimit, "Speed Limit", image);
+                ItisCode code = ItisCode.withImage(speedLimit, "Speed Limit", itis.item, image);
                 speedAdvisoryMap[speed] = code;
                 return code;
               } else {
-                return ItisCode(speedLimit, "Speed Limit");
+                return ItisCode(speedLimit, "Speed Limit", itis.item);
               }
             } else {
-              return ItisCode.error(
-                  "Received Itis Code 268 (Speed Limit), but included Speed is not a valid Speed");
+              return ItisCode.error("Received Itis Code 268 (Speed Limit), but included Speed is not a valid Speed");
             }
           } else {
-            return ItisCode.error(
-                "Received ITIS Code 268 (Speed Limit), but missing additional required arguments");
+            return ItisCode.error("Received ITIS Code 268 (Speed Limit), but missing additional required arguments");
           }
         } else {
           return ItisCode.unknown(code);
         }
-      } else if ((itis.item[0] as ITIStext).itisText.toString() ==
-          "$pedestrian, $crossing") {
-        return ItisCode.withImage(
-            pedestrian,
-            "Pedestrian Crossing",
-            AssetImage(
-                "$imageDirectory/pedcrossing.png")); //AssetImage("$imageDirectory/pedcrossing.png")
+      } else if ((itis.item[0] as ITIStext).itisText.toString() == "$pedestrian, $crossing") {
+        return ItisCode.withImage(pedestrian, "Pedestrian Crossing", itis.item,
+            AssetImage("$imageDirectory/pedcrossing.png")); //AssetImage("$imageDirectory/pedcrossing.png")
       } else if (itis.item.first is ITIStext) {
-        return ItisCode(-1, (itis.item.first as ITIStext).itisText);
+        return ItisCode(-1, (itis.item.first as ITIStext).itisText, itis.item);
       } else {
-        return ItisCode.error(
-            "Received Advisory Tim Message with unknown Item type");
+        return ItisCode.error("Received Advisory Tim Message with unknown Item type");
       }
     } else {
       return ItisCode.error("TIM message has no ITIS Codes");
@@ -320,15 +295,15 @@ class ItisParser {
           if (code == 8196) {
             if (wz.item.length > 1 && wz.item[1] is ITIScodes) {
               if ((wz.item[1] as ITIScodes).itisCode == 771) {
-                return ItisCode.withImage(771, "Right Lane Closed Ahead",
-                    AssetImage("$imageDirectory/$rightLaneClosedAhead.png"));
+                return ItisCode.withImage(
+                    771, "Right Lane Closed Ahead", wz.item, AssetImage("$imageDirectory/$rightLaneClosedAhead.png"));
               }
             }
           } else if (code == 8195) {
             if (wz.item.length > 1 && wz.item[1] is ITIScodes) {
               if ((wz.item[1] as ITIScodes).itisCode == 771) {
-                return ItisCode.withImage(771, "Left Lane Closed Ahead",
-                    AssetImage("$imageDirectory/$leftLaneClosedAhead.png"));
+                return ItisCode.withImage(
+                    771, "Left Lane Closed Ahead", wz.item, AssetImage("$imageDirectory/$leftLaneClosedAhead.png"));
               }
             }
           }
@@ -336,10 +311,9 @@ class ItisParser {
           return ItisCode.unknown(code);
         }
       } else if (wz.item is ITISPhrase) {
-        return ItisCode(-1, (wz.item.first as ITIStext).itisText);
+        return ItisCode(-1, (wz.item.first as ITIStext).itisText, wz.item);
       } else {
-        return ItisCode.error(
-            "Received Advisory Tim Message with unknown Item type");
+        return ItisCode.error("Received Advisory Tim Message with unknown Item type");
       }
     } else {
       return ItisCode.error("TIM message has no ITIS Codes");
@@ -363,16 +337,14 @@ class ItisParser {
 
               ImageProvider? image = await getSpeedImage(speed);
               if (image != null) {
-                ItisCode code =
-                    ItisCode.withImage(speedLimit, "Speed Limit", image);
+                ItisCode code = ItisCode.withImage(speedLimit, "Speed Limit", sl.item, image);
                 speedMap[speed] = code;
                 return code;
               } else {
-                return ItisCode(speedLimit, "Speed Limit");
+                return ItisCode(speedLimit, "Speed Limit", sl.item);
               }
             } else {
-              return ItisCode.error(
-                  "Received Itis Code 268 (Speed Limit), but included Speed is not a valid Speed");
+              return ItisCode.error("Received Itis Code 268 (Speed Limit), but included Speed is not a valid Speed");
             }
           } else if (sl.item.length == 5) {
             // Reduce Speed Ahead
@@ -385,25 +357,22 @@ class ItisParser {
 
             ImageProvider? image = await getSpeedAheadImage(speed);
             if (image != null) {
-              ItisCode code =
-                  ItisCode.withImage(speedLimit, "Reduce Speed Ahead", image);
+              ItisCode code = ItisCode.withImage(speedLimit, "Reduce Speed Ahead", sl.item, image);
               speedAheadMap[speed] = code;
               return code;
             } else {
-              return ItisCode(speedLimit, "Reduce Speed Ahead");
+              return ItisCode(speedLimit, "Reduce Speed Ahead", sl.item);
             }
           } else {
-            return ItisCode.error(
-                "Received ITIS Code 268 (Speed Limit), but missing additional required arguments");
+            return ItisCode.error("Received ITIS Code 268 (Speed Limit), but missing additional required arguments");
           }
         } else {
           return ItisCode.unknown(code);
         }
       } else if (sl.item is ITISPhrase) {
-        return ItisCode(-1, (sl.item.first as ITIStext).itisText);
+        return ItisCode(-1, (sl.item.first as ITIStext).itisText, sl.item);
       } else {
-        return ItisCode.error(
-            "Received Advisory Tim Message with unknown Item type");
+        return ItisCode.error("Received Advisory Tim Message with unknown Item type");
       }
     } else {
       return ItisCode.error("TIM message has no ITIS Codes");
@@ -420,10 +389,9 @@ class ItisParser {
           return ItisCode.unknown(code);
         }
       } else if (gs.item is ITISPhrase) {
-        return ItisCode(-1, (gs.item.first as ITIStext).itisText);
+        return ItisCode(-1, (gs.item.first as ITIStext).itisText, gs.item);
       } else {
-        return ItisCode.error(
-            "Received Advisory Tim Message with unknown Item type");
+        return ItisCode.error("Received Advisory Tim Message with unknown Item type");
       }
     } else {
       return ItisCode.error("TIM message has no ITIS Codes");
@@ -440,10 +408,9 @@ class ItisParser {
           return ItisCode.unknown(code);
         }
       } else if (es.item is ITISPhrase) {
-        return ItisCode(-1, (es.item.first as ITIStext).itisText);
+        return ItisCode(-1, (es.item.first as ITIStext).itisText, es.item);
       } else {
-        return ItisCode.error(
-            "Received Advisory Tim Message with unknown Item type");
+        return ItisCode.error("Received Advisory Tim Message with unknown Item type");
       }
     } else {
       return ItisCode.error("TIM message has no ITIS Codes");
@@ -459,27 +426,23 @@ class ItisParser {
   }
 
   Future<ImageProvider?> getSpeedImage(int sl) async {
-    final ByteData assetImageByteData =
-        await rootBundle.load('$imageDirectory/$speedLimit.png');
+    final ByteData assetImageByteData = await rootBundle.load('$imageDirectory/$speedLimit.png');
     String assetPath = font80Path;
     if (sl >= 100) {
       assetPath = font48Path;
     }
     final ByteData assetFontByteData = await rootBundle.load(assetPath);
     final font = img.readFontZip(assetFontByteData.buffer.asUint8List());
-    img.Image? baseSizeImage =
-        img.decodeImage(assetImageByteData.buffer.asUint8List());
+    img.Image? baseSizeImage = img.decodeImage(assetImageByteData.buffer.asUint8List());
     if (baseSizeImage != null) {
-      img.drawString(baseSizeImage, "$sl",
-          font: font, color: img.ColorRgb8(0, 0, 0), y: 120);
+      img.drawString(baseSizeImage, "$sl", font: font, color: img.ColorRgb8(0, 0, 0), y: 120);
       return MemoryImage(img.encodePng(baseSizeImage));
     }
     return null;
   }
 
   Future<ImageProvider?> getSpeedAheadImage(int sl) async {
-    final ByteData assetImageByteData =
-        await rootBundle.load('$imageDirectory/$reduceYourSpeed.png');
+    final ByteData assetImageByteData = await rootBundle.load('$imageDirectory/$reduceYourSpeed.png');
     String assetPath = font72Path;
     int yOffset = 200;
     if (sl >= 100) {
@@ -489,19 +452,16 @@ class ItisParser {
 
     final ByteData assetFontByteData = await rootBundle.load(assetPath);
     final font = img.readFontZip(assetFontByteData.buffer.asUint8List());
-    img.Image? baseSizeImage =
-        img.decodeImage(assetImageByteData.buffer.asUint8List());
+    img.Image? baseSizeImage = img.decodeImage(assetImageByteData.buffer.asUint8List());
     if (baseSizeImage != null) {
-      img.drawString(baseSizeImage, "$sl",
-          font: font, color: img.ColorRgb8(0, 0, 0), y: yOffset);
+      img.drawString(baseSizeImage, "$sl", font: font, color: img.ColorRgb8(0, 0, 0), y: yOffset);
       return MemoryImage(img.encodePng(baseSizeImage));
     }
     return null;
   }
 
   Future<ImageProvider?> getSpeedAdvisoryImage(int sl) async {
-    final ByteData assetImageByteData =
-        await rootBundle.load('$imageDirectory/268_Advisory.png');
+    final ByteData assetImageByteData = await rootBundle.load('$imageDirectory/268_Advisory.png');
     String assetPath = font80Path;
 
     if (sl >= 100) {
@@ -509,11 +469,9 @@ class ItisParser {
     }
     final ByteData assetFontByteData = await rootBundle.load(assetPath);
     final font = img.readFontZip(assetFontByteData.buffer.asUint8List());
-    img.Image? baseSizeImage =
-        img.decodeImage(assetImageByteData.buffer.asUint8List());
+    img.Image? baseSizeImage = img.decodeImage(assetImageByteData.buffer.asUint8List());
     if (baseSizeImage != null) {
-      img.drawString(baseSizeImage, "$sl",
-          font: font, color: img.ColorRgba8(0, 0, 0, 200), y: 30);
+      img.drawString(baseSizeImage, "$sl", font: font, color: img.ColorRgba8(0, 0, 0, 200), y: 30);
       return MemoryImage(img.encodePng(baseSizeImage));
     }
     return null;

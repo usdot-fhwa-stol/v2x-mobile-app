@@ -2,7 +2,7 @@ import os
 import re
 
 # Directory to search for .c and .h files
-directory = '/build/src/generated-files/2020'
+directory = '/build/src/generated-files/2024'
 
 # Regular expression to find #include <...>
 include_pattern = re.compile(r'#include <(.*)>')

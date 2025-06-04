@@ -1,0 +1,7 @@
+version: '3.9'
+services:
+  asn1builder:
+    build: .
+    image: flutter-asn1:latest
+    restart: no
+

@@ -1,20 +1,32 @@
 PODS:
   - asn1_plugin (0.0.1):
     - Flutter
+  - aws3_bucket (0.0.1):
+    - AWSCognito
+    - AWSCore
+    - AWSS3
+    - Flutter
+  - AWSCognito (2.19.1):
+    - AWSCore (= 2.19.1)
+  - AWSCore (2.19.1)
+  - AWSS3 (2.19.1):
+    - AWSCore (= 2.19.1)
   - connection_network_type (0.0.1):
     - Flutter
     - ReachabilitySwift
-  - device_info (0.0.1):
+  - device_info_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
-  - flutter_kronos (0.0.1):
+  - flutter_kronos_plus (1.0.0):
     - Flutter
-    - Kronos (= 4.1.0)
+    - Kronos (= 4.2.2)
   - flutter_secure_storage (6.0.0):
+    - Flutter
+  - flutter_tts (0.0.1):
     - Flutter
   - geolocator_apple (1.2.0):
     - Flutter
-  - Kronos (4.1.0)
+  - Kronos (4.2.2)
   - native_device_orientation (0.0.1):
     - Flutter
   - package_info_plus (0.4.5):
@@ -28,42 +40,51 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - telephony (0.0.1):
+  - wakelock_plus (0.0.1):
     - Flutter
 
 DEPENDENCIES:
   - asn1_plugin (from `.symlinks/plugins/asn1_plugin/ios`)
+  - aws3_bucket (from `.symlinks/plugins/aws3_bucket/ios`)
   - connection_network_type (from `.symlinks/plugins/connection_network_type/ios`)
-  - device_info (from `.symlinks/plugins/device_info/ios`)
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
-  - flutter_kronos (from `.symlinks/plugins/flutter_kronos/ios`)
+  - flutter_kronos_plus (from `.symlinks/plugins/flutter_kronos_plus/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
   - native_device_orientation (from `.symlinks/plugins/native_device_orientation/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - telephony (from `.symlinks/plugins/telephony/ios`)
+  - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
 
 SPEC REPOS:
   trunk:
+    - AWSCognito
+    - AWSCore
+    - AWSS3
     - Kronos
     - ReachabilitySwift
 
 EXTERNAL SOURCES:
   asn1_plugin:
     :path: ".symlinks/plugins/asn1_plugin/ios"
+  aws3_bucket:
+    :path: ".symlinks/plugins/aws3_bucket/ios"
   connection_network_type:
     :path: ".symlinks/plugins/connection_network_type/ios"
-  device_info:
-    :path: ".symlinks/plugins/device_info/ios"
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
     :path: Flutter
-  flutter_kronos:
-    :path: ".symlinks/plugins/flutter_kronos/ios"
+  flutter_kronos_plus:
+    :path: ".symlinks/plugins/flutter_kronos_plus/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_tts:
+    :path: ".symlinks/plugins/flutter_tts/ios"
   geolocator_apple:
     :path: ".symlinks/plugins/geolocator_apple/ios"
   native_device_orientation:
@@ -76,26 +97,31 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
-  telephony:
-    :path: ".symlinks/plugins/telephony/ios"
+  wakelock_plus:
+    :path: ".symlinks/plugins/wakelock_plus/ios"
 
 SPEC CHECKSUMS:
-  asn1_plugin: 1423faca64bc67ca13335f3ff3b4d8bcbd557c46
-  connection_network_type: 160e62717f4cfc913811aa4e4ccf7f4e60497936
-  device_info: d7d233b645a32c40dfdc212de5cf646ca482f175
+  asn1_plugin: 33377a30ab44f417407961ebd512f05bbc9a18b7
+  aws3_bucket: 929479088910efe7d1c67f4be27298f4e2bc2442
+  AWSCognito: f50de600804941d083af37a7568905f31a774727
+  AWSCore: 55c154ae27efc5c98bdc30a0eeea5a35d10a2ab5
+  AWSS3: 2272253b098d07803af8dd20ce6ce7302bcffb47
+  connection_network_type: 1578442d17a27d74e6e93c49211457e0e05a4190
+  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_kronos: c322b87c805240e8a6ba9d4203cb5c2c174912d1
-  flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
-  geolocator_apple: 6cbaf322953988e009e5ecb481f07efece75c450
-  Kronos: d67579565469f57fae67ac7985c3881738f02075
-  native_device_orientation: 348b10c346a60ebbc62fb235a4fdb5d1b61a8f55
-  package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
-  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
-  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  flutter_kronos_plus: e147a938842feae5252df6ee5e3976c711913fbe
+  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  flutter_tts: b88dbc8655d3dc961bc4a796e4e16a4cc1795833
+  geolocator_apple: 1560c3c875af2a412242c7a923e15d0d401966ff
+  Kronos: dfa27819541f9f1bf6834d5bfefa792f499001bb
+  native_device_orientation: e3580675687d5034770da198f6839ebf2122ef94
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   ReachabilitySwift: 7f151ff156cea1481a8411701195ac6a984f4979
-  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
-  telephony: c41768fae9fb5495781b05a72004106ca33ec777
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  wakelock_plus: 04623e3f525556020ebd4034310f20fe7fda8b49
 
 PODFILE CHECKSUM: dddfc67e623a2a338709fe99a06af3dfd5487372
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

@@ -1,10 +1,1 @@
-enum MsgType {
-  UNKNOWN,
-  MAP,
-  SPAT,
-  TIM,
-  BSM,
-  SSM,
-  PSM,
-  SRM
-}
+enum MsgType { UNKNOWN, MAP, SPAT, TIM, BSM, SSM, PSM, SRM, SDSM }

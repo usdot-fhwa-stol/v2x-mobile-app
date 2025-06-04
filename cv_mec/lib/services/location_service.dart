@@ -14,10 +14,8 @@ class LocationService extends GetxService {
   // Static variables
   final Logger _logger = Logger();
   static final MockLocationService _mockLocationService = MockLocationService();
-  LocationSettings _locationSettings = const LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation, distanceFilter: 0);
-
-  
+  LocationSettings _locationSettings =
+      const LocationSettings(accuracy: LocationAccuracy.bestForNavigation, distanceFilter: 0);
 
   // Variables
   bool _serviceEnabled = false;
@@ -28,14 +26,12 @@ class LocationService extends GetxService {
   DeclinationData? _declinationData;
 
   // Location Stream
-  final StreamController<Position> _locationController =
-      StreamController<Position>.broadcast();
+  final StreamController<Position> _locationController = StreamController<Position>.broadcast();
   Stream<Position> get locationStream => _locationController.stream;
 
   // LocationWithDeclination Stream
   bool declinationRequestOut = false;
-  Stream<PositionWithDeclination> get locationWithDeclinationStream =>
-      locationStream.map((p) {
+  Stream<PositionWithDeclination> get locationWithDeclinationStream => locationStream.map((p) {
         double? declination = getDeclination();
         if (declination == null && !declinationRequestOut) {
           declinationRequestOut = true;
@@ -46,47 +42,41 @@ class LocationService extends GetxService {
         return PositionWithDeclination(p, getDeclination());
       });
 
-  LocationService(
-      {bool mocked = false,
-      double latitude = 0,
-      double longitude = 0,
-      Position? mockedLocation}) {
-
+  LocationService() {
     if (Platform.isAndroid) {
       _locationSettings = AndroidSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 0,
-          forceLocationManager: true,
-          intervalDuration: const Duration(seconds: 1),
-          //(Optional) Set foreground notification config to keep the app alive 
-          //when going to the background
-          // foregroundNotificationConfig: const ForegroundNotificationConfig(
-          //   notificationText:
-          //   "Example app will continue to receive your location even when you aren't using it",
-          //   notificationTitle: "Running in Background",
-          //   enableWakeLock: true,
-          // )
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0,
+        forceLocationManager: true,
+        intervalDuration: const Duration(seconds: 1),
+        //(Optional) Set foreground notification config to keep the app alive
+        //when going to the background
+        // foregroundNotificationConfig: const ForegroundNotificationConfig(
+        //   notificationText:
+        //   "Example app will continue to receive your location even when you aren't using it",
+        //   notificationTitle: "Running in Background",
+        //   enableWakeLock: true,
+        // )
       );
     }
-
-    _start(mocked, latitude, longitude, mockedLocation);
+    //_start(mocked, latitude, longitude, mockedLocation);
   }
 
-  void _start(bool mocked, double latitude, double longitude,
-      Position? mockedLocation) async {
+  Future<void> init({bool mocked = false, double latitude = 0, double longitude = 0, Position? mockedLocation}) async {
+    await _start(mocked, latitude, longitude, mockedLocation);
+  }
+
+  Future<void> _start(bool mocked, double latitude, double longitude, Position? mockedLocation) async {
     _serviceMocked = mocked;
     if (_serviceMocked) {
       _mockedStreamListener?.cancel();
-      _mockedStreamListener = _mockLocationService.locationStream
-          .listen((event) => _locationController.add(event));
-      return _mockLocationService.start(latitude, longitude,
-          mockedLocation: mockedLocation);
+      _mockedStreamListener = _mockLocationService.locationStream.listen((event) => _locationController.add(event));
+      return _mockLocationService.start(latitude, longitude, mockedLocation: mockedLocation);
     }
     // This method starts the location stream. This can be called multiple times, but only one stream will be active at a time.
-    print("Start location_services _start");
     try {
       await requestPermission();
-      if (await _isPermissionGranted() && _serviceEnabled) {
+      if (await isPermissionGranted() && _serviceEnabled) {
         _startLocationUpdates();
       }
     } catch (e) {
@@ -98,7 +88,7 @@ class LocationService extends GetxService {
               'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
               onPressed: () {
                 Get.back();
               },
@@ -109,7 +99,7 @@ class LocationService extends GetxService {
     }
   }
 
-  Future<bool> _isPermissionGranted({check = false}) async {
+  Future<bool> isPermissionGranted({check = false}) async {
     if (check) _permission = await Geolocator.checkPermission();
     switch (_permission) {
       case LocationPermission.denied:
@@ -140,10 +130,10 @@ class LocationService extends GetxService {
         AlertDialog(
           title: const Text('Location Permissions'),
           content: const Text(
-              'This application requires location permissions for accurate timing and data collection. Without it, the application\'s accuracy will be reduced.'),
+              'This application requires location permissions for accurate timing and data collection. Without it, timing and other components will not work correctly.'),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
               onPressed: () {
                 Get.back();
               },
@@ -164,10 +154,8 @@ class LocationService extends GetxService {
     }
     if (_permission == LocationPermission.deniedForever) {
       // Permissions are denied forever, handle appropriately.
-      _logger.w(
-          "Location permissions are permanently denied, we cannot request permissions.");
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
+      _logger.w("Location permissions are permanently denied, we cannot request permissions.");
+      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
     }
     return true;
   }
@@ -177,13 +165,10 @@ class LocationService extends GetxService {
       return _mockLocationService.startMockLocationUpdates();
     }
     _positionStream?.cancel();
-    _positionStream =
-        Geolocator.getPositionStream(locationSettings: _locationSettings)
-            .listen(_onPositionUpdate);
+    _positionStream = Geolocator.getPositionStream(locationSettings: _locationSettings).listen(_onPositionUpdate);
   }
 
   void _onPositionUpdate(Position position) {
-    print("$position, ${DateTime.now()}");
     _locationController.add(position);
   }
 
@@ -207,9 +192,8 @@ class LocationService extends GetxService {
     if (_serviceMocked) {
       return _mockLocationService.getCurrentLocation();
     }
-    if (!await _isPermissionGranted()) {
-      _logger
-          .w("Location permissions not granted, cannot get current location");
+    if (!await isPermissionGranted()) {
+      _logger.w("Location permissions not granted, cannot get current location");
       return null;
     }
     return await Geolocator.getCurrentPosition();

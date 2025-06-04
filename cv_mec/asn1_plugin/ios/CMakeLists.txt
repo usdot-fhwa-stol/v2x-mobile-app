@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.10)
 project(asn1_plugin_library VERSION 0.0.1 LANGUAGES C)
 
 file(GLOB_RECURSE SRC_FILES
-    "${PROJECT_SOURCE_DIR}/Classes/generated-files/2020/*.c"
+    "${PROJECT_SOURCE_DIR}/Classes/generated-files/2024/*.c"
 )
 
 

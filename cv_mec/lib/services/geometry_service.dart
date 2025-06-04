@@ -1,61 +1,42 @@
 import 'dart:math';
 
+import 'package:asn1_plugin/j2735/2024/common/computed_lane.dart';
+import 'package:asn1_plugin/j2735/2024/common/heading_slice.dart';
+import 'package:asn1_plugin/j2735/2024/common/node_list_xy.dart';
+import 'package:asn1_plugin/j2735/2024/common/node_llmd_64b.dart';
+import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
+import 'package:asn1_plugin/j2735/2024/common/node_xy.dart';
+import 'package:asn1_plugin/j2735/2024/common/position_3d.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/distance_units.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/geographical_path.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/geometric_projection.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/node_list_ll.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/node_ll.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/offset_system.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
-import 'package:cv_mec/models/j2735/computed_lane.dart';
-import 'package:cv_mec/models/j2735/distance_units.dart';
-import 'package:cv_mec/models/j2735/geographical_path.dart';
-import 'package:cv_mec/models/j2735/geometric_projection.dart';
-import 'package:cv_mec/models/j2735/heading_slice.dart';
-import 'package:cv_mec/models/j2735/node_list_ll.dart';
-import 'package:cv_mec/models/j2735/node_list_xy.dart';
-import 'package:cv_mec/models/j2735/node_ll.dart';
-import 'package:cv_mec/models/j2735/node_llmd_64b.dart';
-import 'package:cv_mec/models/j2735/node_set_xy.dart';
-import 'package:cv_mec/models/j2735/node_xy.dart';
-import 'package:cv_mec/models/j2735/offset_system.dart';
-import 'package:cv_mec/models/j2735/position_3d.dart';
-import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
-import 'package:cv_mec/models/j2735/traveler_information.dart';
 import 'package:dart_jts/dart_jts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geodesy/geodesy.dart' as geo;
 
 class GeometryService {
-  // Haversine Distance Calculator is faster, Vincenty is more Accurate, but slower
-  // latLng2.Distance distance = const latLng2.Distance(calculator: latLng2.Vincenty());
   GeometryFactory geometryFactory = GeometryFactory.defaultPrecision();
   final geodesy = geo.Geodesy();
 
-  Map<TravelerDataFrame, DataFrameGeometry> getTimPolyRegion(
-      TravelerInformation tim) {
-    Map<TravelerDataFrame, DataFrameGeometry> dataFrameRegions =
-        <TravelerDataFrame, DataFrameGeometry>{};
+  Map<TravelerDataFrame, DataFrameGeometry> getTimPolyRegion(TravelerInformation tim) {
+    Map<TravelerDataFrame, DataFrameGeometry> dataFrameRegions = <TravelerDataFrame, DataFrameGeometry>{};
     for (int i = 0; i < tim.dataFrames.travelerDataFrameList.length; i++) {
-      TravelerDataFrame travelerDataFrame =
-          tim.dataFrames.travelerDataFrameList[i];
+      TravelerDataFrame travelerDataFrame = tim.dataFrames.travelerDataFrameList[i];
       List<GeometryDirection> timGeometryList = [];
       for (int j = 0; j < travelerDataFrame.regions.length; j++) {
-        // List<Coordinate> coordinates = getPointListFromPath(travelerDataFrame.regions[j]);
-
-        // List<Coordinate> polygon = getPolygonFromPointPath(coordinates, travelerDataFrame.regions[j].laneWidth!.getLaneWidthMeters());
-
-        // if(travelerDataFrame.regions[j].anchor != null && polygon.length >=3){
-        //   Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, travelerDataFrame.regions[j].anchor!);
-        //   timGeometryList.add(timGeometry);
-        // }else{
-        //   print("Unable to Add Geometry. Anchor Point: ${travelerDataFrame.regions[j].anchor!}, Coordinate Length: ${polygon.length}");
-        // }
-
-        Geometry? timGeometry =
-            getGeometryFromPath(travelerDataFrame.regions[j]);
+        Geometry? timGeometry = getGeometryFromPath(travelerDataFrame.regions[j]);
 
         HeadingSlice? direction = travelerDataFrame.regions[j].direction;
 
         if (travelerDataFrame.regions[j].description is GeometricProjection) {
-          direction =
-              (travelerDataFrame.regions[j].description as GeometricProjection)
-                  .direction;
+          direction = (travelerDataFrame.regions[j].description as GeometricProjection).direction;
         }
 
         if (timGeometry != null) {
@@ -64,8 +45,7 @@ class GeometryService {
           timGeometryList.add(geoDir);
         }
       }
-      dataFrameRegions[travelerDataFrame] =
-          DataFrameGeometry(travelerDataFrame, timGeometryList);
+      dataFrameRegions[travelerDataFrame] = DataFrameGeometry(travelerDataFrame, timGeometryList);
     }
 
     return dataFrameRegions;
@@ -73,37 +53,30 @@ class GeometryService {
 
   Geometry? getGeometryFromPath(GeographicalPath path) {
     if (path.description is OffsetSystem) {
-      return getGeometryFromOffsetSystem(path.description as OffsetSystem,
-          path.anchor!, path.laneWidth!.getLaneWidthMeters());
+      return getGeometryFromOffsetSystem(
+          path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
     } else if (path.description is GeometricProjection) {
-      return getGeometryFromGeometricProjection(
-          path.description as GeometricProjection);
+      return getGeometryFromGeometricProjection(path.description as GeometricProjection);
     } else {
-      print(
-          "Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
+      print("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
       return null;
     }
   }
 
-  Geometry? getGeometryFromOffsetSystem(
-      OffsetSystem offsetSystem, Position3D anchor, double laneWidth) {
+  Geometry? getGeometryFromOffsetSystem(OffsetSystem offsetSystem, Position3D anchor, double laneWidth) {
     if (offsetSystem.offset is NodeListXY) {
-      return getGeometryFromNodeListXY(
-          offsetSystem.offset as NodeListXY, anchor, laneWidth);
+      return getGeometryFromNodeListXY(offsetSystem.offset as NodeListXY, anchor, laneWidth);
     } else if (offsetSystem.offset is NodeListLL) {
-      return getGeometryFromNodeListLL(
-          offsetSystem.offset as NodeListLL, anchor, laneWidth);
+      return getGeometryFromNodeListLL(offsetSystem.offset as NodeListLL, anchor, laneWidth);
     } else {
       print("Unable to Identify the Type of OffsetSystem");
     }
     return null;
   }
 
-  Geometry? getGeometryFromNodeListXY(
-      NodeListXY nodeListXY, Position3D anchor, double laneWidth) {
+  Geometry? getGeometryFromNodeListXY(NodeListXY nodeListXY, Position3D anchor, double laneWidth) {
     if (nodeListXY.nodeListXY is NodeSetXY) {
-      return getGeometryFromNodeSetXY(
-          nodeListXY.nodeListXY as NodeSetXY, anchor, laneWidth);
+      return getGeometryFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, anchor, laneWidth);
     } else if (nodeListXY.nodeListXY is ComputedLane) {
       print("Unable to Parse Computed NodeListXY System. Not Supported");
       return null;
@@ -113,34 +86,28 @@ class GeometryService {
     return null;
   }
 
-  Geometry? getGeometryFromNodeListLL(
-      NodeListLL nodeListLL, Position3D anchor, double laneWidth) {
-    List<Coordinate> polygon = getPolygonFromPointPath(
-        getCoordinatesNodeListLL(nodeListLL, anchor), laneWidth);
+  Geometry? getGeometryFromNodeListLL(NodeListLL nodeListLL, Position3D anchor, double laneWidth) {
+    List<Coordinate> polygon = getPolygonFromPointPath(getCoordinatesNodeListLL(nodeListLL, anchor), laneWidth);
 
     if (polygon.length >= 3) {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      print(
-          "Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      print("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
     }
 
     return null;
   }
 
   // Returns a list of Coordinates as offset Meters from the anchor point
-  Geometry? getGeometryFromNodeSetXY(
-      NodeSetXY nodeSetXY, Position3D anchor, double laneWidth) {
-    List<Coordinate> polygon = getPolygonFromPointPath(
-        getCoordinatesFromNodeSetXY(nodeSetXY, anchor), laneWidth);
+  Geometry? getGeometryFromNodeSetXY(NodeSetXY nodeSetXY, Position3D anchor, double laneWidth) {
+    List<Coordinate> polygon = getPolygonFromPointPath(getCoordinatesFromNodeSetXY(nodeSetXY, anchor), laneWidth);
 
     if (polygon.length >= 3) {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      print(
-          "Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      print("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -167,8 +134,7 @@ class GeometryService {
     return convertCoordinatesToGeoPoly(boundary, projection.circle.center);
   }
 
-  List<Coordinate> getPolygonFromPointPath(
-      List<Coordinate> points, double laneWidth) {
+  List<Coordinate> getPolygonFromPointPath(List<Coordinate> points, double laneWidth) {
     LineString lineString = geometryFactory.createLineString(points);
 
     BufferParameters bufferParams = BufferParameters();
@@ -176,16 +142,14 @@ class GeometryService {
     bufferParams.setJoinStyle(BufferParameters.JOIN_BEVEL);
     bufferParams.setSimplifyFactor(0.001);
 
-    Geometry buffer =
-        BufferOp.bufferOpWithParams(lineString, laneWidth / 2.0, bufferParams);
+    Geometry buffer = BufferOp.bufferOpWithParams(lineString, laneWidth / 2.0, bufferParams);
 
     List<Coordinate> coordinates = buffer.getCoordinates();
     return coordinates;
   }
 
   Coordinate latLngToCoordinate(LatLng latLng, Position3D anchorPoint) {
-    LatLng anchor = LatLng(anchorPoint.lat.getDecimalLatitude(),
-        anchorPoint.long.getDecimalLongitude());
+    LatLng anchor = LatLng(anchorPoint.lat.getDecimalLatitude(), anchorPoint.long.getDecimalLongitude());
 
     num bearing = geodesy.bearingBetweenTwoGeoPoints(anchor, latLng);
     num distance = geodesy.distanceBetweenTwoGeoPoints(anchor, latLng);
@@ -198,16 +162,14 @@ class GeometryService {
   }
 
   LatLng coordinateToLatLng(Coordinate coordinate, Position3D anchorPoint) {
-    LatLng anchor = LatLng(anchorPoint.lat.getDecimalLatitude(),
-        anchorPoint.long.getDecimalLongitude());
+    LatLng anchor = LatLng(anchorPoint.lat.getDecimalLatitude(), anchorPoint.long.getDecimalLongitude());
     return shiftLatLng(anchor, coordinate.y, coordinate.x);
   }
 
   LatLng shiftLatLng(LatLng point, double metersNorth, double metersEast) {
     double degrees = atan2(metersNorth, metersEast) * 180.0 / pi;
     double distance = sqrt(pow(metersNorth, 2) + pow(metersEast, 2));
-    LatLng destinationPoints =
-        geodesy.destinationPointByDistanceAndBearing(point, distance, degrees);
+    LatLng destinationPoints = geodesy.destinationPointByDistanceAndBearing(point, distance, degrees);
     return destinationPoints;
   }
 
@@ -215,21 +177,17 @@ class GeometryService {
     return LatLng(pos.lat.getDecimalLatitude(), pos.long.getDecimalLongitude());
   }
 
-  Geometry convertCoordinatesToGeoPoly(
-      List<Coordinate> coordinates, Position3D anchorPoint) {
-    Polygon polygon = geometryFactory.createPolygonFromCoords(
-        normalizeCoordinatesToPolygon(
-            convertCoordinatesToLatLng(coordinates, anchorPoint)));
+  Geometry convertCoordinatesToGeoPoly(List<Coordinate> coordinates, Position3D anchorPoint) {
+    Polygon polygon = geometryFactory
+        .createPolygonFromCoords(normalizeCoordinatesToPolygon(convertCoordinatesToLatLng(coordinates, anchorPoint)));
     return polygon;
   }
 
-  List<Coordinate> convertCoordinatesToLatLng(
-      List<Coordinate> coordinates, Position3D anchorPoint) {
+  List<Coordinate> convertCoordinatesToLatLng(List<Coordinate> coordinates, Position3D anchorPoint) {
     List<Coordinate> latLngCoordinates = [];
     for (int i = 0; i < coordinates.length; i++) {
       final converted = coordinateToLatLng(coordinates[i], anchorPoint);
-      latLngCoordinates
-          .add(Coordinate(converted.longitude, converted.latitude));
+      latLngCoordinates.add(Coordinate(converted.longitude, converted.latitude));
     }
     return latLngCoordinates;
   }
@@ -241,8 +199,7 @@ class GeometryService {
   void printLongString(String text) {
     const int chunkSize = 800; // Define the chunk size
     for (int i = 0; i < text.length; i += chunkSize) {
-      print(text.substring(
-          i, i + chunkSize > text.length ? text.length : i + chunkSize));
+      print(text.substring(i, i + chunkSize > text.length ? text.length : i + chunkSize));
     }
   }
 
@@ -279,6 +236,15 @@ class GeometryService {
     return geometry.contains(point);
   }
 
+  bool isPointInPolygonWithMargin(Geometry geometry, double x, double y, double margin) {
+    Coordinate coordinate = Coordinate(x, y);
+    Point point = geometryFactory.createPoint(coordinate);
+
+    Geometry bufferedGeometry = geometry.buffer(margin);
+
+    return bufferedGeometry.contains(point);
+  }
+
   Geometry calculateMultiGeometryBoundingBox(List<Geometry> geometries) {
     Envelope? combinedEnvelope;
     for (Geometry geo in geometries) {
@@ -296,8 +262,7 @@ class GeometryService {
         Coordinate(combinedEnvelope.getMaxX(), combinedEnvelope.getMaxY()),
         Coordinate(combinedEnvelope.getMinX(), combinedEnvelope.getMaxY())
       ];
-      return geometryFactory
-          .createPolygonFromCoords(normalizeCoordinatesToPolygon(coordinates));
+      return geometryFactory.createPolygonFromCoords(normalizeCoordinatesToPolygon(coordinates));
     }
 
     return geometryFactory.createPolygonEmpty();
@@ -326,44 +291,32 @@ class GeometryService {
     }
   }
 
-  List<Coordinate> getCoordinatesFromNodeListXY(
-      NodeListXY nodeListXY, Position3D anchor) {
-    return getCoordinatesFromNodeSetXY(
-        nodeListXY.nodeListXY as NodeSetXY, anchor);
+  List<Coordinate> getCoordinatesFromNodeListXY(NodeListXY nodeListXY, Position3D anchor) {
+    return getCoordinatesFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, anchor);
   }
 
-  List<LatLng> getLatLngCoordinatesFromNodeSetXY(
-      NodeSetXY nodeSetXY, Position3D anchor) {
+  List<LatLng> getLatLngCoordinatesFromNodeSetXY(NodeSetXY nodeSetXY, Position3D anchor) {
     List<Coordinate> coords = getCoordinatesFromNodeSetXY(nodeSetXY, anchor);
 
-    return switchCoordinateListToLatLngList(
-        convertCoordinatesToLatLng(coords, anchor));
+    return switchCoordinateListToLatLngList(convertCoordinatesToLatLng(coords, anchor));
   }
 
-  List<Coordinate> getCoordinatesFromNodeSetXY(
-      NodeSetXY nodeSetXY, Position3D anchor) {
+  List<Coordinate> getCoordinatesFromNodeSetXY(NodeSetXY nodeSetXY, Position3D anchor) {
     List<Coordinate> points = [];
-    LatLng anchorLatLng = LatLng(
-        anchor.lat.getDecimalLatitude(), anchor.long.getDecimalLongitude());
-
+    LatLng anchorLatLng = LatLng(anchor.lat.getDecimalLatitude(), anchor.long.getDecimalLongitude());
     for (int i = 0; i < nodeSetXY.nodeSetXY.length; i++) {
       NodeXY node = nodeSetXY.nodeSetXY[i];
 
       // Handle the case where we get the
       if (node.delta.nodeOffsetPointXY is Node_LLmD_64b) {
-        Node_LLmD_64b refLatLong =
-            node.delta.nodeOffsetPointXY as Node_LLmD_64b;
+        Node_LLmD_64b refLatLong = node.delta.nodeOffsetPointXY as Node_LLmD_64b;
 
-        final refLatLng = LatLng(refLatLong.lat.getDecimalLatitude(),
-            refLatLong.lon.getDecimalLongitude());
+        final refLatLng = LatLng(refLatLong.lat.getDecimalLatitude(), refLatLong.lon.getDecimalLongitude());
 
-        num bearing =
-            geodesy.bearingBetweenTwoGeoPoints(anchorLatLng, refLatLng);
-        num distance =
-            geodesy.distanceBetweenTwoGeoPoints(anchorLatLng, refLatLng);
+        num bearing = geodesy.bearingBetweenTwoGeoPoints(anchorLatLng, refLatLng);
+        num distance = geodesy.distanceBetweenTwoGeoPoints(anchorLatLng, refLatLng);
 
         double theta = bearing * pi / 180;
-        theta = 0;
 
         double x = distance * cos(theta);
         double y = distance * sin(theta);
@@ -375,8 +328,7 @@ class GeometryService {
         if (points.isEmpty) {
           points.add(Coordinate(offset[1], offset[0]));
         } else {
-          points.add(
-              Coordinate(points.last.x + offset[1], points.last.y + offset[0]));
+          points.add(Coordinate(points.last.x + offset[1], points.last.y + offset[0]));
         }
       }
     }
@@ -384,30 +336,24 @@ class GeometryService {
     return points;
   }
 
-  List<Coordinate> getCoordinatesNodeListLL(
-      NodeListLL nodeListLL, Position3D anchor) {
+  List<Coordinate> getCoordinatesNodeListLL(NodeListLL nodeListLL, Position3D anchor) {
     List<LatLng> latLngs = [];
 
-    LatLng anchorLatLng = LatLng(
-        anchor.lat.getDecimalLatitude(), anchor.long.getDecimalLongitude());
+    LatLng anchorLatLng = LatLng(anchor.lat.getDecimalLatitude(), anchor.long.getDecimalLongitude());
 
     for (NodeLL node in nodeListLL.nodes.nodeSetLL) {
       if (node.delta.nodeOffsetPointLL is Node_LLmD_64b) {
-        Node_LLmD_64b refLatLong =
-            node.delta.nodeOffsetPointLL as Node_LLmD_64b;
+        Node_LLmD_64b refLatLong = node.delta.nodeOffsetPointLL as Node_LLmD_64b;
 
-        final refLatLng = LatLng(refLatLong.lat.getDecimalLatitude(),
-            refLatLong.lon.getDecimalLongitude());
+        final refLatLng = LatLng(refLatLong.lat.getDecimalLatitude(), refLatLong.lon.getDecimalLongitude());
         latLngs.add(refLatLng);
       } else {
         List<double> offset = node.delta.nodeOffsetPointLL.getOffsetLongLat();
 
         if (latLngs.isEmpty) {
-          latLngs.add(LatLng(offset[1] + anchorLatLng.latitude,
-              offset[0] + anchorLatLng.longitude));
+          latLngs.add(LatLng(offset[1] + anchorLatLng.latitude, offset[0] + anchorLatLng.longitude));
         } else {
-          latLngs.add(LatLng(latLngs.last.latitude + offset[1],
-              latLngs.last.longitude + offset[0]));
+          latLngs.add(LatLng(latLngs.last.latitude + offset[1], latLngs.last.longitude + offset[0]));
           // points.add(Coordinate(points.last.x + offset[0], points.last.y + offset[1]));
         }
       }
@@ -420,5 +366,62 @@ class GeometryService {
     }
 
     return points;
+  }
+
+  List<LatLng> getPolygonProjection(LatLng position, double degrees, double laneWidth) {
+    double radians = degToRadian(-(degrees - 90));
+    double distance = 100;
+
+    Coordinate start = Coordinate(0, 0);
+    Coordinate end = Coordinate(distance * sin(radians), distance * cos(radians));
+
+    List<Coordinate> coordinates = [start, end];
+
+    List<Coordinate> polygon = getPolygonFromPointPath(coordinates, laneWidth);
+
+    List<LatLng> latLngCoordinates = [];
+    for (int i = 0; i < polygon.length; i++) {
+      LatLng anchor = LatLng(position.latitude, position.longitude);
+      final converted = shiftLatLng(anchor, polygon[i].y, polygon[i].x);
+      latLngCoordinates.add(LatLng(converted.latitude, converted.longitude));
+    }
+    return latLngCoordinates;
+  }
+
+  Polygon getConicSectionProjection(LatLng position, double degrees, double startingWidth, double fov, double length) {
+    List<Coordinate> coordinates = [];
+
+    double radians = degToRadian(-(degrees - 90));
+    double normal = degToRadian(-(degrees - 90) + 90);
+    double fovRadians = degToRadian(fov) / 2.0;
+
+    double startingOffset = startingWidth / 2;
+
+    double h = length / (cos(fovRadians));
+
+    Coordinate positiveOffsetCoordinate = Coordinate(startingOffset * cos(normal), startingOffset * sin(normal));
+    Coordinate negativeOffsetCoordinate = Coordinate(-startingOffset * cos(normal), -startingOffset * sin(normal));
+    Coordinate positiveCorner =
+        positiveOffsetCoordinate + Coordinate(h * cos(radians + fovRadians), h * sin(radians + fovRadians));
+    Coordinate negativeCorner =
+        negativeOffsetCoordinate + Coordinate(h * cos(radians - fovRadians), h * sin(radians - fovRadians));
+
+    // coordinates.add(Coordinate(0, 0));
+    coordinates.add(positiveOffsetCoordinate);
+    coordinates.add(positiveCorner);
+    coordinates.add(negativeCorner);
+    coordinates.add(negativeOffsetCoordinate);
+    coordinates.add(positiveOffsetCoordinate);
+
+    List<Coordinate> latLngCoordinates = [];
+    // print("Coordinate:");
+    for (int i = 0; i < coordinates.length; i++) {
+      final converted = shiftLatLng(position, coordinates[i].x, coordinates[i].y);
+      latLngCoordinates.add(Coordinate(converted.longitude, converted.latitude));
+    }
+
+    return geometryFactory.createPolygonFromCoords(latLngCoordinates);
+
+    // return latLngCoordinates;
   }
 }

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:cv_mec/models/archive_directory.dart';
 import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/vehicle.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -10,8 +11,7 @@ class FileService extends GetxService {
   File registrationFile = File('');
 
   Future<bool> checkIfRegistrationExists() async {
-    String registrationPath =
-        await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
+    String registrationPath = await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
     final file = File(registrationPath);
     return await file.exists();
   }
@@ -22,8 +22,7 @@ class FileService extends GetxService {
   }
 
   Future<bool> deleteRegistration() async {
-    String registrationPath =
-        await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
+    String registrationPath = await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
 
     if (await checkIfRegistrationExists()) {
       File file = File(registrationPath);
@@ -34,8 +33,7 @@ class FileService extends GetxService {
   }
 
   Future<Registration> getRegistration() async {
-    String path =
-        await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
+    String path = await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
     File file = File(path);
     String jsonData = await file.readAsString();
     Registration registration = Registration.fromJson(jsonDecode(jsonData));
@@ -117,5 +115,40 @@ class FileService extends GetxService {
   Future<String> _getFilePath(String name, ArchiveDirectory directory) async {
     String path = await _getDirectory(directory);
     return '$path/$name';
+  }
+
+  Future<List<Vehicle>> getVehicleConfigsfromFile() async {
+    List<Vehicle> vehicles = [];
+    String path = await _getFilePath("vehicles.json", ArchiveDirectory.DOWNLOADS);
+    File file = File(path);
+    if (await file.exists()) {
+      String jsonData = await file.readAsString();
+      List<dynamic> jsonList = jsonDecode(jsonData);
+      for (var vehicleJson in jsonList) {
+        Vehicle vehicle = Vehicle.fromJson(vehicleJson);
+        vehicles.add(vehicle);
+      }
+    } else {
+      // Handle the case where the file does not exist
+      print("File does not exist");
+    }
+    return vehicles;
+  }
+
+  Future<void> saveVehicleConfigsToFile(List<Vehicle> vehicles) async {
+    String path = await _getFilePath("vehicles.json", ArchiveDirectory.DOWNLOADS);
+    File file = File(path);
+    List<Map<String, dynamic>> jsonList = vehicles.map((vehicle) => vehicle.toJson()).toList();
+    try {
+      await file.writeAsString(jsonEncode(jsonList));
+    } catch (e) {
+      if (e is FileSystemException) {
+        // If the file doesn't exist, create it and write the data
+        await file.create(recursive: true);
+        await file.writeAsString(jsonEncode(jsonList));
+      } else {
+        rethrow; // Rethrow other exceptions
+      }
+    }
   }
 }

@@ -43,6 +43,10 @@ class ParamController extends GetxController {
     // fakeLatitude.value = 34.05640313666031;
     // fakeLongitude.value = -84.2769675541679;
 
+    // New York
+    // fakeLatitude.value = 40.788188;
+    // fakeLongitude.value = -74.163805;
+
     messageDelay.value = 1000;
     geoRelevanceOrPrivateToggle.value = true;
     geoRelevanceOrPrivate = true;

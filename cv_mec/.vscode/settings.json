@@ -1,0 +1,7 @@
+{
+    "cmake.sourceDirectory": "C:/Users/jwien/Documents/CV_MEC/cv_mec/src",
+    "files.associations": {
+        "asn_internal.h": "c",
+        "messageframe.h": "c"
+    }
+}

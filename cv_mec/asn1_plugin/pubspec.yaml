@@ -4,8 +4,8 @@ version: 0.0.1
 homepage:
 
 environment:
-  sdk: '>=3.4.3 <4.0.0'
-  flutter: '>=3.3.0'
+  sdk: ">=3.4.3 <4.0.0"
+  flutter: ">=3.3.0"
 
 dependencies:
   flutter:
@@ -87,11 +87,11 @@ ffigen:
   headers:
     entry-points:
       - "src/asn1_plugin.h"
-      - "src/generated-files/2020/asn_application.h"
-      - "src/generated-files/2020/asn_internal.h"
-      - "src/generated-files/2020/MessageFrame.h"
+      - "src/generated-files/2024/asn_application.h"
+      - "src/generated-files/2024/asn_internal.h"
+      - "src/generated-files/2024/MessageFrame.h"
     include-directives:
-      - "src/generated-files/2020/**.h"
+      - "src/generated-files/2024/**.h"
       - "src/asn1_plugin.h"
       - "**index.h"
       - "**/clang-c/**"

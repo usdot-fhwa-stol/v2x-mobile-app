@@ -1,5 +1,5 @@
-import 'package:cv_mec/models/j2735/movement_phase_state.dart';
-import 'package:cv_mec/models/j2735/time_change_details.dart';
+import 'package:asn1_plugin/j2735/2024/spat/movement_phase_state.dart';
+import 'package:asn1_plugin/j2735/2024/spat/time_change_details.dart';
 
 class LightChangeTime {
   late DateTime minEndTime;
@@ -7,8 +7,7 @@ class LightChangeTime {
   DateTime? likelyTime;
   late MovementPhaseState currentPhaseState;
 
-  LightChangeTime(TimeChangeDetails timeChangeDetails, DateTime referenceTime,
-      MovementPhaseState state) {
+  LightChangeTime(TimeChangeDetails timeChangeDetails, DateTime referenceTime, MovementPhaseState state) {
     currentPhaseState = state;
     minEndTime = timeChangeDetails.minEndTime.getUtcTime(referenceTime);
 

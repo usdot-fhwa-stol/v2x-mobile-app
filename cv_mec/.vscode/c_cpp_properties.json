@@ -1,0 +1,21 @@
+{
+  "configurations": [
+    {
+      "name": "Android",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/android/app/src/main/cpp/include",
+        "C:/Users/jwien/AppData/Local/Android/Sdk/ndk/25.2.9519653/sysroot/usr/include",
+        "C:/Users/jwien/AppData/Local/Android/Sdk/ndk/25.2.9519653/sources/cxx-stl/llvm-libc++/include"
+      ],
+      "defines": [
+        "__ANDROID__"
+      ],
+      "compilerPath": "C:/Users/jwien/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/bin/clang++.exe",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
+}

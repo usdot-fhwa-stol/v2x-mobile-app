@@ -1,91 +1,13 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
-import 'package:cv_mec/services/secure_storage.dart';
+import 'package:cv_mec/services/vehicle_notification_manager.dart';
+import 'package:cv_mec/styles/app_colors.dart';
+import 'package:cv_mec/styles/spacing.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
-import 'package:cv_mec/services/shared_pref.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
-class SettingsController extends GetxController {
-  SettingsController();
-  SharedPrefs sharedPrefs = SharedPrefs();
-  SecureStorage secureStorage = SecureStorage();
-
-  Rx<bool> darkModeState = Get.isDarkMode.obs;
-
-  RxString username = dotenv.env['USERNAME']!.obs;
-  RxString password = dotenv.env['PASSWORD']!.obs;
-  RxString baseUri = dotenv.env['API_ENDPOINT']!.obs;
-  RxString vendorID = dotenv.env['VENDOR_ID']!.obs;
-  RxBool settingsChanged = false.obs;
-  RxString appVersion = ''.obs;
-  Rx<bool> vzMode = false.obs;
-  Rx<bool> pedestrianMode = false.obs;
-  RxString deviceID = ''.obs;
-  RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
-  RxString s3SecretKey = (dotenv.env['S3_SECRET_KEY'] ?? "").obs;
-  RxString s3BucketName = (dotenv.env['S3_BUCKET_NAME'] ?? "").obs;
-  RxString s3Region = (dotenv.env['S3_REGION'] ?? "").obs;
-  RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
-
-  initialize() async {
-    username.value = await secureStorage.getUsername();
-    password.value = await secureStorage.getPassword();
-    baseUri.value = await secureStorage.getBaseURI();
-    vendorID.value = await secureStorage.getVendorID();
-    vzMode.value = await secureStorage.getVZMode();
-    deviceID.value = await secureStorage.getDeviceID();
-
-    s3AccessKey.value = await secureStorage.getS3AccessKey();
-    s3SecretKey.value = await secureStorage.getS3SecretKey();
-    s3BucketName.value = await secureStorage.getS3BucketName();
-    s3Region.value = await secureStorage.getS3Region();
-    s3DestDir.value = await secureStorage.getS3DestDir();
-
-    // pedestrianMode.value = await secureStorage.getPedestrianMode();
-
-    bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
-    if (darkMode != null) {
-      if (darkMode) {
-        Get.changeThemeMode(ThemeMode.dark);
-        darkModeState.value = true;
-      } else {
-        Get.changeThemeMode(ThemeMode.light);
-        darkModeState.value = false;
-      }
-    } else {
-      Get.changeThemeMode(ThemeMode.system);
-      darkModeState.value = Get.isDarkMode;
-    }
-
-    PackageInfo packageInfo =
-        await PackageInfo.fromPlatform(); // Fetch the app version
-    appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
-    //appVersion.value = "App Version #9";
-  }
-
-  Future logout() async {}
-
-  @override
-  void onInit() async {
-    await initialize();
-    super.onInit();
-  }
-
-  void switchModeState() async {
-    darkModeState.value = !darkModeState.value;
-    if (darkModeState.value) {
-      Get.changeThemeMode(ThemeMode.dark);
-      await sharedPrefs.saveDarkModeToPrefs(darkModeState.value);
-    } else {
-      Get.changeThemeMode(ThemeMode.light);
-      await sharedPrefs.saveDarkModeToPrefs(darkModeState.value);
-    }
-  }
-}
 
 class SettingsPage extends StatelessWidget {
-  late final SettingsController controller;
+  SettingsController controller = Get.find<SettingsController>();
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController baseUriController = TextEditingController();
@@ -97,32 +19,28 @@ class SettingsPage extends StatelessWidget {
   SettingsPage({super.key});
   @override
   Widget build(BuildContext context) {
-    controller = Get.find<SettingsController>();
-    return FutureBuilder(
-        future: controller.initialize(),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          usernameController.text = controller.username.value;
-          passwordController.text = controller.password.value;
-          baseUriController.text = controller.baseUri.value;
-          vendorIDController.text = controller.vendorID.value;
-          deviceIDController.text = controller.deviceID.value;
-          return Scaffold(
-              appBar: AppBar(
-                title: const Text("Settings Page"),
-              ),
-              body: Container(
-                  child: Obx(
-                () => Padding(
-                  padding: const EdgeInsets.all(30.0),
-                  child: ListView(children: [
-                    versionHeader(),
-                    accountSection(),
-                    const SizedBox(height: 40),
-                    appearanceSection(),
-                  ]),
-                ),
-              )));
-        });
+    usernameController.text = controller.username.value;
+    passwordController.text = controller.password.value;
+    baseUriController.text = controller.baseUri.value;
+    vendorIDController.text = controller.vendorID.value;
+    deviceIDController.text = controller.deviceID.value;
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text("Settings Page"),
+        ),
+        body: Container(
+            child: Obx(
+          () => Padding(
+            padding: const EdgeInsets.all(30.0),
+            child: ListView(children: [
+              versionHeader(),
+              verticalSpaceMedium,
+              accountSection(),
+              verticalSpaceMedium,
+              appearanceSection(),
+            ]),
+          ),
+        )));
   }
 
   versionHeader() {
@@ -143,122 +61,112 @@ class SettingsPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         headerElement("Account", Icons.person),
+        verticalSpaceSmall,
         TextField(
           decoration: const InputDecoration(labelText: 'Username'),
           controller: usernameController,
           obscureText: true,
           onChanged: (value) async {
             if (value != controller.username.value) {
-              controller.settingsChanged.value = true;
+              controller.username.value = value;
+              await controller.secureStorage.setUsername(value);
             }
           },
         ),
-        spacer(),
+        verticalSpaceMedium,
         TextField(
           decoration: const InputDecoration(labelText: 'Password'),
           controller: passwordController,
           obscureText: true,
           onChanged: (value) async {
             if (value != controller.password.value) {
-              controller.settingsChanged.value = true;
+              controller.password.value = value;
+              await controller.secureStorage.setPassword(value);
             }
           },
         ),
-        spacer(),
+        verticalSpaceMedium,
         TextField(
           decoration: const InputDecoration(labelText: 'Base URI'),
           controller: baseUriController,
           obscureText: true,
           onChanged: (value) async {
             if (value != controller.baseUri.value) {
-              controller.settingsChanged.value = true;
+              controller.baseUri.value = value;
+              await controller.secureStorage.setBaseURI(value);
             }
           },
         ),
-        spacer(),
+        verticalSpaceMedium,
         TextField(
           decoration: const InputDecoration(labelText: 'Vendor ID'),
           controller: vendorIDController,
           obscureText: true,
           onChanged: (value) async {
             if (value != controller.vendorID.value) {
-              controller.settingsChanged.value = true;
+              controller.vendorID.value = value;
+              await controller.secureStorage.setVendorID(value);
             }
           },
         ),
-        spacer(),
+        verticalSpaceMedium,
         TextField(
           decoration: const InputDecoration(labelText: 'Device ID'),
           controller: deviceIDController,
           obscureText: false,
           onChanged: (value) async {
             if (value != controller.deviceID.value) {
-              controller.settingsChanged.value = true;
+              controller.deviceID.value = value;
+              await controller.secureStorage.setDeviceID(value);
             }
           },
         ),
-        spacer(),
+        verticalSpaceMedium,
         SwitchListTile(
             title: const Text("VZ Mode"),
             value: controller.vzMode.value,
-            onChanged: (value) {
+            onChanged: (value) async {
               if (value != controller.vzMode.value) {
                 controller.vzMode.value = value;
-                controller.settingsChanged.value = true;
+                await controller.secureStorage.setVZMode(value);
               }
             }),
-        spacer(),
-        Row(
-          children: [
-            ElevatedButton(
-              onPressed: controller.settingsChanged.value
-                  ? () async {
-                      if (!inputValid()) {
-                        Get.snackbar('Error', 'One or more fields are empty');
-                        return;
-                      } else {
-                        controller.username.value = usernameController.text;
-                        await controller.secureStorage
-                            .setUsername(usernameController.text);
-                        controller.password.value = passwordController.text;
-                        await controller.secureStorage
-                            .setPassword(passwordController.text);
-                        controller.baseUri.value = baseUriController.text;
-                        await controller.secureStorage
-                            .setBaseURI(baseUriController.text);
-                        controller.vendorID.value = vendorIDController.text;
-                        await controller.secureStorage
-                            .setVendorID(vendorIDController.text);
-                        await controller.secureStorage
-                            .setDeviceID(deviceIDController.text);
-                        controller.deviceID.value = deviceIDController.text;
-                        await controller.secureStorage
-                            .setVZMode(controller.vzMode.value);
-                        controller.settingsChanged.value = false;
-
-                        await fileService.deleteRegistration();
-                      }
-                    }
-                  : null,
-              child: const Text("Save Changes"),
-            ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: controller.settingsChanged.value
-                  ? () async {
-                      usernameController.text = controller.username.value;
-                      passwordController.text = controller.password.value;
-                      baseUriController.text = controller.baseUri.value;
-                      vendorIDController.text = controller.vendorID.value;
-                      deviceIDController.text = controller.deviceID.value;
-
-                      controller.settingsChanged.value = false;
-                    }
-                  : null,
-              child: const Text("Undo Changes"),
-            ),
-          ],
-        )
+        verticalSpaceMedium,
+        SwitchListTile(
+            title: const Text("Enable Notifications"),
+            value: controller.notificationsEnabled.value,
+            onChanged: (value) async {
+              if (value != controller.notificationsEnabled.value) {
+                controller.notificationsEnabled.value = value;
+                await controller.secureStorage.setNotificationsEnabled(value);
+                if (controller.notificationsEnabled.value) {
+                  //TODO: Fix icons
+                  VehicleNotificationManager.notifyVehicleFromMessageAndImage(
+                      "Notifications Enabled!", const AssetImage('assets/images/cv_mec_notification_icon.png'));
+                }
+              }
+            }),
+        verticalSpaceMedium,
+        SwitchListTile(
+            title: const Text("Read Messages"),
+            value: controller.readMessages.value,
+            onChanged: (value) async {
+              if (value != controller.readMessages.value) {
+                controller.readMessages.value = value;
+                await controller.secureStorage.setReadMessages(value);
+              }
+            }),
+        verticalSpaceMedium,
+        SwitchListTile(
+            title: const Text("Enable Demo Mode"),
+            value: controller.demoMode.value,
+            onChanged: (value) async {
+              if (value != controller.demoMode.value) {
+                controller.demoMode.value = value;
+                await controller.secureStorage.setDemoMode(value);
+              }
+            }),
+        verticalSpaceMedium,
       ],
     );
   }
@@ -283,12 +191,16 @@ class SettingsPage extends StatelessWidget {
                 onChanged: (value) {
                   controller.switchModeState();
                 }),
+            verticalSpaceMedium,
+            SwitchListTile(
+                title: const Text("Developer Mode"),
+                value: controller.developerMode.value,
+                onChanged: (value) async {
+                  controller.developerMode.value = value;
+                  await controller.secureStorage.setDeveloperMode(value);
+                }),
           ],
         ));
-  }
-
-  spacer() {
-    return const SizedBox(height: 20);
   }
 
   inputValid() {
@@ -307,37 +219,14 @@ class SettingsPage extends StatelessWidget {
     return true;
   }
 
-  /*profileSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        headerElement("Profile", Icons.key),
-        Text('Keycloak Endpoint: ${controller.keycloakEndpoint}'),
-        Text('Cimms Broker: ${controller.cimmsBroker}'),
-        Text('Realm: ${controller.realm}'),
-        Text('Client: ${controller.client}'),
-      ],
-    );
-  }
-
-  logoutButton() {
-    return ElevatedButton(
-      onPressed: () async {
-        await controller.logout();
-        // Get.to(() => LogInPage());
-      },
-      child: const Text('Logout'),
-    );
-  }*/
-
   headerElement(String sectionTitle, IconData icon) {
     return Column(
       children: [
         Row(children: [
-          Icon(icon, color: Colors.blue), //change color to match theme
+          Icon(icon,
+              color: controller.darkModeState.value ? lightprimaryColor : primaryColor), //change color to match theme
           const SizedBox(width: 10),
-          Text(sectionTitle,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         const Divider(height: 20, thickness: 1),
       ],

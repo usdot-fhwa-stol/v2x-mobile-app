@@ -1,4 +1,6 @@
-import 'package:cv_mec/models/theme_settings.dart';
+import 'package:cv_mec/pages/load.dart';
+import 'package:cv_mec/services/vehicle_notification_manager.dart';
+import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -11,6 +13,8 @@ void main() async {
   runApp(NativeDeviceOrientationReader(
     builder: (context) => const MainApp(),
   ));
+
+  VehicleNotificationManager.requestPermissions();
 }
 
 class MainApp extends StatelessWidget {
@@ -19,11 +23,11 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ToastificationWrapper(
       child: GetMaterialApp(
-      title: 'AMP',
-      theme: appThemeData,
-      darkTheme: darkAppThemeData,
-      home: const HomePage(),
-    ),
+        title: 'AMP',
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        home: const Load(),
+      ),
     );
   }
 }
