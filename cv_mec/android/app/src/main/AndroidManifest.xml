@@ -37,7 +37,7 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Removing android auto -->
+        <!-- TODO: Re-enable android auto when play store approval is resolved -->
         <!-- <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" /> -->
