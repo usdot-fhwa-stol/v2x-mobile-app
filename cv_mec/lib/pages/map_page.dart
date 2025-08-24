@@ -292,7 +292,7 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.itswcFakePosition);
+      stream = fakePosition(TestData.tfhrcFakePosition);
     } else if (settingsController.demoMode.value) {
       stream = fakePosition(TestData.tfhrcFakePosition);
     } else if (settingsController.gpsType.value == GPSType.cradle) {
@@ -1136,7 +1136,9 @@ class MapState extends State<MapPage> {
                   dominantState = getDominantMovementPhaseState(stateMap[signalGroup]!.eventState, dominantState);
                 }
               }
-              markerList.add(Marker(
+
+              if(dominantState != MovementPhaseState.DARK && dominantState != MovementPhaseState.UNAVAILABLE){
+                markerList.add(Marker(
                 width: 20.0,
                 height: 40.0,
                 point: lightLocation.coordinate,
@@ -1145,15 +1147,16 @@ class MapState extends State<MapPage> {
                       Icons.traffic,
                       color: Colors.grey,
                     ),
-              ));
+                ));
+              }
             }
           }
         }
       }
     }
     DateTime compTime = timingService.getTime();
-    DateTime endTime = compTime.add(const Duration(seconds: 3));
-    DateTime startTime = compTime.subtract(const Duration(seconds: 3));
+    DateTime endTime = compTime.add(const Duration(seconds: 60));
+    DateTime startTime = compTime.subtract(const Duration(seconds: 60));
 
     List<String> removeKeys = [];
     for (String key in messageManager.receivedMsgs.keys) {
