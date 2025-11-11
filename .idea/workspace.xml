@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4073a498-7c8e-4e3d-a2b7-8e8e8f1cdc99" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/cv_mec/linux/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/linux/flutter/generated_plugin_registrant.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/linux/flutter/generated_plugins.cmake" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/ios/Flutter/ephemeral/flutter_lldb_helper.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/ios/Flutter/ephemeral/flutter_lldbinit" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/windows/flutter/generated_plugin_registrant.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cv_mec/windows/flutter/generated_plugins.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/android/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/android/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/asn1_plugin/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/asn1_plugin/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/android/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/android/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/example/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/flutter-kronos-plus/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/iss_scms/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/iss_scms/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/iss_scms/example/android/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/iss_scms/example/android/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/packages/iss_scms/example/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/packages/iss_scms/example/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cv_mec/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/cv_mec/pubspec.lock" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="34AJHegYkigN8HlohjfJQtNaLFN" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "AnalyzeApkAction.lastApkPath": "D:/GitHub/v2x-mec-mobile-app/cv_mec/build/app/outputs/flutter-apk/app-debug.apk",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "app__update",
+    "last_opened_file_path": "D:/GitHub/v2x-mec-mobile-app/cv_mec/build/app/outputs/flutter-apk/app-debug.apk",
+    "settings.editor.selected.configurable": "AndroidSdkUpdater",
+    "show.migrate.to.gradle.popup": "false"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4073a498-7c8e-4e3d-a2b7-8e8e8f1cdc99" name="Changes" comment="" />
+      <created>1760650357540</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1760650357540</updated>
+    </task>
+    <servers />
+  </component>
+</project>
