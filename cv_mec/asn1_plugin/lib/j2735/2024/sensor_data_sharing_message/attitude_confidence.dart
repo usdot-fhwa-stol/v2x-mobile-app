@@ -28,8 +28,15 @@ class AttitudeConfidence {
   late HeadingConfidence rollConfidence;
   late HeadingConfidence yawConfidence;
   AttitudeConfidence.fromC(C.AttitudeConfidence c_obj) {
-    pitchConfidence = HeadingConfidence.values[c_obj.pitchConfidence];
-    rollConfidence = HeadingConfidence.values[c_obj.rollConfidence];
-    yawConfidence = HeadingConfidence.values[c_obj.yawConfidence];
+    if ((c_obj.pitchConfidence < 0 || c_obj.pitchConfidence >= HeadingConfidence.values.length) || (c_obj.rollConfidence < 0 || c_obj.rollConfidence >= HeadingConfidence.values.length) || (c_obj.yawConfidence < 0 || c_obj.yawConfidence >= HeadingConfidence.values.length)) {
+      pitchConfidence = HeadingConfidence.unavailable;
+      rollConfidence = HeadingConfidence.unavailable;
+      yawConfidence = HeadingConfidence.unavailable;
+
+    } else {
+      pitchConfidence = HeadingConfidence.values[c_obj.pitchConfidence];
+      rollConfidence = HeadingConfidence.values[c_obj.rollConfidence];
+      yawConfidence = HeadingConfidence.values[c_obj.yawConfidence];
+    }
   }
 }

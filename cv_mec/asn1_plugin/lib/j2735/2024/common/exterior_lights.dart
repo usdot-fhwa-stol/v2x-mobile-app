@@ -36,15 +36,26 @@ class ExteriorLights {
 
   ExteriorLights.fromBitString(C.BIT_STRING_s bits) {
     List<int> decodedBits = bits.buf.asTypedList(bits.size);
-
-    lowBeamHeadlightsOn = (decodedBits[0] & (1 << 7)) != 0;
-    highBeamHeadlightsOn = (decodedBits[0] & (1 << 6)) != 0;
-    leftTurnSignalOn = (decodedBits[0] & (1 << 5)) != 0;
-    rightTurnSignalOn = (decodedBits[0] & (1 << 4)) != 0;
-    hazardSignalOn = (decodedBits[0] & (1 << 3)) != 0;
-    automaticLightControlOn = (decodedBits[0] & (1 << 2)) != 0;
-    daytimeRunningLightsOn = (decodedBits[0] & (1 << 1)) != 0;
-    fogLightsOn = (decodedBits[0] & (1 << 0)) != 0;
-    parkingLightsOn = (decodedBits[1] & (1 << 7)) != 0;
+    if (decodedBits.isNotEmpty) {
+      lowBeamHeadlightsOn = (decodedBits[0] & (1 << 7)) != 0;
+      highBeamHeadlightsOn = (decodedBits[0] & (1 << 6)) != 0;
+      leftTurnSignalOn = (decodedBits[0] & (1 << 5)) != 0;
+      rightTurnSignalOn = (decodedBits[0] & (1 << 4)) != 0;
+      hazardSignalOn = (decodedBits[0] & (1 << 3)) != 0;
+      automaticLightControlOn = (decodedBits[0] & (1 << 2)) != 0;
+      daytimeRunningLightsOn = (decodedBits[0] & (1 << 1)) != 0;
+      fogLightsOn = (decodedBits[0] & (1 << 0)) != 0;
+      parkingLightsOn = (decodedBits[1] & (1 << 7)) != 0;
+    } else {
+      lowBeamHeadlightsOn = false;
+      highBeamHeadlightsOn = false;
+      leftTurnSignalOn = false;
+      rightTurnSignalOn = false;
+      hazardSignalOn = false;
+      automaticLightControlOn = false;
+      daytimeRunningLightsOn = false;
+      fogLightsOn = false;
+      parkingLightsOn = false;
+    }
   }
 }
