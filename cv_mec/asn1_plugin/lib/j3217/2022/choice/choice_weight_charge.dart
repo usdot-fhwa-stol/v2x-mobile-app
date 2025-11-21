@@ -1,0 +1,1 @@
+class Choice_WeightCharge{}

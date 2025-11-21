@@ -21,12 +21,13 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_charges_table.dart';
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charges.dart';
 
 
-class VehTypeChargesTable{
+class VehTypeChargesTable extends Choice_ChargesTable{
   late List<VehTypeCharges> vehTypeChargesTable;
   VehTypeChargesTable.fromC(C.VehTypeChargesTable vehTypeCharges) {
     vehTypeChargesTable = [];

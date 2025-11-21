@@ -29,6 +29,8 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_charger_i
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/encrypted_tum_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_hash.dart';
 
+import 'package:ffi/ffi.dart';
+
 
 class TollUsageMessage{
     late TollChargerInfo tollPointInfo; 
@@ -45,7 +47,34 @@ class TollUsageMessage{
         if(c_obj.tumHash.address != 0){
             tumHash = TumHash.fromOctetString(c_obj.tumHash.ref);
         }
-
         encryptedTumData = EncryptedTumData.fromOctetString(c_obj.encryptedTumData);
     }
+
+    C.TollUsageMessage toC(Pointer<C.TollUsageMessage> pointer) {
+      print("Big Gorilla 1.1");
+      final c_tum = pointer.ref;
+      print("Big Gorilla 1.2");
+      c_tum.tollPointInfo = tollPointInfo.toC(calloc.allocate<C.TollChargerInfo>(sizeOf<C.TollChargerInfo>()));
+      print("Big Gorilla 1.3");
+      c_tum.tempID = tempID.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
+      print("Big Gorilla 1.4");
+      c_tum.tumSequenceNum = 0;
+      print("Big Gorilla 1.5");
+      c_tum.tamSequenceNum = 0;
+      print("Big Gorilla 1.6");
+      if(tumHash != null){
+        //Cookie - ToDo
+      }
+      print("Big Gorilla 1.7");
+      c_tum.encryptedTumData = encryptedTumData.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
+      print("Big Gorilla 1.8");
+      return c_tum;
+    }
+
+    //pass in memory that I want it to allocate
+    //ToC method
+    //pass in a pointer to the c.tum as well
+    //might need to return a list of all memory pointers
+    //look to generated bindings - send through ai to get c memory allocation
+
 }

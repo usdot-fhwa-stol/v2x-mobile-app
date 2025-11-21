@@ -21,6 +21,7 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_charges_table.dart';
 import 'package:asn1_plugin/j3217/2022/choice/choice_toll_type_charge.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/axles_charges_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charges_table.dart';
@@ -31,9 +32,21 @@ class ChargesTable extends Choice_TollTypeCharge{
   late VehTypeChargesTable vehTypeBased; 
   late AxlesChargesTable numAxlesBased; 
   late WeightChargesTable weightBased; 
+  late ChargesTableChoice chargesTableChoice;
   ChargesTable.fromC(C.ChargesTable c_obj){
-    vehTypeBased = VehTypeChargesTable.fromC(c_obj.choice.vehTypeBased);
-    numAxlesBased = AxlesChargesTable.fromC(c_obj.choice.numAxlesBased);
-    weightBased = WeightChargesTable.fromC(c_obj.choice.weightBased);
+    chargesTableChoice = ChargesTableChoice.fromC(c_obj);
+  }
+}
+
+class ChargesTableChoice {
+  late Choice_ChargesTable chargesTableChoice;
+  ChargesTableChoice.fromC(C.ChargesTable c_chargesTable) {
+    if (c_chargesTable.present == C.ChargesTable_PR.ChargesTable_PR_vehTypeBased) {
+      chargesTableChoice = VehTypeChargesTable.fromC(c_chargesTable.choice.vehTypeBased);
+    } else if (c_chargesTable.present == C.ChargesTable_PR.ChargesTable_PR_numAxlesBased) {
+      chargesTableChoice = AxlesChargesTable.fromC(c_chargesTable.choice.numAxlesBased);
+    } else if (c_chargesTable.present == C.ChargesTable_PR.ChargesTable_PR_weightBased) {
+      chargesTableChoice = WeightChargesTable.fromC(c_chargesTable.choice.weightBased);
+    }
   }
 }

@@ -26,12 +26,13 @@ import 'package:asn1_plugin/j2735/2024/common/descriptive_name.dart';
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_point_id.dart';
-
+import 'package:ffi/ffi.dart';
 
 class TollChargerInfo{
     late int tollChargerId;
     late TollPointID tollPointId; 
     DescriptiveName? descriptiveName; 
+
     TollChargerInfo.fromC(C.TollChargerInfo c_obj){
         tollChargerId = _oidBufferToInt(c_obj.tollChargerId);
         tollPointId = TollPointID(c_obj.tollPointId);
@@ -39,6 +40,29 @@ class TollChargerInfo{
             descriptiveName = DescriptiveName.fromOctetString(c_obj.descriptiveName.ref);
         }
     }
+
+    C.TollChargerInfo toC(Pointer<C.TollChargerInfo> pointer) {
+      final c_info = pointer.ref;
+      c_info.tollChargerId = intToAsnPrimitiveType(tollChargerId); 
+      c_info.tollPointId = tollPointId.tollPointID;
+      if(descriptiveName != null){
+        //c_info.descriptiveName = descriptiveName!.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
+      }
+      return c_info;
+    }
+
+    // C.TollUsageMessage toC(TollUsageMessage tum, Pointer<C.TollUsageMessage> pointer) {
+    //   final c_tum = pointer.ref;
+    //   c_tum.tollPointInfo = tum.tollPointInfo.toC(calloc.allocate<C.TollChargerInfo>(sizeOf<C.TollChargerInfo>()));
+    //   c_tum.tempID = tum.tempID.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
+    //   c_tum.tumSequenceNum = 0;
+    //   c_tum.tamSequenceNum = 0;
+    //   if(tum.tumHash != null){
+    //     //Cookie - ToDo
+    //   }
+    //   c_tum.encryptedTumData = tum.encryptedTumData.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
+    //   return c_tum;
+    // }
 
     int _oidBufferToInt(ASN__PRIMITIVE_TYPE_s oid){
         // Assuming the OID represents an integer in its buffer
@@ -48,5 +72,28 @@ class TollChargerInfo{
             result = (result << 8) | oid.buf.elementAt(i).value;
         }
         return result;
+    }
+
+    ASN__PRIMITIVE_TYPE_s intToAsnPrimitiveType(int value) {
+      // Convert int to big-endian byte array
+      List<int> bytes = [];
+      int temp = value;
+      do {
+        bytes.insert(0, temp & 0xFF);
+        temp >>= 8;
+      } while (temp > 0);
+
+      // Allocate the struct and buffer
+      final ptr = calloc<ASN__PRIMITIVE_TYPE_s>();
+      final buf = malloc.allocate<Uint8>(bytes.length);
+
+      for (int i = 0; i < bytes.length; i++) {
+        buf[i] = bytes[i];
+      }
+
+      ptr.ref.buf = buf;
+      ptr.ref.size = bytes.length;
+
+      return ptr.ref;
     }
 }

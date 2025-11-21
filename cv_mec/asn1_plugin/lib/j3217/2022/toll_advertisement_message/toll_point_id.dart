@@ -20,6 +20,7 @@
  * the License.
  *============================================================================*/
 
+
 class TollPointID{
   late int tollPointID;
   TollPointID(int value): tollPointID = value;

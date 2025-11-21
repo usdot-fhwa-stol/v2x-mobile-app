@@ -33,15 +33,15 @@ class TollPointMap{
   late Position3D referencePoint; 
   late RegulatorySpeedLimit speedLimit; 
   late LaneWidth laneWidth; 
-  late List<GenericLane> approachLanesMap; 
-  late List<GenericLane> tollZoneLanesMap; 
+  late ApproachLanesMap approachLanesMap; 
+  late TollZoneLanesMap tollZoneLanesMap; 
   TollPointMap.fromC(C.TollPointMap c_obj){
       revisionNum = RevisionNumInteger(c_obj.revisionNum);
       referencePoint = Position3D.fromC(c_obj.referencePoint);
       speedLimit = RegulatorySpeedLimit.fromC(c_obj.speedLimit);
       laneWidth = LaneWidth(c_obj.laneWidth);
-      approachLanesMap = ApproachLanesMap.fromC(c_obj.approachLanesMap).approachLanesMap;
-      tollZoneLanesMap = TollZoneLanesMap.fromC(c_obj.tollZoneLanesMap).tollZoneLanesMap;
+      approachLanesMap = ApproachLanesMap.fromC(c_obj.approachLanesMap);
+      tollZoneLanesMap = TollZoneLanesMap.fromC(c_obj.tollZoneLanesMap);
   }
 }
 class RevisionNumInteger{

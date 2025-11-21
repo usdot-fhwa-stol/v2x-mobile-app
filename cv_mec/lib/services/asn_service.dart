@@ -7,6 +7,8 @@ import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:get/get.dart';
 import 'dart:ffi';
@@ -32,6 +34,8 @@ class ASNService extends GetxController {
   final String PSM_START_FLAG = "0020";
   final String SRM_START_FLAG = "001D";
   final String SDSM_START_FLAG = "0029";
+  final String TAM_START_FLAG = "0025";  //COOKIE - where do we get this value?
+  final String TUM_START_FLAG = "0026";
 
   late final List<String> checkStartFlags;
   late final Map<String, MsgType> messageTypeMap;
@@ -55,7 +59,9 @@ class ASNService extends GetxController {
       MAP_START_FLAG,
       SPAT_START_FLAG,
       PSM_START_FLAG,
-      SDSM_START_FLAG
+      SDSM_START_FLAG,
+      TAM_START_FLAG,  //COOKIE
+      TUM_START_FLAG,
     ];
 
     messageTypeMap = {
@@ -67,6 +73,8 @@ class ASNService extends GetxController {
       PSM_START_FLAG: MsgType.PSM,
       SRM_START_FLAG: MsgType.SRM,
       SDSM_START_FLAG: MsgType.SDSM,
+      TAM_START_FLAG: MsgType.TAM,  //COOKIE
+      TUM_START_FLAG: MsgType.TUM,
     };
   }
 
@@ -171,6 +179,24 @@ class ASNService extends GetxController {
     return sdsm;
   }
 
+  TollAdvertisementMessage parseTam(Pointer<Pointer<Void>> message) {
+    //COOKIE
+    Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
+    C.MessageFrame messageFrame = messageFrameValuePtr.ref;
+    C.TollAdvertisementMessage cTam = messageFrame.value.choice.TollAdvertisementMessage;
+    TollAdvertisementMessage tam = TollAdvertisementMessage.fromC(cTam);
+    return tam;
+  }
+
+  TollUsageMessage parseTum(Pointer<Pointer<Void>> message) {
+    //COOKIE
+    Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
+    C.MessageFrame messageFrame = messageFrameValuePtr.ref;
+    C.TollUsageMessage cTum = messageFrame.value.choice.TollUsageMessage;
+    TollUsageMessage tum = TollUsageMessage.fromC(cTum);
+    return tum;
+  }
+
   BasicSafetyMessage decodeBsm(String asn1) {
     Pointer<Pointer<Void>> decoded = decode(asn1);
 
@@ -231,28 +257,53 @@ class ASNService extends GetxController {
     return sdsm;
   }
 
+  TollAdvertisementMessage decodeTam(String asn1) {
+    //COOKIE
+    Pointer<Pointer<Void>> decoded = decode(asn1);
+
+    TollAdvertisementMessage tam = parseTam(decoded);
+
+    cleanupDecoded(decoded);
+
+    return tam;
+  }
+
+  TollUsageMessage decodeTum(String asn1) {
+    //COOKIE
+    Pointer<Pointer<Void>> decoded = decode(asn1);
+
+    TollUsageMessage tum = parseTum(decoded);
+    cleanupDecoded(decoded);
+
+    return tum;
+  }
+
   void cleanupDecoded(Pointer<Pointer<Void>> decoded) {
     calloc.free(decoded.value);
     calloc.free(decoded);
   }
 
   Pointer<Pointer<Void>> decode(String hexInput) {
+    print("Cookie DECODE: ${hexInput}");
+
     Pointer<C.MessageFrame> structPtr = calloc<C.MessageFrame>();
 
     Pointer<Pointer<Void>> ptrToPtr = calloc<Pointer<Void>>();
     ptrToPtr.value = structPtr.cast<Void>();
 
     try {
+      print("Cookie DECODE: Decoding Message ${hexInput}");
       Pointer<C.asn_codec_ctx_s> optCodecCtxPtr = calloc<C.asn_codec_ctx_s>();
       optCodecCtxPtr.ref.max_stack_size = 0;
 
       Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
       typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame;
 
+
       Uint8List byteList = hexToBytes(hexInput);
 
       Pointer<Uint8> dataPtr = malloc.allocate<Uint8>(byteList.length);
-
+    
       Uint8List dataBuffer = dataPtr.asTypedList(byteList.length);
       dataBuffer.setAll(0, byteList);
 
@@ -263,7 +314,9 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        _logger.w("DECODE: Failed to Decode Message ${hexInput}");
+        print("Cookie chocolate Decode failed with code: ${rval.code}");
+        print("Cookie chocolate Consumed bytes: ${rval.consumed}");
+        _logger.w("Cookie DECODE: Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -271,7 +324,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      _logger.w('Unknown Failure during decoding: $e, $hexInput');
+      _logger.w('Cookie Unknown Failure during decoding: $e, $hexInput');
     }
 
     return ptrToPtr;

@@ -21,11 +21,12 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_weight_charge.dart';
 import 'package:asn1_plugin/j3217/2022/payment_fee.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_limit_units.dart';
 
 
-class PerAxleWeightCharges{
+class PerAxleWeightCharges extends Choice_WeightCharge{
     late TotalWeightLimitInteger totalWeightLimit; 
     late MaxLadenWeightOnAxleInteger maxLadenWeightOnAxle; 
     late WeightLimitUnits weightLimitUnits; 

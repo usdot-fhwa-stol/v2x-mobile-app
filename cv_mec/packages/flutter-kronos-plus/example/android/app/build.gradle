@@ -27,8 +27,8 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace = "com.plugin.flutter_kronos_plus_example"
-    compileSdkVersion 34
-    ndkVersion '25.1.8937393'
+    compileSdkVersion 36
+    ndkVersion '27.0.12077973'
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

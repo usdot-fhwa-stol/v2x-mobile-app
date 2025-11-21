@@ -21,16 +21,26 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_weight_charge.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/per_axle_weight_charges.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/total_weight_charges.dart';
  
 
 
 class WeightCharges{
-    late TotalWeightCharges totalWeightCharges; 
-    late PerAxleWeightCharges perAxleWeightCharges; 
+    late WeightChargesChoice weightCharge;
     WeightCharges.fromC(C.WeightCharges c_obj){
-      totalWeightCharges = TotalWeightCharges.fromC(c_obj.choice.totalWeightCharges);
-      perAxleWeightCharges = PerAxleWeightCharges.fromC(c_obj.choice.perAxleWeightCharges);
+      weightCharge = WeightChargesChoice.fromC(c_obj);
     }
+}
+
+class WeightChargesChoice{ 
+  late Choice_WeightCharge weightChargesChoice;
+  WeightChargesChoice.fromC(C.WeightCharges c_weightCharges) {
+    if (c_weightCharges.present == C.WeightCharges_PR.WeightCharges_PR_totalWeightCharges) {
+      weightChargesChoice = TotalWeightCharges.fromC(c_weightCharges.choice.totalWeightCharges);
+    } else if (c_weightCharges.present == C.WeightCharges_PR.WeightCharges_PR_perAxleWeightCharges) {
+      weightChargesChoice = PerAxleWeightCharges.fromC(c_weightCharges.choice.perAxleWeightCharges);
+    }
+  }
 }

@@ -15,6 +15,21 @@ class PaymentFee {
 class PayUnit {
   late String payUnit;
   PayUnit.fromOctetString(C.OCTET_STRING_t string){
+    
+    if (string.buf == nullptr) {
+      payUnit = "";  // or throw exception
+      return;
+    }
+    
+    if (string.size <= 0) {
+      payUnit = "";
+      return;
+    }
+    
+    if (string.size > 1024) {  // Sanity check - adjust limit as needed
+      payUnit = "";
+      return;
+    }
     final Uint8List byteList = string.buf.asTypedList(string.size);
     payUnit = String.fromCharCodes(byteList);
   }

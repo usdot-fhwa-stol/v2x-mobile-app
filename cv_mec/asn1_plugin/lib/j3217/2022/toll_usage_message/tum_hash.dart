@@ -32,6 +32,21 @@ class TumHash{
 
   TumHash.fromOctetString(C.OCTET_STRING string){
     final Uint8List byteList = string.buf.asTypedList(string.size);
-    tumHash = utf8.decode(byteList);
+    //tumHash = utf8.decode(byteList);
+    //Cookie
+    tumHash = byteList.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+  }
+
+  C.OCTET_STRING toC(Pointer<C.OCTET_STRING> pointer) {
+    final c_tumHash = pointer.ref;
+    final bytes = <int>[];
+    for (int i = 0; i < tumHash!.length; i += 2) {
+      bytes.add(int.parse(tumHash!.substring(i, i + 2), radix: 16));
+    }
+    for (int i = 0; i < bytes.length; i++) {
+      c_tumHash.buf[i] = bytes[i];
+    }
+    c_tumHash.size = bytes.length;
+    return c_tumHash;
   }
 }

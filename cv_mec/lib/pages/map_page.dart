@@ -32,6 +32,8 @@ import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
@@ -44,10 +46,14 @@ import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
+import 'package:cv_mec/models/mappable_tam.dart';
 import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
+import 'package:cv_mec/models/message_builders/tum_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
+import 'package:cv_mec/models/message_managers/tam_manager.dart';
+import 'package:cv_mec/models/message_managers/tum_manager.dart';
 import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
@@ -133,6 +139,7 @@ class MapState extends State<MapPage> {
   MapManager mapManager = MapManager();
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
+  TamManager tamManager = TamManager(); //Cookie
 
   SecureStorage secureStorage = SecureStorage();
 
@@ -296,6 +303,12 @@ class MapState extends State<MapPage> {
     
 
     obdController.checkRootStatus();
+
+    //Cookie
+    TumManager tumManager = TumManager();
+    TollUsageMessage tum = tumManager.getSampleTum();
+    TumBuilder tumBuilder = TumBuilder();
+    String cTum = tumBuilder.buildCTum(tum);
   }
 
   // Helper function to disconnect and reconnect all mqtt agents
@@ -656,6 +669,44 @@ class MapState extends State<MapPage> {
     }
 
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
+  }
+
+  //TODO: Implement TAM Processing COOKIE
+  void processNewTAM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+    print("TAM Processing Not Implemented");
+
+    // Trim the Hex
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
+    
+    //ASN service decodes the TAM
+    //TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
+    
+    //Add the Tam message to the TAM manager
+    //tamManager.addOrUpdate(tam);
+
+    //updateGraphics();
+
+    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+    //COOKIE
+  }
+
+  //TODO: Implement TUM Processing COOKIE
+  void processNewTUM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+    print("TAM Processing Not Implemented");
+
+    // Trim the Hex
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUM_START_FLAG)!; 
+    
+    //ASN service decodes the TAM
+    //TollUsageMessage tum = asnService.decodeTum(trimmedHex);
+    
+    //Add the Tam message to the TAM manager
+    //tamManager.addOrUpdate(tam);
+
+    //updateGraphics();
+
+    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+    //COOKIE
   }
 
   void addToReceiveLog(String? broker, String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
@@ -1294,8 +1345,25 @@ class MapState extends State<MapPage> {
           polylines.add(hitPoly);
         }
       }
-    }
 
+      print("Cookie - Went here");
+      // Cookie - Add TAM markers here
+      List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
+      print("Cookie - Got TAM Geometry: ${mappableTams.length} items");
+      for (MappableTam mappableTam in mappableTams) {
+        for (List<LatLng> lanePoints in mappableTam.polylinePoints) {
+          Polyline<PolyLineHitValue> hitPoly = Polyline(
+            points: lanePoints,
+            borderColor: Colors.purple,
+            color: Colors.purple,
+            borderStrokeWidth: 5,
+            strokeWidth: 5,
+            hitValue: (name: "TAM Toll Point"),
+          );
+          polylines.add(hitPoly);
+        }
+      }
+    }
     return polylines;
   }
 

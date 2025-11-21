@@ -21,12 +21,13 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_charges_table.dart';
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/axles_charges.dart';
 
 
-class AxlesChargesTable{
+class AxlesChargesTable extends Choice_ChargesTable{
   late List<AxlesCharges> axlesChargesTable;
   AxlesChargesTable.fromC(C.AxlesChargesTable axlesCharges): super() {
     axlesChargesTable = [];

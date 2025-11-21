@@ -26,12 +26,81 @@ import 'dart:typed_data';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'dart:ffi';
 
+import 'package:ffi/ffi.dart';
+
 
 class EncryptedTumData{
   late String encryptedTumData;
 
   EncryptedTumData.fromOctetString(C.OCTET_STRING string){
     final Uint8List byteList = string.buf.asTypedList(string.size);
-    encryptedTumData = utf8.decode(byteList);
+    //encryptedTumData = utf8.decode(byteList);
+    encryptedTumData = byteList.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
   }
+
+  C.OCTET_STRING toC(Pointer<C.OCTET_STRING> pointer) {
+    print("Big Gorilla 1.7.1");
+    final c_encryptedTumData = pointer.ref;
+    print("Big Gorilla 1.7.2");
+
+    // Free previous buffer if needed
+    if (c_encryptedTumData.buf != nullptr && c_encryptedTumData.size > 0) {
+      calloc.free(c_encryptedTumData.buf);
+      c_encryptedTumData.buf = nullptr;
+    }
+    print("Big Gorilla 1.7.3");
+
+    // Convert hex string to bytes
+    final bytes = <int>[];
+    for (int i = 0; i < encryptedTumData.length; i += 2) {
+      bytes.add(int.parse(encryptedTumData.substring(i, i + 2), radix: 16));
+    }
+    print("Big Gorilla 1.7.4");
+
+    if (bytes.isEmpty) {
+      c_encryptedTumData.size = 0;
+      c_encryptedTumData.buf = nullptr;
+      return c_encryptedTumData;
+    }
+    print("Big Gorilla 1.7.5");
+
+    // Allocate new buffer
+    c_encryptedTumData.buf = calloc.allocate<Uint8>(bytes.length);
+    print("Big Gorilla 1.7.6");
+    for (int i = 0; i < bytes.length; i++) {
+      c_encryptedTumData.buf[i] = bytes[i];
+    }
+    print("Big Gorilla 1.7.7");
+    c_encryptedTumData.size = bytes.length;
+    print("Big Gorilla 1.7.8");
+    return c_encryptedTumData;
+  }
+
+  // OCTET_STRING toC(Pointer<OCTET_STRING> pointer) {
+  //   print("Big Gorilla 1.3.1");
+  //   final c_tempID = pointer.ref;
+  //   print("Big Gorilla 1.3.2");
+  //   // Free previous buffer if needed
+  //   if (c_tempID.buf != nullptr && c_tempID.size > 0) {
+  //     malloc.free(c_tempID.buf);
+  //   }
+  //   print("Big Gorilla 1.3.3");
+
+  //   if (temporaryID.isEmpty) {
+  //     c_tempID.size = 0;
+  //     c_tempID.buf = nullptr;
+  //     return c_tempID;
+  //   }
+  //   print("Big Gorilla 1.3.4");
+
+  //   c_tempID.buf = malloc.allocate<Uint8>(temporaryID.length);
+  //   print("Big Gorilla 1.3.5");
+  //   for (int i = 0; i < temporaryID.length; i++) {
+  //     c_tempID.buf[i] = temporaryID[i];
+  //   }
+  //   print("Big Gorilla 1.3.6");
+  //   c_tempID.size = temporaryID.length;
+  //   print("Big Gorilla 1.3.7");
+  //   return c_tempID;
+  // }
 }
