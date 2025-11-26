@@ -14,6 +14,7 @@ class GeometryDirection {
 
 
   GeometryDirection(this.geometry, this.direction, this.coordinates, this.directionOfUse);
+  final double alignmentThreshold = 45;
 
 
   bool isInPathDirection(double longitude, double latitude, double heading){
@@ -24,9 +25,11 @@ class GeometryDirection {
         case DirectionOfUse.both:
           return true;
         case DirectionOfUse.forward:
-          return isPointInAlignmentWithPath(latitude, longitude, heading);
+          double angleOffset = getPointPathOffsetAngle(longitude, latitude, heading);
+          return angleOffset > -alignmentThreshold && angleOffset < alignmentThreshold;
         case DirectionOfUse.reverse:
-          return !isPointInAlignmentWithPath(latitude, longitude, heading);
+          double angleOffset = getPointPathOffsetAngle(longitude, latitude, heading);
+          return angleOffset > (180 - alignmentThreshold) || angleOffset < (-180 + alignmentThreshold);
       }
     }
     return false;
@@ -34,7 +37,7 @@ class GeometryDirection {
 
   // This function checks if the provided direction at the given point is in the same direction as the path.
   // This calculation is done by finding the closest point on the path to the provided point and checking if the angle between the path segment and the provided heading is less than 90 degrees.
-  bool isPointInAlignmentWithPath(double longitude, double latitude, double headingDegrees) {
+  double getPointPathOffsetAngle(double longitude, double latitude, double headingDegrees) {
     double direction = 0;
     double closestDistance = double.infinity;
 
@@ -61,6 +64,6 @@ class GeometryDirection {
     // Direction should be set to the dot product of the heading vector and the path segment vector.
     // Values greater than 0 indicate the same direction, values less than 0 indicate the opposite direction.
     // values equal to 0 indicate that the point is perpendicular to the path segment.
-    return direction > cos(degToRadian(45)); // Allows angle to within 45 degrees of the path segment
+    return radianToDeg(acos(direction));
   }
 }
