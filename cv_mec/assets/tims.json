@@ -57,8 +57,6 @@
             "codes": ["6916", "13579", "#", "13588", "776"],
             "graphic":"right_lane_blocked.png"
         },
-        
-        
         {
             "name": "caution-high-winds",
             "source": "guidance",
@@ -380,6 +378,338 @@
             "type": "exitService",
             "codes": ["11792", "892", "13582", "13579"],
             "graphic":"weight_station_ahead.png"
+        },
+        {
+            "name": "road-construction, traffic-congestion, ahead ",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["1025", "263", "13569"],
+            "graphic":"slow_traffic_ahead.png"
+        },
+        {
+            "name": "road-construction/construction-work",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["[1025,1028]"],
+            "graphic":"work_zone.png"
+        },
+        {
+            "name": "road-construction/construction-work ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["[1025,1028]","13569"],
+            "graphic":"road_work_ahead.png"
+        },
+        {
+            "name": "left-lane, closed-ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["8195", "771"],
+            "graphic":"left_lane_closed_ahead.png"
+        },
+        {
+            "name": "left, <small number>, lanes, closed-ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["13580", "*", "13588", "771"],
+            "graphic":"left_lane_closed_ahead.png"
+        },
+        {
+            "name": "right-lane, closed-ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["8196", "771"],
+            "graphic":"right_lane_closed_ahead.png"
+        },
+        {
+            "name": "right, <small number>, lanes, closed-ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["13579", "*", "13588", "771"],
+            "graphic":"right_lane_closed_ahead.png"
+        },
+        {
+            "name": "center-lane, closed-ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["8197", "771"],
+            "graphic":"center_lane_closed_ahead.png"
+        },
+        {
+            "name": "closed-to-traffic",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["769"],
+            "graphic":"road_closed.png"
+        },
+        {
+            "name": "closed-for-the-season",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["774"],
+            "graphic":"road_closed.png"
+        },
+        {
+            "name": "look-out-for-workers",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["6952"],
+            "graphic":"look_out_for_workers.png"
+        },
+        {
+            "name": "do-not-enter",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["12314"],
+            "graphic":"do_not_enter.png"
+        },
+        {
+            "name": "stop",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["12294"],
+            "graphic":"stop.png"
+        },
+        {
+            "name": "yield",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["12295"],
+            "graphic":"yield.png"
+        },
+        {
+            "name": "Advice, speed limit, <small number>, mph",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["7712", "268", "#", "8720"],
+            "graphic":"advisory_speed_limit_mph.png",
+            "overlays":[
+                {
+                    "majorFontSize": 80,
+                    "minorFontSize": 48,
+                    "xPos": 60,
+                    "yPos": 60
+                }
+            ]
+        },
+        {
+            "name": "Advice, speed limit, <small number>, kph",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["7712", "268", "#", "8721"],
+            "graphic":"advisory_speed_limit_kph.png",
+            "overlays":[
+                {
+                    "majorFontSize": 80,
+                    "minorFontSize": 48,
+                    "xPos": 60,
+                    "yPos": 60
+                }
+            ]
+        },
+        {
+            "name": "speed limit, <small number>, mph/kph",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["268", "#", "[8720,8721]"],
+            "graphic":"speed_limit.png",
+            "overlays":[
+                {
+                    "majorFontSize": 72,
+                    "minorFontSize": 40,
+                    "xPos": 45,
+                    "yPos": 150
+                }
+            ]
+        },
+        {
+            "name": "speed limit, <small number>, mph/kph ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["268", "12302", "#", "[8720,8721]", "13569"],
+            "graphic":"speed_limit_ahead.png",
+            "overlays":[
+                {
+                    "majorFontSize": 44,
+                    "minorFontSize": 32,
+                    "xPos": 96,
+                    "yPos": 136
+                }
+            ]
+        },
+        {
+            "name": "speed limit, trucks, buses, <small number>",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["268", "9227", "9228", "#", "8720"],
+            "graphic":"speed_limit_trucks_buses.png",
+            "overlays":[
+                {
+                    "majorFontSize": 72,
+                    "minorFontSize": 40,
+                    "xPos": 45,
+                    "yPos": 150
+                }
+            ]
+        },
+        {
+            "name": "School zone, speed limit, <small number>, Units, ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["4124", "268", "#", "8720", "13569"],
+            "graphic":"speed_limit_school_zone.png",
+            "overlays":[
+                {
+                    "majorFontSize": 44,
+                    "minorFontSize": 32,
+                    "xPos": 96,
+                    "yPos": 144
+                }
+            ]
+        },
+        {
+            "name": "Speed Limit, Combined <num>, <units> , minimum <num>, <units>",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["268", "12303", "#", "8720", "12304", "#", "8720"],
+            "graphic":"speed_limit_combined.png",
+            "overlays":[
+                {
+                    "majorFontSize": 48,
+                    "minorFontSize": 36,
+                    "xPos": 20,
+                    "yPos": 95
+                },
+                {
+                    "majorFontSize": 48,
+                    "minorFontSize": 36,
+                    "xPos": 20,
+                    "yPos": 190
+                }
+            ]
+        },
+        {
+            "name": "stop-ahead, toll-plaza",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["12294", "13569", "8217"],
+            "graphic":"stop_ahead_pay_toll.png"
+        },
+        {
+            "name": "exit, for, toll-plaza, ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["11794", "7721", "8217", "13569"],
+            "graphic":"last_exit_before_toll.png"
+        },
+        {
+            "name": "truck, parking, ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["9227", "4120", "13569"],
+            "graphic":"truck_parking_ahead.png"
+        },
+        {
+            "name": "gas, diesel, ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["[11016,11015]", "13569"],
+            "graphic":"gas_diesel_ahead.png"
+        },
+        {
+            "name": "weigh-station <num> mile ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["11792", "*", "8711", "12569"],
+            "graphic":"weight_station_ahead.png"
+        },
+        {
+            "name": "weigh-station <num> mile ahead",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["11792", "892", "13582", "13579"],
+            "graphic":"weight_station_ahead.png"
+        },
+        {
+            "name": "snow-tires or chains required, all vehicles",
+            "source": "caltrans",
+            "type": "advisory",
+            "codes": ["6156", "9217"],
+            "graphic":"snow_tires_all_vehicles.png"
+        },
+        {
+            "name": "ice",
+            "source": "caltrans",
+            "type": "advisory",
+            "codes": ["5906"],
+            "graphic":"ice.png"
+        },
+        {
+            "name": "ice patches",
+            "source": "caltrans",
+            "type": "advisory",
+            "codes": ["5907"],
+            "graphic":"ice_patches.png"
+        },
+        {
+            "name": "advice right turn advice on-curve speed-limit <small number> mph",
+            "source": "caltrans",
+            "type": "advisory",
+            "codes": ["13599", "7712", "8026", "268", "#", "8720"],
+            "graphic":"curve_speed_warning_right.png",
+            "overlays":[
+                {
+                    "majorFontSize": 32,
+                    "minorFontSize": 28,
+                    "xPos": 64,
+                    "yPos": 192
+                }
+            ]
+        },
+        {
+            "name": "advice left turn advice on-curve speed-limit <small number> mph",
+            "source": "caltrans",
+            "type": "advisory",
+            "codes": ["13594", "7712", "8026", "268", "#", "8720"],
+            "graphic":"curve_speed_warning_left.png",
+            "overlays":[
+                {
+                    "majorFontSize": 32,
+                    "minorFontSize": 28,
+                    "xPos": 64,
+                    "yPos": 192
+                }
+            ]
+        },
+        {
+            "name": "advice right turn on-curve speed-limit <small number> mph",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["7712", "13599", "8026", "268", "#", "8720"],
+            "graphic":"curve_speed_warning_right.png",
+            "overlays":[
+                {
+                    "majorFontSize": 32,
+                    "minorFontSize": 28,
+                    "xPos": 64,
+                    "yPos": 192
+                }
+            ]
+        },
+        {
+            "name": "advice right turn on-curve speed-limit <small number> mph",
+            "source": "guidance",
+            "type": "advisory",
+            "codes": ["7712", "13594", "8026", "268", "#", "8720"],
+            "graphic":"curve_speed_warning_left.png",
+            "overlays":[
+                {
+                    "majorFontSize": 32,
+                    "minorFontSize": 28,
+                    "xPos": 64,
+                    "yPos": 192
+                }
+            ]
         }
     ]
 }
