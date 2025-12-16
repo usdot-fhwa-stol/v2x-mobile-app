@@ -1,0 +1,24 @@
+﻿# Managed Packages
+The CV-MEC application is dependent on many 3rd party external packages that provide a wide variety of functionality ranging from Widget (such as the MAP interface) to clean interfaces for accessing GPS data. A full list of dependencies is described in the pubspec.yaml for the project [here](https://github.com/usdot-fhwa-stol/v2x-mec-mobile-app/blob/develop/cv_mec/pubspec.yaml).
+
+In addition to these external sources the CV-MEC also has multiple libraries that are included alongside the CV-MEC application source code. These packages are considered “Managed Packages” because they are managed within the CV-MEC application. It is the responsibility of the CV-MEC application development team to ensure these packages are kept in working order and retain compatibility with the latest app versions. Some of these packages such as Flutter Kronos and AWS S3 Plus began as 3rd party packages, but required additional features or bug fixes not available on the public repositories. Where possible, required features have been offered back to upstream forks, but have not been accepted generally because the source package is no longer publicly maintained.
+
+In other cases such as the ASN.1 Plugin and ISS_SCMS library, these packages were developed as a part of CV-MEC, however structuring this code as an library allows for keeping the main project more organized and allows improved compile times do to library caching.
+
+Below is a list of the managed packages and why they are separated from the main project. If ever the assumptions outlined below are no longer true, developers should consider reintegrating these with the main project.
+
+[**Flutter Kronos Plus**](https://github.com/usdot-fhwa-stol/v2x-mec-mobile-app/tree/develop/cv_mec/packages/flutter-kronos-plus)
+
+The CV-MEC application uses [Flutter Kronos](https://pub.dev/documentation/flutter_kronos/latest/) for ensuring monatomic time within the application. Flutter Kronos is an open source time library that wraps the Android and IOS Kronos libraries for Flutter. Unfortunately, the published version of the Flutter Kronos library does not provide consistent time implementation between Android and IOS device. Namely, the Android library syncs from [time.google.com](http://time.google.com) while the IOS implementation syncs from [time.apple.com](http://time.apple.com). During testing it became apparent that the different time servers are not well synced to one another and both the google time and apple time servers had inconsistent times with the [time.aws.com](http://time.aws.com) server used by the [ODE](https://github.com/usdot-jpo-ode)  and [V2X-HUB](https://github.com/usdot-fhwa-OPS/V2X-Hub). To correct for this problem, the CV-MEC team built a special version of flutter Kronos in which both android and IOS sync to [time.aws.com](http://time.aws.com) . This ensures that timing discrepancy between the ODE, V2X hub and connected phones is minimized.
+
+[**AWS S3 Upload Lite**](https://github.com/usdot-fhwa-stol/v2x-mec-mobile-app/tree/develop/cv_mec/packages/aws_s3_upload_lite)
+
+The CV-MEC uses the [AWS S3 Upload Lite](https://github.com/Yoda-Man/aws_s3_upload_lite) package for uploading data to amazon S3 Buckets. Unfortunately, the published version of the AWS S3 Plus package currently contains a bug which prevent uploading data from IOS devices. The local version of this package includes fixes to allow IOS devices to upload to S3 Buckets. This package should be periodically re-evaluated to see if the upstream package has been patched to work properly with IOS. ideally, this submodule should be deleted once the upstream package is patched
+
+[**ASN.1 Plugin**](https://github.com/usdot-fhwa-stol/v2x-mec-mobile-app/tree/develop/cv_mec/asn1_plugin)
+
+The ASN.1 Plugin contains all of the C code and generated files needed to integrate the ASN.1 code C code with the CV-MEC dart code using dart FFI. This package was separate from the main body of the CV-MEC application in order to improve code clarity and create a distinction between user code in the CV-MEC application and auto-generated code needed for the ASN.1 integration.
+
+[**ISS SCMS**](https://github.com/usdot-fhwa-stol/v2x-mec-mobile-app/tree/develop/cv_mec/packages/iss_scms)
+
+The ISS SCMS package serves as a wrapper library around the IOS and Android SDK’s provided by ISS for performing signing and verification on a mobile device. This library was kept separate from the main code body of the CV-MEC application because splitting it off provides a clean way to implement the android and IOS specific functionality. Additionally, this component of the CV-MEC application is nicely encapsulated and it may be valuable to release as its own library in the future for others to use.

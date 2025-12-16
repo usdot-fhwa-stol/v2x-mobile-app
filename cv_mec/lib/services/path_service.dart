@@ -41,16 +41,13 @@ class PathService{
     return null;
   }
 
-  Stream<Position> followPath(VehiclePath vehiclePath) {
-    Duration delay = Duration(seconds: 1);
-    return Stream<Position>.periodic(delay, (count) {
+  Stream<Position> followPath(VehiclePath vehiclePath) async* {
+    List<List<double>> route = vehiclePath.geometry.coordinates;
+    int count = 0;
 
-
-
-      List<List<double>> route = vehiclePath.geometry.coordinates;
+    while (true) {
       int index = count % route.length;
-      delay = Duration(milliseconds:((vehiclePath.timestamps[index] - vehiclePath.timestamps[(index - 1 + route.length) % route.length])).abs());
-      int prevIndex = (count - 1) % route.length;
+      int prevIndex = (count - 1 + route.length) % route.length;
 
       List<double> pos = route[index];
       List<double> lastPos = route[prevIndex];
@@ -60,14 +57,30 @@ class PathService{
       num distance =
           geometryService.geodesy.distanceBetweenTwoGeoPoints(LatLng(pos[1], pos[0]), LatLng(lastPos[1], lastPos[0]));
 
-      double speed = distance / 0.5;
+      // Calculate delay based on timestamp difference
+      int currentTimestamp = vehiclePath.timestamps[index];
+      int prevTimestamp = vehiclePath.timestamps[prevIndex];
+      
+
+      int timestampDiff = (currentTimestamp - prevTimestamp);
+      print("Delay${route.length} - $index - $prevIndex : $currentTimestamp - $prevTimestamp = $timestampDiff");
+      if (timestampDiff <=0) {
+        // If looping back to start, estimate delay based on average speed
+        timestampDiff = 100; // Default to 100 ms for loopback
+      }
+
+      // Use timestamp difference for delay, with a minimum of 10ms
+      Duration delay = Duration(milliseconds: max(10, timestampDiff));
+      
+      
+      double speed = distance / (delay.inMilliseconds / 1000.0);
 
       heading = -heading + 90;
       if (heading < 0) {
         heading += 360;
       }
 
-      return Position(
+      yield Position(
           longitude: route[index][0],
           latitude: route[index][1],
           timestamp: DateTime.now(),
@@ -78,6 +91,8 @@ class PathService{
           headingAccuracy: 0,
           speed: speed,
           speedAccuracy: 0);
-    });
+      await Future.delayed(delay);
+      count++;
+    }
   }
 }

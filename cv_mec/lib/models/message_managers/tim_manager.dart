@@ -215,7 +215,14 @@ class TimManager {
 
     DateTime startYear = DateTime(year);
     DateTime startTime = startYear.add(Duration(minutes: dataFrame.startTime.minuteOfTheYear));
+
+
     DateTime endTime = startTime.add(Duration(minutes: dataFrame.durationTime.minutesDuration));
+    
+    if(dataFrame.durationTime.minutesDuration == 32000){
+      endTime = DateTime.utc(2100);
+    }
+    
     return endTime;
   }
 
@@ -246,6 +253,10 @@ class TimManager {
     DateTime startYear = DateTime.utc(year);
     DateTime startTime = startYear.add(Duration(minutes: dataFrame.startTime.minuteOfTheYear));
     DateTime endTime = startTime.add(Duration(minutes: dataFrame.durationTime.minutesDuration));
+
+    if(dataFrame.durationTime.minutesDuration == 32000){
+      endTime = DateTime.utc(2100);
+    }
 
     return startTime.isBefore(now) && endTime.isAfter(now);
   }

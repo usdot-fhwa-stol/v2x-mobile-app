@@ -16,23 +16,19 @@ flutter doctor
 
 ### Flutter version compatibility
 
-This flutter project requires Java 17 in order to build properly. As of October 2024, the default version of Java installed in Android Studio (Ladybug) is Java 21. Currently, this project will remain on Java 17 until numerous dependencies complete their updates to Java 21. If you are running this application alongside Android Studio Ladybug (or newer) you will need to manually modify the Java build version in order for the app to function properly.
+As of November 2025, the CV-MEC application has been updated to build with Java 21 and Android Ladybug. It requires the following to build properly
 
-The current recommended fix for this is to manually specify the Java JDK to use in the cv_mec/android/gradle.properties file. This can be done by adding the following line to the file
+Flutter
+- Flutter 3.35
+- Dart 3.9.2
 
-```
-org.gradle.java.home=<Path to your Java 17 JDK>
-```
+Android
+- Java 21
+- Gradle 8
 
-Note: The file path specified here may need escape characters to function properly. For example the path
-`org.gradle.java.home=C:\Program Files\Java\jdk-17.0.8.7-hotspot`
-May need to be rewritten as: `org.gradle.java.home=C:\\Program Files\\Java\\jdk-17.0.8.7-hotspot`
-
-Below is the recommend versions of Flutter Gradle and Java required to build this project
-
-| Date          | Flutter Version | Java version | Android Studio Version | Gradle Version |
-| :------------ | :-------------: | :----------: | :--------------------: | -------------: |
-| December 2024 |     3.22.2      |      17      |       JellyFish        |          7.6.3 |
+IOS
+- Swift 6
+- Xcode 26
 
 ### Setup ENV file
 
@@ -76,7 +72,7 @@ flutter pub clean
 flutter pub get
 ```
 
-\*These commands will not work unless you are inside the cv_mec directory. To avoid confusion, the proper cv_mec directory is the one with the pubspec.yaml file.
+*For IOS please reference the [Additional Instructions for IOS](#building-on-ios)
 
 ### Run the app
 
