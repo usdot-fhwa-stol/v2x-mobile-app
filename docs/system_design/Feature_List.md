@@ -55,20 +55,20 @@
                 
         -   PC5 via Ettifos OBU
             
-            -   Allows loading PC5 data into CV-MEC by forwarding it directly from a connected ettifos OBU unit.
+            -   Allows loading PC5 data into V2X-Mobile-App by forwarding it directly from a connected ettifos OBU unit.
                 
 -   Signing Support:
     
-    -   CV-MEC supports sending Signed messages using the ISS signing SDK. Available only on Android and IOS
+    -   V2X-Mobile-App supports sending Signed messages using the ISS signing SDK. Available only on Android and IOS
         
 -   GPS Source Support:
     
-    -   CV-MEC supports connecting to remote GPS or local GPS devices. This includes the following
+    -   V2X-Mobile-App supports connecting to remote GPS or local GPS devices. This includes the following
         
         -   Mobile Phone GPS            
         -   OBU GPS (only available with configured Ettifos OBU)            
         -   Cradlepoint GPS            
-        -   Path Support - CV-MEC can run vehicles along predefined paths downloaded from the Partner API
+        -   Path Support - V2X-Mobile-App can run vehicles along predefined paths downloaded from the Partner API
             
 -   Logging Support
     

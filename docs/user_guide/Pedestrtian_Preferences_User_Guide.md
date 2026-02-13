@@ -1,5 +1,5 @@
 ﻿# Pedestrian Preferences User Guide
-Users that select “Pedestrian” have various non-vehicle options to test V2X technology within the CV-MEC application.
+Users that select “Pedestrian” have various non-vehicle options to test V2X technology within the V2X-Mobile-App application.
 
 **Step 1:** For this user guide, click the “**Pedestrian**” button.
 
@@ -23,7 +23,7 @@ These are the configuration options for Public Safety Workers. Each selection ha
 
 ![Public_Safety_Workers](images/Pedestrian_Preferences_User_Guide_Page/Public_Safety_Workers.png)
 
-**Step 3:** After selecting a configuration, the user will automatically be redirected to the map where an icon of the pedestrian will appear in the geo-location of the user of the smart phone that the CV-MEC is downloaded on.
+**Step 3:** After selecting a configuration, the user will automatically be redirected to the map where an icon of the pedestrian will appear in the geo-location of the user of the smart phone that the V2X-Mobile-App is downloaded on.
 
 The icon on the map will move in near real-time with the movement of the user.
 

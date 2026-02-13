@@ -90,7 +90,7 @@ The user can skip these preferences and go straight to the map. The default car 
 
 ![Skip_Button](images/Vehicle_Preferences_User_Guide_Page/Skip_Button.png)
 
-After clicking on a vehicle in the “Choose a vehicle” section, the user will be redirected to the map where an icon of the vehicle will appear in the geo-location of the user of the smart phone that the CV-MEC is downloaded on.
+After clicking on a vehicle in the “Choose a vehicle” section, the user will be redirected to the map where an icon of the vehicle will appear in the geo-location of the user of the smart phone that the V2X-Mobile-App is downloaded on.
 
 The icon on the map will move in near real-time with the movement of the user. The application will also display the miles per hour.
 

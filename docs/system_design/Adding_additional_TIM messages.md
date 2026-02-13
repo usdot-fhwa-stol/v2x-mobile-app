@@ -1,9 +1,9 @@
 ﻿# Adding additional TIM messages
-The CV-MEC application currently supports all of the TIM messages outlined in the TIM message guidance document put together by the interoperability technical working group. These TIM messages are configured in a file called tims.json located in the assets folder of the CV-MEC application. To add support for additional TIM messages, itis sequences, and images, developers can modify the tims.json file and the corresponding assets/images/tims directory to expand the existing TIM dictionary. Below is a description of the tims.json file format and how to add new tim messages.
+The V2X-Mobile-App application currently supports all of the TIM messages outlined in the TIM message guidance document put together by the interoperability technical working group. These TIM messages are configured in a file called tims.json located in the assets folder of the V2X-Mobile-App application. To add support for additional TIM messages, itis sequences, and images, developers can modify the tims.json file and the corresponding assets/images/tims directory to expand the existing TIM dictionary. Below is a description of the tims.json file format and how to add new tim messages.
 
 ## Wildcards and Template Parsing
 
-The tims.json functions as a sort of template file which maps series of ITIS codes to corresponding graphics and edit operations needed to properly show that graphic. For example, if the CV-MEC mobile application receives a TIM message with ITIS codes 769, 9478, 7747 (in that order) and a message type of advisory. It will show the graphic “closed_to_traffic.png” from the assets/images/tims directory.
+The tims.json functions as a sort of template file which maps series of ITIS codes to corresponding graphics and edit operations needed to properly show that graphic. For example, if the V2X-Mobile-App mobile application receives a TIM message with ITIS codes 769, 9478, 7747 (in that order) and a message type of advisory. It will show the graphic “closed_to_traffic.png” from the assets/images/tims directory.
 
 ```json
 {

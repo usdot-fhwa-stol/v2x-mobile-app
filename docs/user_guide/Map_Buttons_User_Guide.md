@@ -1,5 +1,5 @@
 ﻿# Map Buttons User Guide
-The Map view of the CV-MEC application has various features that allows users to interact with V2X technologies.
+The Map view of the V2X-Mobile-App application has various features that allows users to interact with V2X technologies.
 
 The top circle indicates if the app is connected to any MQTT brokers
 

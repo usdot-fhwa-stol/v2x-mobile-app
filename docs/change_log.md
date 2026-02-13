@@ -1,4 +1,13 @@
 # Changelog
+## Version 80
+5gaa V2X Tolling Demo Release
+New Features
+    - Added support for receiving and showing TAM messages
+    - Added support for sending TUM messages
+    - Added support for receiving TUMAck Messages
+    - Updated TIM logic to download TIM message definitions from partner api
+    - Updated mobile application to load sample paths from partner api
+
 ## Version 69
 Plugfest Test Release
 New Features
@@ -24,7 +33,7 @@ New Features
     - Added Support for Receiving SPaT Messages
     - Added Support for Receiving MAP Messages
     - Added Countdown to Green Graphic
-    - Fixed Time Synchronization Issues by forcing CV-MEC to always use AWS NTP Time Server
+    - Fixed Time Synchronization Issues by forcing V2X-Mobile-App to always use AWS NTP Time Server
 
 ## Release 26
 Interoperability Release
@@ -36,4 +45,4 @@ New Features
 
 
 ## Release 12
-First delivered release of the CV-MEC application to Leidos. Added ability to connect to Verizon IMP Service and Log Message Latencies.
+First delivered release of the V2X-Mobile-App application to Leidos. Added ability to connect to Verizon IMP Service and Log Message Latencies.

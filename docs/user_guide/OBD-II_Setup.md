@@ -1,5 +1,5 @@
 ﻿# OBD-II Setup
-The CV-MEC application is able to connect to the On-Board Diagnostics (OBD-II) System to get additional information about the current state of the vehicle including the vehicle make, model, year as well as the speed and engine RPM. This functionality is only available on Android and Linux devices.
+The V2X-Mobile-App application is able to connect to the On-Board Diagnostics (OBD-II) System to get additional information about the current state of the vehicle including the vehicle make, model, year as well as the speed and engine RPM. This functionality is only available on Android and Linux devices.
 
 **Adding an OBD-II sensor to the vehicle**
 
@@ -19,12 +19,12 @@ Plug a Bluetooth OBD-II Fob into the 16 pin port generally located under the das
 ![Cell_Phone_Bluetooth_Button](images/OBD-II_Set_Up_User_Guide_Page/Cell_Phone_Bluetooth_Button.png)
 ![Cell_Phone_Pair_New_Device](images/OBD-II_Set_Up_User_Guide_Page/Cell_Phone_Pair_New_Device.png)
 
-**Connecting to the OBD-II through CV-MEC Android Application**
+**Connecting to the OBD-II through V2X-Mobile-App Android Application**
 
-1.  Open the CV-MEC application and navigate to the map page 
+1.  Open the V2X-Mobile-App application and navigate to the map page 
 2.  Click on the carrot dropdown on the “Vehicle Stats” Tab    
 3.  Click the “Connect to OBD-II” Button    
-4.  If this is the first time the device is connecting, allow the CV-MEC application to connect to nearby devices
+4.  If this is the first time the device is connecting, allow the V2X-Mobile-App application to connect to nearby devices
 
 ![Vehicle_Stats](images/OBD-II_Set_Up_User_Guide_Page/Vehicle_Stats.png)
 ![Connect_to_OBD-II](images/OBD-II_Set_Up_User_Guide_Page/Connect_to_OBD-II.png)
@@ -46,9 +46,9 @@ Plug a Bluetooth OBD-II Fob into the 16 pin port generally located under the das
 ![Bluetooth_Menu](images/OBD-II_Set_Up_User_Guide_Page/Bluetooth_Menu.png)
 ![List_of_Bluetooth_Devices](images/OBD-II_Set_Up_User_Guide_Page/List_of_Bluetooth_Devices.png)
 
-**Connecting to the OBD-II through CV-MEC Linux Application**
+**Connecting to the OBD-II through V2X-Mobile-App Linux Application**
 
-1.  Open the CV-MEC application with **root permissions** and navigate to the map page    
+1.  Open the V2X-Mobile-App application with **root permissions** and navigate to the map page    
 2.  Click on the carrot dropdown on the “Vehicle Stats” Tab    
 3.  Click the “Connect to OBD-II” Button    
 4.  If an OBD-II device hasn’t already been selected, the Bluetooth device selection will pop up. Click on the OBD-II device from the list    
