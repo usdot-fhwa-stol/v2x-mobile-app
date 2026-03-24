@@ -66,7 +66,7 @@ import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
 import 'package:cv_mec/models/mqtt/pc5_mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
-import 'package:cv_mec/models/received_messages/receieved_msg.dart';
+import 'package:cv_mec/models/received_messages/received_msg.dart';
 import 'package:cv_mec/models/received_messages/received_bsm.dart';
 import 'package:cv_mec/models/received_messages/received_psm.dart';
 import 'package:cv_mec/models/received_messages/received_sdsm.dart';
@@ -372,7 +372,6 @@ class MapState extends State<MapPage> {
       stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.gpsType.value == GPSType.path) {
       VehiclePath? path = pathService.getPathByName(settingsController.pathToFollow.value);
-      print("path to follow: ${settingsController.pathToFollow.value}");
       if(path!=null){
         stream = pathService.followPath(path);
       }else{
@@ -618,7 +617,7 @@ class MapState extends State<MapPage> {
 
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
-    ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
+    ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens, validity);
     messageManager.addOrUpdate(msg);
     addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
   }
@@ -632,7 +631,7 @@ class MapState extends State<MapPage> {
 
     DateTime psmTime = psm.secMark.getDateTime(recTime);
 
-    ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
+    ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType, validity);
     messageManager.addOrUpdate(msg);
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
@@ -703,7 +702,7 @@ class MapState extends State<MapPage> {
 
       LatLng shiftedPosition = geometryService.shiftLatLngByMeters(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
-      messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
+      messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType, validity));
     }
 
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
@@ -873,7 +872,7 @@ class MapState extends State<MapPage> {
           showError("Result of Message Signing was Null or Empty");
         }
       }
-      
+
       mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
@@ -1188,24 +1187,21 @@ class MapState extends State<MapPage> {
       ReceivedMsg msg = messageManager.receivedMsgs[key]!;
 
       if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
+        Widget markerChild;
         if (msg is ReceivedBsm) {
-          Marker remoteMarker = Marker(
-            point: msg.position,
-            width: 60,
-            height: 60,
-            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
-                sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
-          );
-          markerList.add(remoteMarker);
+          markerChild = iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
+              sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse);
         } else {
-          Marker remoteMarker = Marker(
-            point: msg.position,
-            width: 60,
-            height: 60,
-            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!),
-          );
-          markerList.add(remoteMarker);
+          markerChild = iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!);
         }
+
+        Marker remoteMarker = Marker(
+          point: msg.position,
+          width: 60,
+          height: 60,
+          child: withValidityLock(markerChild, msg.validateStatus),
+        );
+        markerList.add(remoteMarker);
       } else {
         removeKeys.add(key);
       }
@@ -1380,6 +1376,62 @@ class MapState extends State<MapPage> {
                   ),
                 ),
               );
+  }
+
+  Widget withValidityLock(Widget markerChild, ValidateStatus validateStatus) {
+
+    Color lockColor = Colors.grey;
+    IconData lockIcon = Icons.device_unknown;
+
+    switch (validateStatus) {
+      case ValidateStatus.VALID:
+        lockIcon = Icons.lock;
+        lockColor = Colors.green;
+        break;
+      case ValidateStatus.FAILURE:
+        lockIcon = Icons.lock_open;
+        lockColor = Colors.red;
+        break;
+      case ValidateStatus.NOT_SIGNED:
+        lockIcon = Icons.lock_open;
+        lockColor = Colors.red;
+        break;
+      case ValidateStatus.UNKNOWN_CERT:
+        lockIcon = Icons.lock;
+        lockColor = Colors.orange;
+        break;
+      case ValidateStatus.UNRECOGNIZED_ISSUER:
+        lockIcon = Icons.lock;
+        lockColor = Colors.orange;
+        break;
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        markerChild,
+        Positioned(
+          right: 12,
+          bottom: 12,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.95),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.black54,
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              lockIcon,
+              size: 12,
+              color: lockColor,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   MovementPhaseState getDominantMovementPhaseState(MovementPhaseState a, MovementPhaseState b) {

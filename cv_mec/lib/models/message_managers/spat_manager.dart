@@ -76,6 +76,8 @@ class SpatManager {
         if (state.getUtcTime().isAfter(now.subtract(const Duration(seconds: 3))) &&
             state.getUtcTime().isBefore(now.add(const Duration(seconds: 3)))) {
           states.add(state);
+        }else{
+          print("Spat Message is outdated: ${state.getUtcTime()} ${now}");
         }
       }
     }

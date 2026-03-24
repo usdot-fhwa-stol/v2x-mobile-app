@@ -2,7 +2,7 @@ import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_u
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/object_type.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/models/msg_types.dart';
-import 'package:cv_mec/models/received_messages/receieved_msg.dart';
+import 'package:cv_mec/models/received_messages/received_msg.dart';
 import 'package:cv_mec/models/received_messages/received_psm.dart';
 import 'package:cv_mec/models/received_messages/received_sdsm.dart';
 import 'package:cv_mec/services/geometry_service.dart';
