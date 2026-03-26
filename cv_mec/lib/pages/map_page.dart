@@ -394,7 +394,6 @@ class MapState extends State<MapPage> {
         // Catch exception in case stream has already been listened to.
         _logger.w("caught error with stream.first called on existing stream");
       }
-      
     }     
   }
   
@@ -1379,6 +1378,10 @@ class MapState extends State<MapPage> {
   }
 
   Widget withValidityLock(Widget markerChild, ValidateStatus validateStatus) {
+
+    if (!settingsController.showMessageValidityIcons.value) {
+      return markerChild;
+    }
 
     Color lockColor = Colors.grey;
     IconData lockIcon = Icons.device_unknown;

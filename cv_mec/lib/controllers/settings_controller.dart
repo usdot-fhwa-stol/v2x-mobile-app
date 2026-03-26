@@ -30,6 +30,7 @@ class SettingsController extends GetxController {
   Rx<bool> soundEffectsEnabled = true.obs;
   Rx<bool> tollingEnabled = true.obs;
   Rx<bool> showTims = true.obs;
+  Rx<bool> showMessageValidityIcons = true.obs;
 
   RxString username = dotenv.env['USERNAME']!.obs;
   RxString password = dotenv.env['PASSWORD']!.obs;
@@ -93,6 +94,7 @@ class SettingsController extends GetxController {
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
     tollingEnabled.value = await secureStorage.getTollingEnabled();
     showTims.value = await secureStorage.getShowTims();
+    showMessageValidityIcons.value = await secureStorage.getShowMessageValidityIcons();
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();

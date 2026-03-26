@@ -482,6 +482,14 @@ class SettingsPage extends StatelessWidget {
                   controller.showTims.value = value;
                   await controller.secureStorage.setShowTims(value);
                 }),
+            verticalSpaceMedium,
+            SwitchListTile(
+                title: const Text("Show Message Signing Status"),
+                value: controller.showMessageValidityIcons.value,
+                onChanged: (value) async {
+                  controller.showMessageValidityIcons.value = value;
+                  await controller.secureStorage.setShowMessageValidityIcons(value);
+                }),
           ],
         ));
   }
