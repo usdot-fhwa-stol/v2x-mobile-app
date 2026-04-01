@@ -13,13 +13,12 @@ import 'package:logger/logger.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 class LocationService extends GetxService {
-  // Static variables
+
   final Logger _logger = Logger();
   static final MockLocationService _mockLocationService = MockLocationService();
   LocationSettings _locationSettings =
       const LocationSettings(accuracy: LocationAccuracy.bestForNavigation, distanceFilter: 0);
 
-  // Variables
   bool _serviceEnabled = false;
   bool _serviceMocked = false;
   StreamSubscription<Position>? _mockedStreamListener;
@@ -28,11 +27,9 @@ class LocationService extends GetxService {
   DeclinationData? _declinationData;
   Position? latestPosition;
 
-  // Location Stream
   final StreamController<Position> _locationController = StreamController<Position>.broadcast();
   Stream<Position> get locationStream => _locationController.stream;
 
-  // LocationWithDeclination Stream
   bool declinationRequestOut = false;
   Stream<PositionWithDeclination> get locationWithDeclinationStream => locationStream.map((p) {
         double? declination = getDeclination();
@@ -52,14 +49,6 @@ class LocationService extends GetxService {
         distanceFilter: 0,
         forceLocationManager: true,
         intervalDuration: const Duration(seconds: 1),
-        //(Optional) Set foreground notification config to keep the app alive
-        //when going to the background
-        // foregroundNotificationConfig: const ForegroundNotificationConfig(
-        //   notificationText:
-        //   "Example app will continue to receive your location even when you aren't using it",
-        //   notificationTitle: "Running in Background",
-        //   enableWakeLock: true,
-        // )
       );
     }
     //_start(mocked, latitude, longitude, mockedLocation);
@@ -119,7 +108,6 @@ class LocationService extends GetxService {
   Future<bool> isTrackingGranted() async {
     if(Platform.isIOS){
       TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
-      print("Returning Tracking Status $status");
       return status == TrackingStatus.authorized;
     }
     return true;
@@ -129,9 +117,6 @@ class LocationService extends GetxService {
     if(Platform.isIOS){
       if (await AppTrackingTransparency.trackingAuthorizationStatus ==
           TrackingStatus.notDetermined) {
-        // Show a custom explainer dialog before the system dialog
-        // await showCustomTrackingDialog(context);
-        // Wait for dialog popping animation
         await Future.delayed(const Duration(milliseconds: 200));
         // Request system's tracking authorization dialog
         TrackingStatus status = await AppTrackingTransparency.requestTrackingAuthorization();
@@ -145,9 +130,6 @@ class LocationService extends GetxService {
 
     _serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!_serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
       _logger.w("Location services are disabled");
       return Future.error('Location services are disabled.');
     }
@@ -170,11 +152,6 @@ class LocationService extends GetxService {
       );
       _permission = await Geolocator.requestPermission();
       if (_permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
         _logger.w("Location permissions are denied after requesting");
         return Future.error('Location permissions are denied');
       }

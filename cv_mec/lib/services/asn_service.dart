@@ -7,6 +7,7 @@ import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
+import 'package:asn1_plugin/j2735/2024/rtcmcorrections/rtcmcorrections.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
@@ -37,6 +38,7 @@ class ASNService extends GetxController {
   final String PSM_START_FLAG = "0020";
   final String SRM_START_FLAG = "001D";
   final String SDSM_START_FLAG = "0029";
+  final String RTCM_START_FLAG = "001C";
   final String TAM_START_FLAG = "0025";  
   final String TUM_START_FLAG = "0026";
   final String TUMACK_START_FLAG = "0027";
@@ -64,6 +66,7 @@ class ASNService extends GetxController {
       SPAT_START_FLAG,
       PSM_START_FLAG,
       SDSM_START_FLAG,
+      RTCM_START_FLAG,
       TAM_START_FLAG, 
       TUM_START_FLAG,
       TUMACK_START_FLAG,
@@ -78,6 +81,7 @@ class ASNService extends GetxController {
       PSM_START_FLAG: MsgType.PSM,
       SRM_START_FLAG: MsgType.SRM,
       SDSM_START_FLAG: MsgType.SDSM,
+      RTCM_START_FLAG: MsgType.RTCM,
       TAM_START_FLAG: MsgType.TAM,  
       TUM_START_FLAG: MsgType.TUM,
       TUMACK_START_FLAG: MsgType.TUMACK,
@@ -185,6 +189,16 @@ class ASNService extends GetxController {
     return sdsm;
   }
 
+  RTCMcorrections parseRtcm(Pointer<Pointer<Void>> message) {
+    Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
+    C.MessageFrame messageFrame = messageFrameValuePtr.ref;
+    C.RTCMcorrections cRtcm = messageFrame.value.choice.RTCMcorrections;
+
+    RTCMcorrections rtcm = RTCMcorrections.fromC(cRtcm);
+
+    return rtcm;
+  }
+
   TollAdvertisementMessage parseTam(Pointer<Pointer<Void>> message) {
     Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
@@ -275,6 +289,16 @@ class ASNService extends GetxController {
     cleanupDecoded(decoded);
 
     return sdsm;
+  }
+
+  RTCMcorrections decodeRtcm(String asn1) {
+    Pointer<Pointer<Void>> decoded = decode(asn1);
+
+    RTCMcorrections rtcm = parseRtcm(decoded);
+
+    cleanupDecoded(decoded);
+
+    return rtcm;
   }
 
   TollAdvertisementMessage decodeTam(String asn1) {

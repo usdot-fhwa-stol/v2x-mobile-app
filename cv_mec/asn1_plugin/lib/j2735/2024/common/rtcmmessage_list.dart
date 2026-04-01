@@ -27,6 +27,7 @@ import 'package:asn1_plugin/j2735/2024/common/rtcmmessage.dart';
 class RTCMmessageList {
   late List<RTCMmessage> rtcmMessageList;
   RTCMmessageList.fromC(C.RTCMmessageList value) : super() {
+    rtcmMessageList = [];
     for (int i = 0; i < value.list.count; i++) {
       this.rtcmMessageList.add(RTCMmessage(value.list.array[i].ref));
     }

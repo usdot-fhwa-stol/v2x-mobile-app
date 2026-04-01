@@ -708,6 +708,13 @@ class MapState extends State<MapPage> {
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
+  void processNewRTCM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity){
+    String trimmedHex = asnService.trimMessageHeaders(
+        hex, asnService.RTCM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      asnService.decodeRtcm(trimmedHex);
+      addToReceiveLog(broker, topic, "RTCM", recTime, sendTime, recTime, trimmedHex, source, validity);
+  }
+
   void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
     TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
