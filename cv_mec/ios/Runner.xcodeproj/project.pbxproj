@@ -877,7 +877,7 @@
 					"-framework",
 					"\"wakelock_plus\"",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.neaera.cvmec;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.neaera.caltrans-cvmec";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

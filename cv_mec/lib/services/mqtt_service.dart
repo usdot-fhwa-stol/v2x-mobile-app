@@ -36,6 +36,8 @@ class MqttService extends GetxService {
       final host = uri.host;
       final port = uri.hasPort ? uri.port : 1883; // Default MQTT port
 
+
+      _logger.i("Attempting MQTT Connection to $host, $port");
       // Create New Client
       client = MqttServerClient.withPort(host, clientId, port);
 
