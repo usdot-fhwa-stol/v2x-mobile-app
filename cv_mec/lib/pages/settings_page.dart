@@ -225,41 +225,44 @@ class SettingsPage extends StatelessWidget {
                   final bool useStackedLayout =
                       MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
 
-                  Widget pathSelector = controller.availablePaths.isNotEmpty
-                      ? DropdownButton<String>(
-                          isExpanded: true,
-                          value: controller.pathToFollow.value,
-                          hint: const Text('Select an option'),
-                          dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(8),
-                          items: controller.availablePaths.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: Text(
-                                  value,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                  Widget pathSelector = Obx(
+                    () => controller.availablePaths.isNotEmpty
+                        ? DropdownButton<String>(
+                            isExpanded: true,
+                            value: controller.availablePaths.contains(controller.pathToFollow.value)
+                                ? controller.pathToFollow.value
+                                : null,
+                            hint: const Text('Select an option'),
+                            dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                            borderRadius: BorderRadius.circular(8),
+                            items: controller.availablePaths.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    value,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            if (newValue != controller.pathToFollow.value) {
-                              if (newValue != null) {
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) async {
+                              if (newValue != null && newValue != controller.pathToFollow.value) {
                                 controller.pathToFollow.value = newValue;
-                                controller.secureStorage.setPathToFollow(newValue);
+                                controller.pathToFollow.refresh();
+                                await controller.secureStorage.setPathToFollow(newValue);
                               }
-                            }
-                          },
-                        )
-                      : Text(
-                          'No paths available',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!),
-                        );
+                            },
+                          )
+                        : Text(
+                            'No paths available',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!),
+                          ),
+                  );
 
                   if (useStackedLayout) {
                     return Column(
