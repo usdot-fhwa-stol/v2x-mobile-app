@@ -54,6 +54,7 @@ import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
 import 'package:cv_mec/models/mappable_tam.dart';
+import 'package:cv_mec/models/mappable_tim.dart';
 import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/tum_message_builder.dart';
@@ -1327,6 +1328,15 @@ class MapState extends State<MapPage> with RouteAware {
       }
     }
 
+    if (pos != null &&_mapController.camera.zoom > 17.5) {
+      List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
+      for (DataFrameGeometry frame in dataFrames) {
+        for (MappableTim mappableTim in frame.mappableTims) {
+          markerList.addAll(mappableTim.timMarkers);
+        }
+      }
+    }
+
     if (pos != null) {
       Marker userMarker = Marker(
         point: getUserLocation(),
@@ -1593,20 +1603,8 @@ class MapState extends State<MapPage> with RouteAware {
 
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
     for (DataFrameGeometry frame in dataFrames) {
-      TravelerDataFrame tdFrame = frame.frame;
-
-      for (GeometryDirection geoDir in frame.geometry) {
-        List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
-
-        Polygon<HitValue> hitPoly = Polygon(
-          points: polyPoints,
-          borderColor: Colors.orangeAccent,
-          color: const Color.fromARGB(128, 252, 173, 89),
-          borderStrokeWidth: 1,
-          hitValue: (frame: tdFrame,),
-        );
-
-        polygons.add(hitPoly);
+      for (MappableTim mappableTim in frame.mappableTims) {
+          polygons.add(mappableTim.polygonPoints);
       }
     }
 

@@ -28,7 +28,7 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as Image;
 
-class ItisDecodingService{
+class ItisDecodingService extends GetxService {
 
   final int maxItisSmallNumber = 12799;
   final int minItisSmallNumber = 12545;

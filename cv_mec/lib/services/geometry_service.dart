@@ -30,6 +30,7 @@ class GeometryService {
   GeometryFactory geometryFactory = GeometryFactory.defaultPrecision();
   final geodesy = geo.Geodesy();
   final Logger _logger = Logger();
+  
 
   Map<TravelerDataFrame, DataFrameGeometry> getTimPolyRegion(TravelerInformation tim) {
     Map<TravelerDataFrame, DataFrameGeometry> dataFrameRegions = <TravelerDataFrame, DataFrameGeometry>{};
@@ -590,5 +591,94 @@ class GeometryService {
 
 
     return maxLaneWidth;
+  }
+
+  List<LatLng> roundCorners(List<LatLng> points, {double radius = 3.0, int segments = 5}) {
+    List<LatLng> roundedPoints = [];
+
+    for (int i = 0; i < points.length - 1; i++) {
+      LatLng prev = points[(i - 1 + points.length) % points.length];
+      if (i == 0) {
+        prev = points[(i - 2 + points.length) % points.length];
+      }
+      LatLng current = points[i];
+      LatLng next = points[(i + 1) % points.length];
+
+      double bearingToPrev = calculateBearingBetweenLatLng(current, prev);
+      double bearingToNext = calculateBearingBetweenLatLng(current, next);
+      double angle = (bearingToNext - bearingToPrev + 360) % 360;
+      if (angle > 180) {
+        angle = 360 - angle;
+      }
+      if (angle < 130) {
+        num distanceToPrev = geodesy.distanceBetweenTwoGeoPoints(current, prev);
+        num distanceToNext = geodesy.distanceBetweenTwoGeoPoints(current, next);
+        double offset = min(radius, min(distanceToPrev, distanceToNext) / 2);
+
+        // Two offset points along each edge from the vertex
+        LatLng start = geodesy.destinationPointByDistanceAndBearing(current, offset, bearingToPrev);
+        LatLng end = geodesy.destinationPointByDistanceAndBearing(current, offset, bearingToNext);
+
+        // Quadratic Bezier
+        for (int j = 0; j <= segments; j++) {
+          double t = j / segments;
+          double lat = (1 - t) * (1 - t) * start.latitude +
+              2 * (1 - t) * t * current.latitude +
+              t * t * end.latitude;
+          double lng = (1 - t) * (1 - t) * start.longitude +
+              2 * (1 - t) * t * current.longitude +
+              t * t * end.longitude;
+          roundedPoints.add(LatLng(lat, lng));
+        }
+      } else {
+        roundedPoints.add(current);
+      }
+    }
+
+    return roundedPoints;
+  }
+
+  List<LatLng> getCorners(List<LatLng> points, {double radius = 3.0, int segments = 5}) {
+    List<LatLng> centerRoundedPoints = [];
+
+    for (int i = 0; i < points.length - 1; i++) {
+      LatLng prev = points[(i - 1 + points.length) % points.length];
+      if (i == 0) {
+        prev = points[(i - 2 + points.length) % points.length];
+      }
+      LatLng current = points[i];
+      LatLng next = points[(i + 1) % points.length];
+
+      double bearingToPrev = calculateBearingBetweenLatLng(current, prev);
+      double bearingToNext = calculateBearingBetweenLatLng(current, next);
+      double angle = (bearingToNext - bearingToPrev + 360) % 360;
+      if (angle > 180) {
+        angle = 360 - angle;
+      }
+      if (angle < 130) {
+        num distanceToPrev = geodesy.distanceBetweenTwoGeoPoints(current, prev);
+        num distanceToNext = geodesy.distanceBetweenTwoGeoPoints(current, next);
+        double offset = min(radius, min(distanceToPrev, distanceToNext) / 2);
+
+        // Two offset points along each edge from the vertex
+        LatLng start = geodesy.destinationPointByDistanceAndBearing(current, offset, bearingToPrev);
+        LatLng end = geodesy.destinationPointByDistanceAndBearing(current, offset, bearingToNext);
+
+        // Quadratic Bezier
+        for (int j = 0; j <= segments; j++) {
+          double t = j / segments;
+          double lat = (1 - t) * (1 - t) * start.latitude +
+              2 * (1 - t) * t * current.latitude +
+              t * t * end.latitude;
+          double lng = (1 - t) * (1 - t) * start.longitude +
+              2 * (1 - t) * t * current.longitude +
+              t * t * end.longitude;
+          if (j == segments ~/ 2) {
+            centerRoundedPoints.add(LatLng(lat, lng));
+          }
+        }
+      } 
+    }
+    return centerRoundedPoints;
   }
 }
