@@ -18,7 +18,8 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SettingsController controller = Get.find<SettingsController>();
-    return Obx(() => Center( 
+    return Obx(() => Align(
+      alignment:  controller.screenLocation.value,
       child: SizedBox( 
         width: screenWidth(context),
         height: screenHeight(context),

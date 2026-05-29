@@ -1742,7 +1742,8 @@ class MapState extends State<MapPage> with RouteAware {
     markerSize = getMarkerSize();
 
     const String appTitle = "MAP";
-    return Obx(() => Center(
+    return Obx(() => Align(
+      alignment: settingsController.screenLocation.value,
       child: SizedBox(
         width: displayWidth,
         height: displayHeight,

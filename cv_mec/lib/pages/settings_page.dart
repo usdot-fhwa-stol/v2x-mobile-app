@@ -67,7 +67,8 @@ class SettingsPage extends StatelessWidget {
     screenWidthController.text = controller.screenWidth.value.toString();
     screenHeightController.text = controller.screenHeight.value.toString();
 
-    return Obx(() => Center(
+    return Obx(() => Align(
+      alignment: controller.screenLocation.value,
       child: SizedBox(
         width: screenWidth(context),
         height: screenHeight(context),
@@ -627,6 +628,40 @@ class SettingsPage extends StatelessWidget {
                       }
                     },
                   ),
+                  verticalSpaceSmall,
+                  Row(
+                    children: [
+                      const SizedBox(width: 14),
+                      const Text("Screen Alignment: ", style: TextStyle(fontSize: 16)),
+                      Expanded(child: Container()),
+                      DropdownButton<Alignment>(
+                        dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(8),
+                        value: controller.screenLocation.value,
+                        items: [
+                          Alignment.topLeft,
+                          Alignment.topRight,
+                          Alignment.bottomLeft,
+                          Alignment.bottomRight,
+                          Alignment.center,
+                          Alignment.centerLeft,
+                          Alignment.centerRight,
+                          Alignment.topCenter,
+                          Alignment.bottomCenter
+                        ].map((Alignment location) {
+                          return DropdownMenuItem<Alignment>(
+                            value: location,
+                            child: Text(location.toString().split('.').last.toUpperCase()),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.setScreenLocation(value);
+                          }
+                        },
+                      ),
+                    ],
+                  )
                 ],
               ),
             ) : Container(),

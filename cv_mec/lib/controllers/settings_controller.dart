@@ -114,6 +114,8 @@ class SettingsController extends GetxController {
   Rx<IconSize> iconSize = IconSize.small.obs;
   Rx<int> screenWidth = 0.obs;
   Rx<int> screenHeight = 0.obs;
+  Rx<Alignment> screenLocation = Alignment.center.obs;
+
   Rx<bool> enableIssScmsSigning = false.obs;
 
   initialize() async {    
@@ -183,6 +185,7 @@ class SettingsController extends GetxController {
 
     if (screenWidth.value != 0 || screenHeight.value != 0) {
       showScreenSizeSettings.value = true;
+      screenLocation.value = await sharedPrefs.getScreenLocationFromPrefs() ?? Alignment.center;
     }
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform(); // Fetch the app version
@@ -254,6 +257,11 @@ class SettingsController extends GetxController {
   void setScreenHeight(int height) async {
     screenHeight.value = height;
     await sharedPrefs.saveScreenHeightToPrefs(height);
+  }
+
+  void setScreenLocation(Alignment location) async {
+    screenLocation.value = location;
+    await sharedPrefs.saveScreenLocationToPrefs(location);
   }
 
   GPSType toGPSType(String type) {

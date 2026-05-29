@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/pages/home_page.dart';
 import 'package:cv_mec/pages/missing_permissions.dart';
 import 'package:cv_mec/services/location_service.dart';
@@ -37,7 +38,9 @@ class Load extends StatelessWidget {
     return FutureBuilder(
         future: _init(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
-          return Center(
+          SettingsController settingsController = Get.find<SettingsController>();
+          return Obx(() => Align(
+            alignment: settingsController.screenLocation.value,
             child: SizedBox(
               width: screenWidth(context),
               height: screenHeight(context),
@@ -57,7 +60,7 @@ class Load extends StatelessWidget {
                 ),
               ),
             ),
-          );
+          ));
         });
   }
 }
