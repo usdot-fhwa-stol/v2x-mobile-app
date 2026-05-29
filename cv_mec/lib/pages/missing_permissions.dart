@@ -10,19 +10,25 @@ class MissingPermissions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Center(
+        body: SizedBox(
+          width: screenWidth(context),
+          height: screenHeight(context),
+          child: Center(
             child: Column(
-      children: [
-        verticalSpaceMassive,
-        Image.asset(
-          dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png',
-          width: 200,
-          height: 200,
-        ),
-        verticalSpaceLarge,
-        startASession(context),
-      ],
-    )));
+              children: [
+                verticalSpaceMassive,
+                Image.asset(
+                  dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png',
+                  width: 200,
+                  height: 200,
+                ),
+                verticalSpaceLarge,
+                startASession(context),
+              ],
+            )
+          )
+        )
+    );
   }
 
   Container startASession(BuildContext context) {

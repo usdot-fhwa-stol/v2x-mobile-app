@@ -35,7 +35,8 @@ class SettingsPage extends StatelessWidget {
   TextEditingController staticGPSLatitudeController = TextEditingController();
   TextEditingController staticGPSLongitudeController = TextEditingController();
   TextEditingController issMqttBrokerUrlController = TextEditingController();
-
+  TextEditingController screenWidthController = TextEditingController();
+  TextEditingController screenHeightController = TextEditingController();
 
   FileService fileService = Get.find<FileService>();
   
@@ -63,25 +64,33 @@ class SettingsPage extends StatelessWidget {
     staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
     issMqttBrokerUrlController.text = controller.issMqttBrokerUrl.value;
+    screenWidthController.text = controller.screenWidth.value.toString();
+    screenHeightController.text = controller.screenHeight.value.toString();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Settings Page"),
-      ),
-      body: Container(
-          child: Obx(
-        () => Padding(
-          padding: const EdgeInsets.all(30.0),
-          child: ListView(children: [
-            versionHeader(),
-            verticalSpaceMedium,
-            configurationSection(),
-            verticalSpaceMedium,
-            appearanceSection(),
-          ]),
+    return Obx(() => Center(
+      child: SizedBox(
+        width: screenWidth(context),
+        height: screenHeight(context),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text("Settings Page"),
+          ),
+          body: Container(
+              child: Obx(
+            () => Padding(
+              padding: const EdgeInsets.all(30.0),
+              child: ListView(children: [
+                versionHeader(),
+                verticalSpaceMedium,
+                configurationSection(),
+                verticalSpaceMedium,
+                appearanceSection(),
+              ]),
+            ),
+          ))
         ),
-      ))
-    );
+      ),
+    ));
   }
 
   versionHeader() {
@@ -226,7 +235,7 @@ class SettingsPage extends StatelessWidget {
                       MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
 
                   Widget pathSelector = controller.availablePaths.isNotEmpty
-                      ? DropdownButton<String>(
+                      ? Obx(() => DropdownButton<String>(
                           isExpanded: true,
                           value: controller.pathToFollow.value,
                           hint: const Text('Select an option'),
@@ -253,7 +262,7 @@ class SettingsPage extends StatelessWidget {
                               }
                             }
                           },
-                        )
+                        ))
                       : Text(
                           'No paths available',
                           maxLines: 1,
@@ -567,6 +576,60 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
             )) : Container(),
+            Platform.isLinux ? Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: SwitchListTile(  
+                title: const Text("Change Screen Size"),
+                value: controller.showScreenSizeSettings.value,
+                onChanged: (value) async {
+                  controller.showScreenSizeSettings.value = value;
+                  if (value && (controller.screenWidth.value == 0 || controller.screenHeight.value == 0)) {
+                    controller.setScreenHeight(screenHeight(Get.context!).toInt());
+                    controller.setScreenWidth(screenWidth(Get.context!).toInt());
+                  }
+                }
+              ),
+            ) : Container(),
+            controller.showScreenSizeSettings.value ? Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Screen Width'),
+                    controller: screenWidthController,
+                    obscureText: false,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) async {
+                      if (value != controller.screenWidth.value.toString()) {
+                        if ((int.tryParse(value) ?? 0) < 400) {
+                          controller.setScreenWidth(400);
+                        } else {
+                          controller.setScreenWidth(int.tryParse(value) ?? 0);
+                        }
+                      }
+                    },
+                  ),
+                  verticalSpaceSmall,
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Screen Height'),
+                    controller: screenHeightController,
+                    obscureText: false,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) async {
+                      if (value != controller.screenHeight.value.toString()) {
+                        if ((int.tryParse(value) ?? 0) < 700) {
+                          controller.setScreenHeight(700);
+                        } else {
+                          controller.setScreenHeight(int.tryParse(value) ?? 0);
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ) : Container(),
             controller.showTollingSettings ? SwitchListTile(
                 title: const Text("Show Tolling"),
                 value: controller.tollingEnabled.value,
@@ -574,7 +637,7 @@ class SettingsPage extends StatelessWidget {
                   controller.tollingEnabled.value = value;
                   await controller.secureStorage.setTollingEnabled(value);
                 }) : Container(),
-            verticalSpaceMedium,
+            verticalSpaceSmall,
             controller.showTimsSettings ? SwitchListTile(
                 title: const Text("Show TIMs"),
                 value: controller.showTims.value,

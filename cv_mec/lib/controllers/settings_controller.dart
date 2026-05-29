@@ -59,11 +59,13 @@ class SettingsController extends GetxController {
   bool showTollingSettings = (dotenv.env['SHOW_TOLLING_SETTINGS'] ?? 'false').toLowerCase() == 'true';
   bool showTimsSettings = (dotenv.env['SHOW_TIMS_SETTINGS'] ?? 'false').toLowerCase() == 'true';
 
+
   Rx<bool> darkModeState = Get.isDarkMode.obs;
   Rx<bool> developerMode = false.obs;
   Rx<bool> soundEffectsEnabled = true.obs;
   Rx<bool> tollingEnabled = true.obs;
   Rx<bool> showTims = true.obs;
+  Rx<bool> showScreenSizeSettings = false.obs;
 
   RxString username = dotenv.env['USERNAME']!.obs;
   RxString password = dotenv.env['PASSWORD']!.obs;
@@ -110,6 +112,8 @@ class SettingsController extends GetxController {
   RxBool changedBrokerSettings = false.obs; 
 
   Rx<IconSize> iconSize = IconSize.small.obs;
+  Rx<int> screenWidth = 0.obs;
+  Rx<int> screenHeight = 0.obs;
   Rx<bool> enableIssScmsSigning = false.obs;
 
   initialize() async {    
@@ -174,7 +178,12 @@ class SettingsController extends GetxController {
     }
 
     iconSize = (await sharedPrefs.getIconSizeFromPrefs() ?? IconSize.small).obs;
+    screenWidth.value = await sharedPrefs.getScreenWidthFromPrefs() ?? 0;
+    screenHeight.value = await sharedPrefs.getScreenHeightFromPrefs() ?? 0;
 
+    if (screenWidth.value != 0 || screenHeight.value != 0) {
+      showScreenSizeSettings.value = true;
+    }
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform(); // Fetch the app version
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
@@ -235,6 +244,16 @@ class SettingsController extends GetxController {
 
   void setIconSize() async {
     await sharedPrefs.saveIconSizeToPrefs(iconSize.value);
+  }
+
+  void setScreenWidth(int width) async {
+    screenWidth.value = width;
+    await sharedPrefs.saveScreenWidthToPrefs(width);
+  }
+
+  void setScreenHeight(int height) async {
+    screenHeight.value = height;
+    await sharedPrefs.saveScreenHeightToPrefs(height);
   }
 
   GPSType toGPSType(String type) {
