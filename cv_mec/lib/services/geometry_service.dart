@@ -681,4 +681,14 @@ class GeometryService {
     }
     return centerRoundedPoints;
   }
+
+  Coordinate calculateCentroid(Geometry geometry) {
+    Coordinate? centroid = geometry.getCentroid().getCoordinate();
+    return centroid ?? Coordinate(0, 0);
+  }
+
+  LatLng getPolygonCentroid(Geometry polygon) {
+    Coordinate centroid = calculateCentroid(polygon);
+    return LatLng(centroid.y, centroid.x);
+  }
 }

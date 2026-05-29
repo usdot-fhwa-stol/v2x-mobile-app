@@ -55,7 +55,7 @@ class MappableTim {
     return Polygon(
       points: roundedPoints,
       borderColor: timColors[colorIndex],
-      color: timColors[colorIndex].withValues(alpha: 0.5),
+      color: timColors[colorIndex].withValues(alpha: 0.3),
       borderStrokeWidth: 5,
     );
   }
@@ -68,6 +68,8 @@ class MappableTim {
     List<Marker> markers = [];
     ImageProvider itisImage = (await itisDecodingService.getSequenceForFrame(frame)).image;
     for (LatLng point in roundedPoints) {
+    //for (int i = 0 ; i < roundedPoints.length; i+=2) {
+      //LatLng point = roundedPoints[i];
       markers.add(Marker(
         width: 60.0,
         height: 60.0,
@@ -78,6 +80,36 @@ class MappableTim {
         ),
       ));
     }
+    if (markers.isEmpty) {
+      LatLng centroid = geometryService.getPolygonCentroid(geometryDirection.geometry);
+      markers.add(Marker(
+        width: 60.0,
+        height: 60.0,
+        point: centroid,
+        child: Image(
+          image: itisImage,
+          fit: BoxFit.contain,
+        ),
+      ));
+    }
+    return markers;
+  }
+
+  static Future<List<Marker>> createTimMarkersTwo(GeometryDirection geometryDirection, TravelerDataFrame frame) async {
+    GeometryService geometryService = Get.find<GeometryService>();
+    ItisDecodingService itisDecodingService = Get.find<ItisDecodingService>();
+    LatLng point = geometryService.getPolygonCentroid(geometryDirection.geometry);
+    List<Marker> markers = [];
+    ImageProvider itisImage = (await itisDecodingService.getSequenceForFrame(frame)).image;
+    markers.add(Marker(
+      width: 60.0,
+      height: 60.0,
+      point: point,
+      child: Image(
+        image: itisImage,
+        fit: BoxFit.contain,
+      ),
+    ));
     return markers;
   }
 }
