@@ -1,6 +1,6 @@
 import Flutter
 import UIKit
-import trafficauth_v2xclient_ios
+import TrafficAuthSDK
 // import Algorithms
 // import TrafficAuthV2XClient
 
@@ -80,6 +80,7 @@ public class IssScmsPlugin: NSObject, FlutterPlugin {
       case "getDeviceCerts":
         if let args = call.arguments as? Dictionary<String, Any>{
           let token = args["token"] as? String ?? ""
+          let deviceId = args["deviceId"] as? String ?? ""
           var tokenType = TokenType.APP;
 
           if let signer = localSigning {
@@ -91,7 +92,7 @@ public class IssScmsPlugin: NSObject, FlutterPlugin {
                   if(signer.getState() == SigningAPIState.READY){
                     result(nil)
                   }else{
-                    let certs = try await signer.getDeviceCerts(token: token, type: tokenType)
+                    let certs = try await signer.getDeviceCerts(token: token, type: tokenType, deviceId: deviceId)
                     result(nil)
                   }
               } catch {

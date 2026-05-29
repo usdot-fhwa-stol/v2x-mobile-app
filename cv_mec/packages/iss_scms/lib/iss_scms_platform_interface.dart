@@ -43,7 +43,7 @@ abstract class IssScmsPlatform extends PlatformInterface {
     throw UnimplementedError('validate(List<int> bytes, bool shouldValidate) has not been implemented.');
   }
 
-  void getDeviceCerts(String token, TokenType type){
+  void getDeviceCerts(String token, TokenType type, String deviceId){
     throw UnimplementedError('getDeviceCerts(List<int> bytes, bool shouldValidate) has not been implemented.');
   }
 
@@ -59,7 +59,7 @@ abstract class IssScmsPlatform extends PlatformInterface {
     throw UnimplementedError('ExpirationInformation(List<int> bytes, bool shouldValidate, int? jIndex, bool? digestSigner) has not been implemented.');
   }
 
-  void topOffCerts(String token, TokenType tokenType){
-    throw UnimplementedError('topOffCerts(String token, TokenType tokenType) has not been implemented.');
+  void topOffCerts(String token, TokenType tokenType, String deviceId){
+    throw UnimplementedError('topOffCerts(String token, TokenType tokenType, String deviceId) has not been implemented.');
   }
 }

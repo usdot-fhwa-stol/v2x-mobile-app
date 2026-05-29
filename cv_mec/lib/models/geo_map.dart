@@ -76,8 +76,15 @@ class GeoMap {
             }
           }
           int connectId = connection.connectingLane.lane.laneID;
-          List<LatLng> coordinates =
-              calculateLaneConnectionCoordinates(ingressLaneId, connectId, intersectionGeometry.refPoint);
+          
+          List<LatLng> coordinates = [];
+
+          if(connection.remoteIntersection != null){
+            coordinates = calculateRemoteLaneConnectionCoordinates(ingressLaneId);
+          }else{
+            coordinates = calculateLaneConnectionCoordinates(ingressLaneId, connectId, intersectionGeometry.refPoint);
+          }
+              
 
           if (coordinates.isNotEmpty) {
             laneConnections.add(RenderLaneConnection(coordinates, signalGroup));
@@ -93,6 +100,18 @@ class GeoMap {
         }
       }
     }
+  }
+
+  // Updating the MAP render logic to properly link remote intersections will require more complicated updates to the MAP parsing and rendering logic. 
+  // For now, we'll just render a point at the start of the connection for remote connections, and not attempt to draw a line to the remote intersection since we don't have the geometry for it.
+  // This allows SPaT lights to be shown properly even though the lane connections won't be fully rendered.
+  // Future updates to connect intersections may be done at a later date
+  List<LatLng> calculateRemoteLaneConnectionCoordinates(int firstLaneId) {
+    if (laneSegments.containsKey(firstLaneId)) {
+      LatLng firstPoint = laneSegments[firstLaneId]!.first;
+      return [firstPoint];
+    }
+    return [];
   }
 
   List<LatLng> calculateLaneConnectionCoordinates(int firstLaneId, int secondLaneId, Position3D refPoint) {

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cv_mec/models/position_with_declination.dart';
+import 'package:cv_mec/styles/screen_size.dart';
+import 'package:cv_mec/styles/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -79,24 +81,41 @@ class LocationService extends GetxService {
     // This method starts the location stream. This can be called multiple times, but only one stream will be active at a time.
     try {
       await requestPermission();
-      if (await isPermissionGranted() && await isTrackingGranted() && _serviceEnabled) {
+      if (await isPermissionGranted() && _serviceEnabled) {
         _startLocationUpdates();
       }
     } catch (e) {
       _stopLocationUpdates();
       Get.dialog(
-        AlertDialog(
-          title: const Text('Location Permissions Required'),
-          content: Text(
-              'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
-              onPressed: () {
-                Get.back();
-              },
+        Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Location Permissions Required',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                verticalSpaceMedium,
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Text(
+                        'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+                  ),
+                ),
+                verticalSpaceMedium,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
+                    onPressed: () {
+                      Get.back();
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }

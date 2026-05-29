@@ -5,6 +5,8 @@ import 'package:cv_mec/models/us_states.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/text_styles.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:cv_mec/views/bluetooth_dialog.dart';
 import 'package:flutter/material.dart';
@@ -66,28 +68,32 @@ class CreateVehicleConfigDialog extends StatelessWidget {
       child: SizedBox(
         width: screenWidth(context) * 0.8,
         height: screenHeight(context) * 0.5,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Obx(() => Column(
-                  children: [
-                    Row(children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios),
-                        onPressed: () {
-                          configController.vehicleBeingEditedIndex.value = -1;
-                          Get.back();
-                        },
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Obx(() => Column(
+                children: [
+                  Row(children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios),
+                      onPressed: () {
+                        configController.vehicleBeingEditedIndex.value = -1;
+                        Get.back();
+                      },
+                    ),
+                    const Flexible(  
+                      child: AutoSizeTextWidget(
+                        text: "Vehicle Configuration",
+                        style: style_two,
+                        maxLines: 2,
                       ),
-                      const CVMECText.styleTwo("Vehicle Configuration"),
-                    ]),
-                    verticalSpaceSmall,
-                    SizedBox(
-                      height: screenHeight(context) * 0.4,
-                      child: Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: ListView(
-                          children: [
+                    ),
+                  ]),
+                  verticalSpaceSmall,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: ListView(
+                        children: [
                             SizedBox(width: screenWidth(context) * 0.8, child: CVMECText.styleThree("Config Name")),
                             verticalSpaceSmall,
                             Padding(
@@ -149,13 +155,19 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                                   isRequired: true, isNumeric: false, context: context),
                             ),
                             verticalSpaceSmall,
-                            if(Platform.isAndroid || Platform.isLinux)
+                            if (Platform.isAndroid || Platform.isLinux)
                             SizedBox(
                               width: screenWidth(context) * 0.8,
                               child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const CVMECText.styleThree("OBD II Connection"),
-                                  Expanded(child: Container()),
+                                  const Flexible(
+                                    child: const AutoSizeTextWidget(
+                                      text: "OBD II Connection",
+                                      style: style_three,
+                                      maxLines: 2,
+                                    ),
+                                  ),
                                   IconButton(
                                     icon: Icon(
                                       Icons.bluetooth,
@@ -179,13 +191,13 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                             CVMECText.styleFive(obdIIaddress.value == "" ? "Not Connected" : obdIIaddress.value),
                             verticalSpaceLarge,
                             saveButton(context),
-                          ],
-                        ),
+                            const SizedBox(height: 8),
+                        ],
                       ),
                     ),
-                  ],
-                )),
-          ),
+                  ),
+                ],
+              )),
         ),
       ),
     );

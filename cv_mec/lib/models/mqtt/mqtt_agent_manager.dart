@@ -68,6 +68,8 @@ class MqttAgentManager{
     for(MqttAgent agent in agents){
       if(agent.isConnected()){
         count += 1;
+      }else{
+        agent.reconnect();
       }
     }
     return count;

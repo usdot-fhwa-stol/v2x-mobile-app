@@ -124,7 +124,6 @@ class MqttService extends GetxService {
   }
 
   void onSubscribed(String topic) {
-    _logger.i('CV_MEC::Subscription confirmed for topic $topic');
   }
 
   void onDisconnected() {
@@ -151,7 +150,6 @@ class MqttService extends GetxService {
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-    _logger.i('CV_MEC::Subscribing to the $topicName topic');
 
     int retryCount = 0;
 
@@ -173,7 +171,6 @@ class MqttService extends GetxService {
   }
 
   void unsubscribe(String topicName) {
-    _logger.i('CV_MEC::Unsubscribing');
     if (client != null && subscriberList.containsKey(topicName)) {
       client!.unsubscribe(topicName);
       subscriberList.remove(topicName);

@@ -3,7 +3,9 @@ import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/pages/map_page.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/text_styles.dart';
 import 'package:cv_mec/styles/theme_setting.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:cv_mec/views/create_vehicle_config_dialog.dart';
 import 'package:flutter/material.dart';
@@ -24,39 +26,43 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
         height: screenHeight(context) * 0.5,
         child: Center(
           child: Obx(() => Padding(
-                padding: const EdgeInsets.only(left:4, right: 4, top: 24, bottom: 24),
+                padding: const EdgeInsets.only(left:16, right: 8, top: 24, bottom: 24),
                 child: Column(
                   children: [
                     SizedBox(
                       width: screenWidth(context) * 0.8,
                       child: Row(
                         children: [
-                          horizontalSpaceMedium,
-                          const CVMECText.styleTwo("Choose a vehicle"),
-                          const Spacer(),
+                          const Expanded(
+                            child: AutoSizeTextWidget(
+                              text: "Choose a vehicle",
+                              style: style_two,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.delete),
                             onPressed: () {
                               deleteConfigMode.value = !deleteConfigMode.value;
                             },
                           ),
-                          horizontalSpaceMedium,
                         ],
                       ),
                     ),
                     verticalSpaceSmall,
                     Expanded(
                       child: SizedBox(
-                        width: screenWidth(context) * 0.75,
                         child: ListView(
                           children: [
                             ...configController.vehicleConfigs
                                 .map((vehicle) => ListTile(
                                       leading: vehicleAvatar(vehicle),
                                       title: Text(vehicle.name),
-                                      subtitle: Text(
-                                          vehicle.classification.name.replaceAll("_", " ").capitalizeFirst ?? "",
-                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                                      subtitle: AutoSizeTextWidget(
+                                          text: vehicle.classification.name.replaceAll("_", " ").capitalizeFirst ?? "",
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                                          maxLines: 2, overflow: TextOverflow.ellipsis, minFontSize: 8),
                                       trailing: !(deleteConfigMode.value)
                                           ? IconButton(
                                               icon: Icon(Icons.arrow_forward_ios,

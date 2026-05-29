@@ -153,7 +153,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      _logger.w("Unable to Add Closed Geometry. Issue in decoding Node List LL. Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -165,7 +165,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      _logger.w("Unable to Add Closed Geometry. Issue in decoding Node Set XY Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -189,7 +189,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      _logger.w("Unable to Add Geometry. Issue in decoding Node List LL. Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
     }
 
     return null;
@@ -203,7 +203,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      _logger.w("Unable to Add Geometry. Issue in decoding Node Set XY Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -232,7 +232,6 @@ class GeometryService {
 
   List<Coordinate> getPolygonFromPointPath(List<Coordinate> points, double laneWidth) {
     LineString lineString = geometryFactory.createLineString(points);
-
     double maxLaneWidth = calculateMaximumExpansion(lineString);
 
     if (laneWidth > maxLaneWidth) {
@@ -562,6 +561,12 @@ class GeometryService {
 
 
   double calculateMaximumExpansion(LineString lineString){
+    
+
+    if (lineString.getNumPoints() < 3) {
+      return double.maxFinite;
+    }
+
     double maxLaneWidth = 0;
     for(int i = 1; i < lineString.getNumPoints()-1; i++){
       

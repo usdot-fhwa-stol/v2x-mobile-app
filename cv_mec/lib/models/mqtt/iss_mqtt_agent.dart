@@ -52,7 +52,7 @@ class IssMqttAgent extends MqttAgent{
     for(String neighbor in surroundingGeohashes){
       if(neighbor.length >= 7){
         for (int psid in subscribedPSIDs){
-          mqttService.subscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid",callback);
+          mqttService.subscribe("v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid",callback);
         }
       }
     }
@@ -70,7 +70,7 @@ class IssMqttAgent extends MqttAgent{
           String neighbor = surroundingGeohashes[i];
           if(neighbor.length >= 7 && !newGeohashes.contains(neighbor)){
             for (int psid in subscribedPSIDs){
-              mqttService.unsubscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid");
+              mqttService.unsubscribe("v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid");
             }
             surroundingGeohashes.removeWhere((value) => value == neighbor);
           } else if (neighbor.length >= 7){
@@ -84,7 +84,7 @@ class IssMqttAgent extends MqttAgent{
           if(neighbor.length >= 7){
             surroundingGeohashes.add(neighbor);
             for (int psid in subscribedPSIDs){
-              mqttService.subscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid",callback);
+              mqttService.subscribe("v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid",callback);
             }
           }
         }
@@ -101,10 +101,10 @@ class IssMqttAgent extends MqttAgent{
     String topic = "";
     switch (messageType) {
       case MsgType.BSM:
-        topic = "/v1/g32/${currentGeohash[0]}/${currentGeohash[1]}/${currentGeohash[2]}/${currentGeohash[3]}/${currentGeohash[4]}/${currentGeohash[5]}/${currentGeohash[6]}/$bsmPSID";
+        topic = "v1/g32/${currentGeohash[0]}/${currentGeohash[1]}/${currentGeohash[2]}/${currentGeohash[3]}/${currentGeohash[4]}/${currentGeohash[5]}/${currentGeohash[6]}/$bsmPSID";
         break;
       case MsgType.PSM:
-        topic = "/v1/g32/${currentGeohash[0]}/${currentGeohash[1]}/${currentGeohash[2]}/${currentGeohash[3]}/${currentGeohash[4]}/${currentGeohash[5]}/${currentGeohash[6]}/$psmPSID";
+        topic = "v1/g32/${currentGeohash[0]}/${currentGeohash[1]}/${currentGeohash[2]}/${currentGeohash[3]}/${currentGeohash[4]}/${currentGeohash[5]}/${currentGeohash[6]}/$psmPSID";
         break;
       default:
         logger.e('$agentName does not support sending ${messageType.name} messages');

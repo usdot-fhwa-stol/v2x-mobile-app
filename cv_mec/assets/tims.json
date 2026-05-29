@@ -1,5 +1,5 @@
 {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "tims":[
         {
             "name": "closed-to-traffic, local-traffic, only",
@@ -757,13 +757,6 @@
             "graphic":"ice_patches.png"
         },
         {
-            "name": "traffic-congestion, ahead",
-            "source": "guidance-deprecated",
-            "type": "advisory",
-            "codes": ["263","13569"],
-            "graphic":"traffic_congestion_ahead.png"
-        },
-        {
             "name": "alert, left-lane, blocked-ahead",
             "source": "guidance-deprecated",
             "type": "advisory",
@@ -1011,6 +1004,13 @@
             "source": "itsa-wzdx",
             "type": "advisory",
             "codes": ["769", "*", "8196", "771"],
+            "graphic":"right_lane_closed_ahead.png"
+        },
+        {
+            "name": "closed_to-traffic, mile, right-lane, closed-ahead",
+            "source": "itsa-wzdx",
+            "type": "advisory",
+            "codes": ["769", "*", "8711", "8196", "771"],
             "graphic":"right_lane_closed_ahead.png"
         },
         {

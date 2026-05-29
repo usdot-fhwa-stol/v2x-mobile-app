@@ -82,13 +82,13 @@ class IssSigningApiService extends GetxService {
     }
   }
 
-  Future<void> getDeviceCerts(String token, TokenType tokenType) async {
+  Future<void> getDeviceCerts(String token, TokenType tokenType, String deviceId) async {
     String uri = "$baseUrl/get-device-certs";
     final Map<String, String> headers = {"Content-Type": "application/json"};
     String body = jsonEncode({
       "token": token,
       "tokenType": tokenType.name.toLowerCase().replaceAll("_", "-"),
-      "deviceId": "obu"
+      "deviceId": deviceId
     });
     try {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);

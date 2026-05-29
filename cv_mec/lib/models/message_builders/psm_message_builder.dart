@@ -16,14 +16,16 @@ class PsmMessageBuilder extends MessageBuilder {
 
   final String psmTemplateString = "00201A0000020000000000000035A4E9006B49D1FF0000FFFF00000000";
 
-  PsmMessageBuilder() {
+  String deviceId = "";
+
+  PsmMessageBuilder(List<int> randomId) {
     msgPtr = getNewTemplate();
 
     Pointer<C.MessageFrame> messageFrameValuePtr = msgPtr.value.cast<C.MessageFrame>();
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
     psm = messageFrame.value.choice.PersonalSafetyMessage;
 
-    randomizeId();
+    setId(randomId);
   }
 
   @override
@@ -84,6 +86,13 @@ class PsmMessageBuilder extends MessageBuilder {
     Uint8List dataBuffer = psm.id.buf.asTypedList(randomNumbers.length);
     psm.id.size = 4;
     dataBuffer.setAll(0, randomNumbers);
+  }
+
+  void setId(List<int> id) {  
+    Uint8List dataBuffer = psm.id.buf.asTypedList(id.length);
+    psm.id.size = id.length;
+    dataBuffer.setAll(0, id);
+    deviceId = ASNService.bytesToHex(id);
   }
 
   String getPsmId() {

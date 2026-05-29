@@ -60,7 +60,7 @@ class SecureStorage {
   static final _startDeveloperMode = false;
   static final _startEnableSoundEffects = false;
   static final _startEnablePC5 = false;
-  static final _startEnableIssMqtt = false;
+  static final _startEnableIssMqtt = true;
   static final _startEnableEtxMqtt = true;
   static final _startIssScmsSigningEnabled = dotenv.env['ISS_SCMS_TOKEN'] != null ? true : false;
   static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(10, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;

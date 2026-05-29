@@ -2,7 +2,7 @@ name: cv_mec
 description: "A new Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 12.1.8+83
+version: 12.2.0+87
 
 environment:
   sdk: ">=3.4.3 <4.0.0"
@@ -19,7 +19,7 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_dotenv: ^5.1.0
   http: ^1.2.2
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.2.3 # This dependency caused issues with path_provide on version 2.5.3, downgraded to resolve for now.
   native_device_orientation: ^2.0.3
   mqtt_client: ^10.2.1
   flutter_kronos_plus:
@@ -69,6 +69,7 @@ dependencies:
   app_tracking_transparency: ^2.0.6+1
   dart_geohash: ^2.1.0
   yaml_edit: ^2.2.4
+  auto_size_text_pro: ^3.0.1
 
 dev_dependencies:
   flutter_test:

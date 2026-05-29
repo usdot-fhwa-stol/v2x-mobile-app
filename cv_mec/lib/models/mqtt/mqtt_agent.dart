@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -12,6 +14,8 @@ class MqttAgent{
   Position? currentPosition;
   String? connectionUrl;
   Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction;
+  int reconnectAttempts = 0;
+  bool isReconnecting = false;
   
   
 
@@ -35,6 +39,32 @@ class MqttAgent{
     throw UnimplementedError('sendMessage method not implemented for mqtt agent $agentName');
   }
 
+  Future<void> reconnect() async {
+    if(!isReconnecting){
+      isReconnecting = true;
+      while(!isConnected()){
+        logger.i("Attempting to Reconnect MQTT Agent $agentName. Attempt number ${reconnectAttempts + 1}");
+        await connect();
+        reconnectAttempts++;
+        
+        if(!isConnected()){
+          int delayMilliseconds = min(1000 * (1 << reconnectAttempts), 60000); // Exponential backoff: 2s, 4s, 8s, 16s, max 60s
+          logger.i("Reconnection attempt $reconnectAttempts failed. Waiting ${delayMilliseconds}ms before retry...");
+          await Future.delayed(Duration(milliseconds: delayMilliseconds));
+        }
+      }
+
+      if(isConnected()){
+        logger.i("Successfully reconnected MQTT Agent $agentName after $reconnectAttempts attempts");
+        reconnectAttempts = 0;
+        isReconnecting = false;
+      } else {
+        logger.w("Failed to reconnect MQTT Agent $agentName after 5 attempts");
+        isReconnecting = false;
+      }
+    }
+  }
+
   void callback(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
     final recMess = message.payload as MqttPublishMessage;
     print("Agent Callback received data");
@@ -48,4 +78,6 @@ class MqttAgent{
   void setPosition(Position? position){
     currentPosition = position;
   }
+
+  
 }

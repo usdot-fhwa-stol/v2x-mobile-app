@@ -23,7 +23,7 @@ class IssScms {
 
 
   // Helper Method to perform on necessary checks to prepare the SCMS for Signing
-  Future<bool> activateScms(String token) async{
+  Future<bool> activateScms(String token, String deviceId) async{
 
     SigningApiState state = await getState();
 
@@ -33,7 +33,7 @@ class IssScms {
     }
 
     if(state == SigningApiState.NEED_CERTS){
-      getDeviceCerts(token);
+      getDeviceCerts(token, deviceId);
       await waitUntilCertsDownloaded();
       state = await getState();
     }
@@ -42,7 +42,6 @@ class IssScms {
       // topOffCerts(token);
       return true;
     }
-    
 
     return false;
   }
@@ -65,7 +64,6 @@ class IssScms {
   // Message Definition Matches ISS Library
   void init() async {
     if (isMobile) {
-      print("Initializing SCMS for Mobile");
       return IssScmsPlatform.instance.init();
     } else {
       apiService = Get.put(IssSigningApiService());
@@ -88,11 +86,11 @@ class IssScms {
     }
   }
 
-  void getDeviceCerts(String token){
+  void getDeviceCerts(String token, String deviceId){
     if (isMobile) {
-      IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+      IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD, deviceId);
     } else {
-      apiService.getDeviceCerts(token, TokenType.DM_DASHBOARD); // For Linux users
+      apiService.getDeviceCerts(token, TokenType.DM_DASHBOARD, deviceId); // For Linux users
     }
   }
 
@@ -116,9 +114,9 @@ class IssScms {
     return IssScmsPlatform.instance.getExpirationInfo();
   }
 
-  void topOffCerts(String token){
+  void topOffCerts(String token, String deviceId){
     if (isMobile) {
-      IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD);
+      IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD, deviceId);
     } else {
       apiService.topOffCerts(token, TokenType.DM_DASHBOARD); // For Linux users
     }

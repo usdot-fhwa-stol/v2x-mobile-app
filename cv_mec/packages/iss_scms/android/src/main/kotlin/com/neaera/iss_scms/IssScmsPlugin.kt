@@ -66,13 +66,16 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
     }else if(call.method == "getDeviceCerts"){
       val token = args?.get("token") as String
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]
+      val deviceId = args?.get("deviceId") as String
       scope.launch {
         try {
-            LocalSigning.getDeviceCerts(token, TokenType.DM_DASHBOARD)
+            LocalSigning.getDeviceCerts(token, TokenType.DM_DASHBOARD, deviceId)
+            Log.d("IssScmsPlugin", "Success in Downloading Certificates")
             withContext(Dispatchers.Main) {
                 result.success(null)
             }
         } catch (e: Exception) {
+          Log.d("IssScmsPlugin", "Failure in Downloading Certificates: ${e.message}")
             withContext(Dispatchers.Main) {
                 result.success(null)
             }
@@ -83,10 +86,11 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
       result.success(state.name) // Returning names for Enums because order is not guaranteed.
     }else if(call.method == "topOffCerts"){
       val token = args?.get("token") as String
+      val deviceId = args?.get("deviceId") as String
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]
       scope.launch {
         try {
-            LocalSigning.topOffCerts(token, tokenType)
+            LocalSigning.topOffCerts(token, tokenType, deviceId)
             withContext(Dispatchers.Main) {
                 result.success(null)
             }

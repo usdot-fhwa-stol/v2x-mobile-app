@@ -4,6 +4,8 @@ import 'package:cv_mec/pages/map_page.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/text_styles.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:cv_mec/views/public_safety_worker_type.dart';
 import 'package:flutter/material.dart';
@@ -19,22 +21,21 @@ class PedestrianConfigSelectionDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: SizedBox(
-        width: screenWidth(context) * 0.8,
-        height: screenHeight(context) * 0.5,
-        child: Center(
+        width: screenWidth(context) * 0.85,
+        height: screenHeight(context) * 0.65,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              verticalSpaceMedium,
-              SizedBox(
-                width: screenWidth(context) * 0.7,
-                child: CVMECText.styleTwo("Select a Config"),
+              const AutoSizeTextWidget(
+                text: "Select a Config",
+                style: style_two,
+                maxLines: 2,
               ),
               verticalSpaceSmall,
-              SizedBox(
-                width: screenWidth(context) * 0.75,
-                height: screenHeight(context) * 0.3,
+              Expanded(
                 child: ListView(
-                  shrinkWrap: true,
                   children: [
                     ...PersonalDeviceUserType.values
                         .skip(1)
@@ -55,16 +56,18 @@ class PedestrianConfigSelectionDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              Expanded(child: Container()),
-              ClickableText(
-                text: "Skip",
-                onTap: () {
-                  configController.selectedPedestrian = PersonalDeviceUserType.APEDESTRIAN; // Default to pedestrian
-                  configController.isVehicleConfig.value = false;
-                  Get.off(() => const MapPage());
-                },
+              verticalSpaceSmall,
+              Align(
+                alignment: Alignment.center,
+                child: ClickableText(
+                  text: "Skip",
+                  onTap: () {
+                    configController.selectedPedestrian = PersonalDeviceUserType.APEDESTRIAN; // Default to pedestrian
+                    configController.isVehicleConfig.value = false;
+                    Get.off(() => const MapPage());
+                  },
+                ),
               ),
-              verticalSpaceMedium,
             ],
           ),
         ),

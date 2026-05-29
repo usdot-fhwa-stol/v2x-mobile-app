@@ -25,13 +25,16 @@ PODS:
   - geolocator_apple (1.2.0):
     - Flutter
     - FlutterMacOS
-  - iss_scms (0.0.1):
+  - iss_scms (1.0.0):
     - Flutter
   - Kronos (4.2.2)
   - native_device_orientation (0.0.1):
     - Flutter
   - package_info_plus (0.4.5):
     - Flutter
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
   - ReachabilitySwift (5.2.4)
@@ -57,6 +60,7 @@ DEPENDENCIES:
   - iss_scms (from `.symlinks/plugins/iss_scms/ios`)
   - native_device_orientation (from `.symlinks/plugins/native_device_orientation/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
@@ -97,6 +101,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/native_device_orientation/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   shared_preferences_foundation:
@@ -115,12 +121,13 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_kronos_plus: d58be24e8d7f34f73f4550188921c1b254a5e2dc
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
-  flutter_tts: 91ad1884033cd95ef6e9338754adad54f01f090f
+  flutter_tts: 0f492aab6accf87059b72354fcb4ba934304771d
   geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
-  iss_scms: 2cc0cc7c3c8be250081e32d1f47a8eb855828c21
+  iss_scms: 785f69886568282594d8beb543c13c21235206d9
   Kronos: dfa27819541f9f1bf6834d5bfefa792f499001bb
-  native_device_orientation: 42487b19c552fb5a6a2b51e61b93366f628113df
+  native_device_orientation: 348b10c346a60ebbc62fb235a4fdb5d1b61a8f55
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
+  path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   ReachabilitySwift: 32793e867593cfc1177f5d16491e3a197d2fccda
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6

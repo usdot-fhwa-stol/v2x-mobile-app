@@ -41,9 +41,9 @@ class MethodChannelIssScms extends IssScmsPlatform {
   }
 
   @override
-  void getDeviceCerts(String token, TokenType tokenType){
+  void getDeviceCerts(String token, TokenType tokenType, String deviceId){
     try{
-      methodChannel.invokeMethod<List<int>?>('getDeviceCerts', {'token': token, 'tokenType': tokenType.index});
+      methodChannel.invokeMethod<List<int>?>('getDeviceCerts', {'token': token, 'tokenType': tokenType.index, 'deviceId': deviceId});
     } on PlatformException catch(e){
       print(e);
     }
@@ -75,9 +75,9 @@ class MethodChannelIssScms extends IssScmsPlatform {
   }
 
   @override
-  void topOffCerts(String token, TokenType tokenType){
+  void topOffCerts(String token, TokenType tokenType, String deviceId){
     try{
-      methodChannel.invokeMethod<List<int>?>('topOffCerts', {'token': token, 'tokenType': tokenType.index});
+      methodChannel.invokeMethod<List<int>?>('topOffCerts', {'token': token, 'tokenType': tokenType.index, 'deviceId': deviceId});
     } catch(e){
       print(e);
     }
