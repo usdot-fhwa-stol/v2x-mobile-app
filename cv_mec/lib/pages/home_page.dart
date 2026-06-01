@@ -18,35 +18,42 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SettingsController controller = Get.find<SettingsController>();
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: CVMecAppBar(title: "Home"),
-      body: Obx(() => Center(
-        child: SizedBox(
-          height: screenHeight(context) * 0.8,
-          child: Column(
-            children: [
-              verticalSpaceMedium,
-              Image.asset(
-                dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png', 
-                width: screenWidth(context) * 0.8,
-                height: screenHeight(context) * 0.35,
+    return Obx(() => Align(
+      alignment:  controller.screenLocation.value,
+      child: SizedBox( 
+        width: screenWidth(context),
+        height: screenHeight(context),
+        child:Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: CVMecAppBar(title: "Home"),
+          body: Center(
+            child: SizedBox(
+              height: screenHeight(context) * 0.8,
+              child: Column(
+                children: [
+                  verticalSpaceMedium,
+                  Image.asset(
+                    dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png', 
+                    width: screenWidth(context) * 0.8,
+                    height: screenHeight(context) * 0.35,
+                  ),
+                  Flexible(child: Container()),
+                  startASession(context),
+                  controller.developerMode.value ? verticalSpaceMedium : Container(),
+                  controller.developerMode.value
+                      ? SizedBox(
+                          width: screenWidth(context) * 0.8,
+                          child: ElevatedButton(
+                              child: const Text("Dev Page"), onPressed: () => Get.to(() => const DevPage())))
+                      : Container(),
+                  verticalSpaceLarge,
+                ],
               ),
-              Flexible(child: Container()),
-              startASession(context),
-              controller.developerMode.value ? verticalSpaceMedium : Container(),
-              controller.developerMode.value
-                  ? SizedBox(
-                      width: screenWidth(context) * 0.8,
-                      child: ElevatedButton(
-                          child: const Text("Dev Page"), onPressed: () => Get.to(() => const DevPage())))
-                  : Container(),
-              verticalSpaceLarge,
-            ],
-          ),
+            )
+          )
         )
-      ))
-    );
+      )
+    ));
   }
 
   Container startASession(BuildContext context) {

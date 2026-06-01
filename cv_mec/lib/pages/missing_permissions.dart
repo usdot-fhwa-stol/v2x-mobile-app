@@ -1,28 +1,40 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
 
 class MissingPermissions extends StatelessWidget {
   const MissingPermissions({super.key});
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Center(
+    SettingsController controller = Get.find<SettingsController>();
+    return Obx(() => Align(
+      alignment: controller.screenLocation.value,
+      child: Scaffold(
+        body: SizedBox(
+          width: screenWidth(context),
+          height: screenHeight(context),
+          child: Center(
             child: Column(
-      children: [
-        verticalSpaceMassive,
-        Image.asset(
-          dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png',
-          width: 200,
-          height: 200,
-        ),
-        verticalSpaceLarge,
-        startASession(context),
-      ],
-    )));
+              children: [
+                verticalSpaceMassive,
+                Image.asset(
+                  dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png',
+                  width: 200,
+                  height: 200,
+                ),
+                verticalSpaceLarge,
+                startASession(context),
+              ],
+            )
+          )
+        )
+      )
+    ));
   }
 
   Container startASession(BuildContext context) {
