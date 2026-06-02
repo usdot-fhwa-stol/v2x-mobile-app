@@ -238,9 +238,14 @@ class EtxMqttAgent extends MqttAgent{
 
   void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     final recMess = message.payload as MqttPublishMessage;
-    protobuf.GeoRoutedMsg decodedMessage = protobuf.GeoRoutedMsg.fromBuffer(recMess.payload.message);
-    DateTime msgTime = Utils.timeStampToDateTime(decodedMessage.time);
-    processingFunction(connectionUrl, message.topic, decodedMessage.msgBytes, recTime, msgTime, "ETX");
+    try{
+      protobuf.GeoRoutedMsg decodedMessage = protobuf.GeoRoutedMsg.fromBuffer(recMess.payload.message);
+      DateTime msgTime = Utils.timeStampToDateTime(decodedMessage.time);
+      processingFunction(connectionUrl, message.topic, decodedMessage.msgBytes, recTime, msgTime, "ETX");
+    }catch(e){
+      logger.e("Failed to decode GeoRelevance Message: $e ${ASNService.bytesToHex(recMess.payload.message)}");
+    }
+    
   }
 
   void onRawAsnMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {

@@ -21,6 +21,7 @@ class MapData {
   RestrictionClassList? restrictionList;
 
   MapData.fromC(C.MapData c_map) {
+
     if (c_map.timeStamp.address != 0) {
       timeStamp = MinuteOfTheYear(c_map.timeStamp.value);
     }
@@ -28,7 +29,7 @@ class MapData {
     msgIssueRevision = MsgCount(c_map.msgIssueRevision);
 
     if (c_map.layerType.address != 0) {
-      layerType = LayerType.values[c_map.layerID.value];
+      layerType = LayerType.values[c_map.layerType.value];
     }
 
     if (c_map.layerID.address != 0) {
@@ -46,7 +47,7 @@ class MapData {
     if (c_map.dataParameters.address != 0) {
       dataParameters = DataParameters.fromC(c_map.dataParameters.ref);
     }
-
+    
     if (c_map.restrictionList.address != 0) {
       restrictionList = RestrictionClassList.fromC(c_map.restrictionList.ref);
     }

@@ -582,9 +582,13 @@ class MapState extends State<MapPage> with RouteAware {
         heading += 360;
       }
 
+      //round longitude / latitude to 6 decimal places to simulate gps precision
+      double roundedLongitude = double.parse(route[index][0].toStringAsFixed(6));
+      double roundedLatitude = double.parse(route[index][1].toStringAsFixed(6));
+
       return Position(
-          longitude: route[index][0],
-          latitude: route[index][1],
+          longitude: roundedLongitude,
+          latitude: roundedLatitude,
           timestamp: DateTime.now(),
           accuracy: 0,
           altitude: 1600,
@@ -647,11 +651,11 @@ class MapState extends State<MapPage> with RouteAware {
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        addToAppLog("Identified Message as MAP $hex");
+        addToAppLog("Identified Message as MAP");
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
-        addToAppLog("Identified Message as TIM");
+        addToAppLog("Identified Message as TIM $hex");
         if (settingsController.showTims.value) {
           processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         }
@@ -751,7 +755,7 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
-
+    
     mapManager.addOrUpdate(map);
 
     updateGraphics();
