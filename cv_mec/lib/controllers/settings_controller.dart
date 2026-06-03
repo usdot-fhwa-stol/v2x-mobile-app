@@ -83,8 +83,8 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
-  Rx<bool> enableIssMqtt = true.obs;
-  Rx<bool> enableEtxMqtt = true.obs;
+  Rx<bool> enableIssMqtt = false.obs;
+  Rx<bool> enableEtxMqtt = false.obs;
   RxInt broadcastRate = 10.obs;
 
   RxList<String> availablePaths = <String>[].obs;
@@ -99,8 +99,8 @@ class SettingsController extends GetxController {
   List<GPSType> gpsTypes = GPSType.values;
 
 
-  // Automatically enable PC5 if the environment variable is configured
-  Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
+  Rx<bool> enablePC5 = false.obs;
+
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;

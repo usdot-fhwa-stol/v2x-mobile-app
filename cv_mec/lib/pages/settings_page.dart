@@ -453,34 +453,6 @@ class SettingsPage extends StatelessWidget {
               ],
             )
             : Container()),
-        controller.showBaseUri ? Padding(
-          padding: const EdgeInsets.only(bottom: 20.0, top: 10.0),
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Base URI'),
-            controller: baseUriController,
-            obscureText: true,
-            onChanged: (value) async {
-              if (value != controller.baseUri.value) {
-                controller.baseUri.value = value;
-                await controller.secureStorage.setBaseURI(value);
-              }
-            },
-          ),
-        ) : Container(),
-        controller.showDeviceID ? Padding(
-          padding: const EdgeInsets.only(bottom: 20.0),
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Device ID'),
-            controller: deviceIDController,
-            obscureText: false,
-            onChanged: (value) async {
-              if (value != controller.deviceID.value) {
-                controller.deviceID.value = value;
-                await controller.secureStorage.setDeviceID(value);
-              }
-            },
-          ),
-        ) : Container(),
         controller.showVzMode ? verticalSpaceSmall : Container(),
         controller.showVzMode ? Obx(() => SwitchListTile(
             title: const Text("VZ Mode"),
@@ -554,6 +526,34 @@ class SettingsPage extends StatelessWidget {
               }
             }) : Container(),            
         controller.showDisableTUMRetry ? verticalSpaceMedium : Container(),
+        controller.showBaseUri ? Padding(
+          padding: const EdgeInsets.only(bottom: 20.0, top: 10.0),
+          child: TextField(
+            decoration: const InputDecoration(labelText: 'Base URI'),
+            controller: baseUriController,
+            obscureText: true,
+            onChanged: (value) async {
+              if (value != controller.baseUri.value) {
+                controller.baseUri.value = value;
+                await controller.secureStorage.setBaseURI(value);
+              }
+            },
+          ),
+        ) : Container(),
+        controller.showDeviceID ? Padding(
+          padding: const EdgeInsets.only(bottom: 20.0),
+          child: TextField(
+            decoration: const InputDecoration(labelText: 'Device ID'),
+            controller: deviceIDController,
+            obscureText: false,
+            onChanged: (value) async {
+              if (value != controller.deviceID.value) {
+                controller.deviceID.value = value;
+                await controller.secureStorage.setDeviceID(value);
+              }
+            },
+          ),
+        ) : Container(),
       ],
     );
   }
