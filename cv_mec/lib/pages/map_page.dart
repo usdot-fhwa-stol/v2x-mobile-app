@@ -81,6 +81,7 @@ import 'package:cv_mec/models/type_definitions.dart';
 import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
@@ -111,7 +112,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:iss_scms/iss_scms.dart';
 import 'package:iss_scms/models/psid.dart';
 import 'package:iss_scms/models/validate_status.dart';
-import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
@@ -141,6 +141,7 @@ class MapState extends State<MapPage> with RouteAware {
   Timing timingService = Get.find<Timing>();
 
   LocationService locationService = Get.find<LocationService>();
+  LoggingService loggingService = Get.find<LoggingService>();
   SettingsController settingsController = Get.find<SettingsController>();
   S3Service awsService = Get.find<S3Service>();
   ConfigurationController configController = Get.find<ConfigurationController>();
@@ -180,7 +181,6 @@ class MapState extends State<MapPage> with RouteAware {
 
   late DataQueue recDataQueue;
   late DataQueue pubDataQueue;
-  late DataQueue appDataQueue;
   late DataQueue timDataQueue;
 
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
@@ -204,8 +204,6 @@ class MapState extends State<MapPage> with RouteAware {
     MovementPhaseState.PERMISSIVE_CLEARANCE: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
     MovementPhaseState.CAUTION_CONFLICTING_TRAFFIC: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png")
   };
-
-  final Logger _logger = Logger();
 
   late Image currentLightState;
   late String nextLightText = "";
@@ -311,9 +309,9 @@ class MapState extends State<MapPage> with RouteAware {
         scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
           scmsActive = result;
           if(!scmsActive){
-            showError("Unable to Activate SCMS Signing");
+            loggingService.showError("Unable to Activate SCMS Signing");
           }else{
-            addToAppLog("SCMS Signing Activated");
+            loggingService.addToAppLog("SCMS Signing Activated");
           }
         });
       }else{
@@ -398,30 +396,30 @@ class MapState extends State<MapPage> with RouteAware {
     mqttAgents.clearAgents();
 
     if(settingsController.enableEtxMqtt.value){
-      addToAppLog("Adding ETX MQTT Agent");
+      loggingService.addToAppLog("Adding ETX MQTT Agent"); 
       mqttAgents.addAgent(EtxMqttAgent(processIncomingMessage));
 
     }
 
     if(settingsController.enablePC5.value){
-      addToAppLog("Adding PC5 MQTT Agent");
+      loggingService.addToAppLog("Adding PC5 MQTT Agent"); 
       mqttAgents.addAgent(Pc5MqttAgent(processIncomingMessage));
     }
     
     if(settingsController.enableIssMqtt.value){
-      addToAppLog("Adding ISS MQTT Agent");
+      loggingService.addToAppLog("Adding ISS MQTT Agent"); 
       mqttAgents.addAgent(IssMqttAgent(processIncomingMessage));
     }
     
     mqttAgents.setPosition(currentPosition);
     var success = await mqttAgents.connectAll();
     if(success != 0){
-      showError("Unable to connect all configured MQTT Agents");
+      loggingService.showError("Unable to connect all configured MQTT Agents");
       return;
     }
     success = await mqttAgents.subscribeAll();
     if(success != 0){
-      showError("Unable to Subscribe all configured MQTT Agents");
+      loggingService.showError("Unable to Subscribe all configured MQTT Agents");
       return;
     }
     updateConnectedStatus(ConnectedStatus.CONNECTED);
@@ -450,18 +448,18 @@ class MapState extends State<MapPage> with RouteAware {
       gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
       stream = gpsdService.locationStream.stream;
     } else {
-      addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
+      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}"); 
       stream = locationService.locationStream;
     }
 
     positionSubscription = stream.listen(
       (position) {
         updatePosition(position).catchError((error, stackTrace) {
-          showError("Position update failed: $error");
+          loggingService.showError("Position update failed: $error");
         });
       },
       onError: (error, stackTrace) {
-        showError("GPS stream error: $error");
+        loggingService.showError("GPS stream error: $error");
       },
     );
     if(currentPosition == null){
@@ -469,7 +467,7 @@ class MapState extends State<MapPage> with RouteAware {
         await stream.first;
       }on StateError catch(e){
         // Catch exception in case stream has already been listened to.
-        _logger.w("caught error with stream.first called on existing stream");
+        loggingService.showWarning("caught error with stream.first called on existing stream"); 
       }
     }  
   }
@@ -509,7 +507,9 @@ class MapState extends State<MapPage> with RouteAware {
     configController.stopSiren();
     configController.isBusWarningOn.value = false;
     configController.isIceCreamSongOn.value = false;
-    obdController.disconnect();
+    if (obdController.isConnected.value) {
+      obdController.disconnect();
+    }
     super.dispose();
   }
 
@@ -600,12 +600,11 @@ class MapState extends State<MapPage> with RouteAware {
     });
   }
 
-  void createDataQueues(){
+  void createMessageDataQueues(){
     DateTime logTime = timingService.getTime();
 
     recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
-    appDataQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
         "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
@@ -619,9 +618,10 @@ class MapState extends State<MapPage> with RouteAware {
 
   Future<int> enableLogging() async {
     
-    createDataQueues();
-    uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      rotateAndUploadLogs();
+    createMessageDataQueues(); 
+    uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) { 
+      rotateAndUploadMessageLogs();
+      loggingService.rotateAndUploadAppLog(deviceID); 
     });
 
     return 0;
@@ -634,48 +634,48 @@ class MapState extends State<MapPage> with RouteAware {
     try {
       validity = await scms.validate(bytes);
     } catch (e) {
-      showError("SCMS validation failed: $e");
+      loggingService.showError("SCMS validation failed: $e");
     }
 
     switch (msgType) {
       case MsgType.BSM:
-        addToAppLog("Identified Message as BSM");
+        loggingService.addToAppLog("Identified Message as BSM");  
         processNewBsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.PSM:
-        addToAppLog("Identified Message as PSM");
+        loggingService.addToAppLog("Identified Message as PSM"); 
         processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
-        addToAppLog("Identified Message as SPaT $hex");
+        loggingService.addToAppLog("Identified Message as SPaT $hex"); 
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        addToAppLog("Identified Message as MAP");
+        loggingService.addToAppLog("Identified Message as MAP"); 
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
-        addToAppLog("Identified Message as TIM $hex");
+        loggingService.addToAppLog("Identified Message as TIM $hex"); 
         if (settingsController.showTims.value) {
           processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         }
         break;
       case MsgType.SDSM:
-        addToAppLog("Identified Message as SDSM");
+        loggingService.addToAppLog("Identified Message as SDSM"); 
         processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TAM:
-        addToAppLog("Identified Message as TAM");
+        loggingService.addToAppLog("Identified Message as TAM"); 
         if (settingsController.tollingEnabled.value) {
           processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
         }
         break;
       case MsgType.TUMACK:
-        addToAppLog("Identified Message as TUMACK");
+        loggingService.addToAppLog("Identified Message as TUMACK"); 
         processNewTumAck(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       default:
-        addToAppLog("Unable to Identify Message Type: $msgType");
+        loggingService.addToAppLog("Unable to Identify Message Type: $msgType"); 
     }
   }
 
@@ -824,7 +824,7 @@ class MapState extends State<MapPage> with RouteAware {
       VehicleNotificationManager.sendPaymentMessage("Toll Message Acknowledged");
       tumAckManager.add(tumAck);
     }else{
-      addToAppLog("Duplicate TUMAck Received. Ignoring.");
+      loggingService.addToAppLog("Duplicate TUMAck Received. Ignoring."); 
     }
     addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
   }
@@ -881,16 +881,6 @@ class MapState extends State<MapPage> with RouteAware {
     recDataQueue.addItem(record);
   }
 
-  void showError(String message) {
-    addToAppLog("ERROR: $message");
-    _logger.e("ERROR: $message");
-  }
-
-  void addToAppLog(String message) {
-    _logger.i("APPLOG: $message");
-    appDataQueue.addItem("$message\n");
-  }
-
   void startSendingBSM() {
     // Stop any previous timer
     sendMessageTimer?.cancel();
@@ -906,7 +896,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   void sendMessage() async {
     if (currentPosition == null) {
-      addToAppLog("Cannot Send BSM. Location is Null");
+      loggingService.addToAppLog("Cannot Send BSM. Location is Null"); 
       updateConnectedStatus(ConnectedStatus.PARTIAL);
       return;
     }
@@ -965,10 +955,10 @@ class MapState extends State<MapPage> with RouteAware {
             messageBytes = signedMessageBytes;
             signed = true;
           }else{
-            showError("Result of Message Signing was Null or Empty");
+            loggingService.showError("Result of Message Signing was Null or Empty");
           }
         } catch (e) {
-          showError("SCMS signing failed: $e");
+          loggingService.showError("SCMS signing failed: $e");
         }
       }
       
@@ -986,7 +976,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   bool sendTumMessage(TollAdvertisementMessage tam) {
     if (currentPosition == null) {
-      addToAppLog("Cannot Send TUM. Location is Null");
+      loggingService.addToAppLog("Cannot Send TUM. Location is Null"); 
       updateConnectedStatus(ConnectedStatus.PARTIAL);
       return false;
     }
@@ -996,7 +986,7 @@ class MapState extends State<MapPage> with RouteAware {
 
     TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, sendTime);
     if (!tumResult.isSuccess) {
-      showError(tumResult.errorMessage!);
+      loggingService.showError(tumResult.errorMessage!); 
       return false;
     }
     
@@ -1004,10 +994,10 @@ class MapState extends State<MapPage> with RouteAware {
 
     String tumHex = tumBuilder.convertTumToHex(tum);
     if(tumHex == ""){
-      showError("Failed to convert TUM to Hex");
+      loggingService.showError("Failed to convert TUM to Hex"); 
       return false;
     }
-    _logger.i("Generated TUM Hex $tumHex");
+    loggingService.addToAppLog("Generated TUM Hex $tumHex"); 
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
@@ -1157,7 +1147,7 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   void onMqttDisconnect() {
-    showError("Lost Connection to All MQTT Brokers");
+    loggingService.showError("Lost Connection to All MQTT Brokers"); 
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
     mqttAgents.clearAgents();
@@ -1674,31 +1664,28 @@ class MapState extends State<MapPage> with RouteAware {
     }
   }
 
-  void rotateAndUploadLogs() {
+  void rotateAndUploadMessageLogs() { 
 
-    addToAppLog("Rotating Log File. Current Time ${timingService.getTime()}");
+    loggingService.addToAppLog("Rotating Log File. Current Time ${timingService.getTime()}");
 
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
     String timDataPath = timDataQueue.filePath;
-    String appDataPath = appDataQueue.filePath;
 
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
-    createDataQueues();
+    createMessageDataQueues();
 
-    addToAppLog("Log Rotation Complete. Current Time ${timingService.getTime()}");
+    loggingService.addToAppLog("Log Rotation Complete. Current Time ${timingService.getTime()}");
 
 
     if (settingsController.deviceID.value.isNotEmpty) {
       awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}");
       awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}");
       awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}");
-      awsService.uploadFile(appDataPath, "app/${settingsController.deviceID.value}");
     } else {
       awsService.uploadFile(recDataPath, "subscribe/$deviceID");
       awsService.uploadFile(pubDataPath, "publish/$deviceID");
       awsService.uploadFile(timDataPath, "tim/$deviceID");
-      awsService.uploadFile(appDataPath, "app/$deviceID");
     }
   }
 
@@ -2060,8 +2047,9 @@ class MapState extends State<MapPage> with RouteAware {
               ),
               ElevatedButton(
                 onPressed: () {
-                  addToAppLog("Upload Log Files");
-                  rotateAndUploadLogs();
+                  loggingService.addToAppLog("Upload Log Files");
+                  rotateAndUploadMessageLogs();
+                  loggingService.rotateAndUploadAppLog(deviceID); 
                 },
                 style: ElevatedButton.styleFrom(
                   shape: const CircleBorder(),
@@ -2559,11 +2547,11 @@ class MapState extends State<MapPage> with RouteAware {
           await obdController.startGettingDataLinux();
           successfulConnection = true;
         } else {
-          addToAppLog("Timeout waiting for serial port to open");
+          loggingService.showError("Timeout waiting for serial port to open");
         }
       } else {
         // Handle timeout or error
-        addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+        loggingService.showError("Timeout waiting for /dev/rfcomm0 to appear");
       }
     }
     if (!successfulConnection) {
@@ -2593,10 +2581,10 @@ class MapState extends State<MapPage> with RouteAware {
             await obdController.startGettingDataLinux();
             successfulConnection = true;
           } else {
-            addToAppLog("Timeout waiting for serial port to open");
+            loggingService.addToAppLog("Timeout waiting for serial port to open");
           }
         } else {
-          addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+          loggingService.addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
         }
       }
       obdConnecting.value = false;

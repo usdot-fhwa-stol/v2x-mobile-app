@@ -15,7 +15,7 @@ class RootBundleImageResolver extends ItisImageResolver{
       return AssetImage("$imageDirectory/$imageName");
     }
     catch (e) {
-      logger.e("Unable to Load Image from Root Bundle Assets for Name $imageName");
+      loggingService.showError("Unable to Load Image from Root Bundle Assets for Name $imageName");
       return getMissing();
     }
   }

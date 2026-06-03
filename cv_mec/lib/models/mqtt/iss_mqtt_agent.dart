@@ -1,6 +1,7 @@
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:get/get.dart';
 import 'package:iss_scms/models/dsrc_msg_id.dart';
 import 'package:typed_data/typed_data.dart';
@@ -26,15 +27,16 @@ class IssMqttAgent extends MqttAgent{
   final int bsmPSID = DsrcMsgId.basicSafetyMessage.code;
   final int psmPSID = DsrcMsgId.personalSafetyMessage.code;
   SettingsController settingsController = Get.find<SettingsController>();
+  LoggingService loggingService = Get.find<LoggingService>();
 
   @override
   Future<int> connect() async{
     String connectionUrl = settingsController.issMqttBrokerUrl.value;
-    logger.i("Connecting MQTT Agent $agentName to $connectionUrl");
+    loggingService.addToAppLog("Connecting MQTT Agent $agentName to $connectionUrl");
 
     int result = await mqttService.connect(connectionUrl, null);
     if (result != 0) {
-      logger.e("${agentName} unable to connect to MQTT Broker $connectionUrl");
+      loggingService.showError("${agentName} unable to connect to MQTT Broker $connectionUrl");
       return 1;
     }
 
@@ -46,7 +48,7 @@ class IssMqttAgent extends MqttAgent{
     currentGeohash = geohashInBaseThirtyTwo(currentPosition?.latitude ?? 0.0, currentPosition?.longitude ?? 0.0);
     surroundingGeohashes = getGeohashAndNeighbors(currentGeohash);
     if (currentGeohash.length < 7) {
-      logger.e("Geohash is too short: $currentGeohash");
+      loggingService.showError("Geohash is too short: $currentGeohash");
       return 1;
     }
     for(String neighbor in surroundingGeohashes){
@@ -76,7 +78,7 @@ class IssMqttAgent extends MqttAgent{
           } else if (neighbor.length >= 7){
             newGeohashes.removeWhere((value) => value == neighbor);
           } else {
-            logger.e( "Geohash is too short: $neighbor");
+            loggingService.showError("Geohash is too short: $neighbor");
             return 1;
           }
         }
@@ -107,7 +109,7 @@ class IssMqttAgent extends MqttAgent{
         topic = "v1/g32/${currentGeohash[0]}/${currentGeohash[1]}/${currentGeohash[2]}/${currentGeohash[3]}/${currentGeohash[4]}/${currentGeohash[5]}/${currentGeohash[6]}/$psmPSID";
         break;
       default:
-        logger.e('$agentName does not support sending ${messageType.name} messages');
+        loggingService.showError('$agentName does not support sending ${messageType.name} messages');
         break;
     }
 

@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:logger/logger.dart';
 
 class GPSDService extends GetxService {
-  final Logger _logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
   final StreamController<Position> locationStream = StreamController<Position>.broadcast();
 
   void connectToGPSD(String host, int port) async {
@@ -46,13 +46,13 @@ class GPSDService extends GetxService {
           }
             
         }catch (e) {
-          _logger.e("Error parsing GPSD data: $e $textData");
+          loggingService.showError("Error parsing GPSD data: $e $textData");
         }
         
       });
 
     } catch (e) {
-      _logger.e("Error parsing GPSD data: $e");
+      loggingService.showError("Error parsing GPSD data: $e");
     }
   }
 }

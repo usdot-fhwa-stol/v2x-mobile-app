@@ -10,6 +10,7 @@ import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/file_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:get/get.dart';
@@ -27,6 +28,7 @@ class EtxMqttAgent extends MqttAgent{
   ConfigurationController configController = Get.find<ConfigurationController>();
   Timing timingService = Get.find<Timing>();
   ASNService asnService = Get.find<ASNService>();
+  LoggingService loggingService = Get.find<LoggingService>();
   Map<String, bool> allowedTopicCache = {};
 
   MqttPermission? aclRules;
@@ -41,18 +43,18 @@ class EtxMqttAgent extends MqttAgent{
     Registration? registration;
 
     if (await fileService.checkIfRegistrationExists()) {
-      logger.i("Loading Registration from Cache");
+      loggingService.addToAppLog("Loading Registration from Cache");
       registration = await fileService.getRegistration();
       fullRegistration = await apiService.checkRegistration(registration.deviceID);
     }
 
     if(registration == null || fullRegistration == null){
-      logger.i("Loading Registration from Partner API");
+      loggingService.addToAppLog("Loading Registration from Partner API");
       registration = await apiService.getRegistration(paramController.clientType.value, paramController.clientSubtype.value);
       if(registration != null){
         fullRegistration = await apiService.checkRegistration(registration!.deviceID);
       }else{
-        logger.w( "Unable to retrieve registration information from partner API");
+        loggingService.showWarning("Unable to retrieve registration information from partner API");
         return 1;
       }
       
@@ -61,13 +63,13 @@ class EtxMqttAgent extends MqttAgent{
     if(fullRegistration != null){
       fileService.saveRegistration(registration);
     }else{
-      logger.w("Unable to retrieve full registration information from partner API");
+      loggingService.showWarning("Unable to retrieve full registration information from partner API");
       return 2;
     }
 
 
 
-    logger.i("Acquired Certificates for DeviceID: ${fullRegistration!.deviceID}");
+    loggingService.addToAppLog("Acquired Certificates for DeviceID: ${fullRegistration!.deviceID}");
 
     String vzString = paramController.networkType.value;
 
@@ -99,7 +101,7 @@ class EtxMqttAgent extends MqttAgent{
     aclRules = await apiService.getAclRules();
 
     if(aclRules == null){
-      logger.w("Unable to retrieve ACL Rules from Partner API. Using Default topic names");
+      loggingService.showWarning("Unable to retrieve ACL Rules from Partner API. Using Default topic names");
       mqttService.subscribe("vzimp/1/Private/+/+/+/j2735/+/+", onRawAsnMessage); //MAP / TIM
       mqttService.subscribe("vzimp/1/Private/+/+/+/j2735_gr/+/+", onGeoRelevanceMessage);
       mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735/+/+", onRawAsnMessage); // SPaT
@@ -176,7 +178,7 @@ class EtxMqttAgent extends MqttAgent{
         topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/TUM";
         break;
       default:
-        logger.e('$agentName does not support sending ${messageType.name} messages');
+        loggingService.showError('$agentName does not support sending ${messageType.name} messages');
         break;
     }
 
@@ -192,7 +194,7 @@ class EtxMqttAgent extends MqttAgent{
       if(isAllowed){
         mqttService.publishBytes(buffer, topic);
       }else{
-        logger.w("Topic $topic is not allowed by ACL Rules. Message not sent.");
+        loggingService.showWarning("Topic $topic is not allowed by ACL Rules. Message not sent.");
       }
         
     }else{
@@ -243,7 +245,7 @@ class EtxMqttAgent extends MqttAgent{
       DateTime msgTime = Utils.timeStampToDateTime(decodedMessage.time);
       processingFunction(connectionUrl, message.topic, decodedMessage.msgBytes, recTime, msgTime, "ETX");
     }catch(e){
-      logger.e("Failed to decode GeoRelevance Message: $e ${ASNService.bytesToHex(recMess.payload.message)}");
+      loggingService.showError("Failed to decode GeoRelevance Message: $e ${ASNService.bytesToHex(recMess.payload.message)}");
     }
     
   }
@@ -255,7 +257,7 @@ class EtxMqttAgent extends MqttAgent{
 
   void onClientInfo(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
     final recMess = message.payload as MqttPublishMessage;
-    logger.i("On Client Info Decoded ${ascii.decode(recMess.payload.message)}");
+    loggingService.addToAppLog("On Client Info Decoded ${ascii.decode(recMess.payload.message)}");
   }
 
 

@@ -9,14 +9,14 @@ import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
 import 'package:cv_mec/models/render_models/render_lane_connection.dart';
 import 'package:cv_mec/models/render_models/render_light_location.dart';
 import 'package:cv_mec/services/geometry_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:dart_jts/dart_jts.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:logger/logger.dart';
 
 class GeoMap {
 
-  final Logger _logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
   late MapData map;
   late IntersectionGeometry intersectionGeometry;
   late Geometry mapBoundingBox;
@@ -143,7 +143,8 @@ class GeoMap {
         return [firstPoint];
       }
     }else{
-      _logger.w("Unable to build lane connections for MAP message. Missing lane segment for lane id $firstLaneId");
+      loggingService.showWarning("Unable to build lane connections for MAP message. Missing lane segment for lane id $firstLaneId");
+    
     }
 
     return [];

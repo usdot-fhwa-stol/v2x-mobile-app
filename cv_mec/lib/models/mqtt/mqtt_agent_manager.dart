@@ -2,20 +2,21 @@ import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/services/asn_service.dart';
-import 'package:logger/logger.dart';
+import 'package:cv_mec/services/logging_service.dart';
+import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 
 class MqttAgentManager{
   List<MqttAgent> agents = [];
-  Logger logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
   MqttAgentManager(){}
 
   Future<int> connectAll() async{
     for(MqttAgent agent in List<MqttAgent>.from(agents)){ //looping this way to avoid concurrent modification errors
-      logger.i("Connecting Agent ${agent.agentName}");
+      loggingService.addToAppLog("Connecting Agent ${agent.agentName}");
       final success = await agent.connect();
       if(success != 0){
-        logger.w("Unable to Connect Agent ${agent.agentName}");
+        loggingService.showWarning("Unable to Connect Agent ${agent.agentName}");
       }
     }
     return 0;
@@ -23,10 +24,10 @@ class MqttAgentManager{
 
   Future<int> subscribeAll() async{
     for(MqttAgent agent in agents){
-      logger.i("Subscribing Agent ${agent.agentName}");
+      loggingService.addToAppLog("Subscribing Agent ${agent.agentName}");
       final success = await agent.setupSubscribers();
       if(success != 0){
-        logger.w("Unable to Subscribe Agent ${agent.agentName}");
+        loggingService.showWarning("Unable to Subscribe Agent ${agent.agentName}");
       }
     }
     return 0;

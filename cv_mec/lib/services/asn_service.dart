@@ -11,10 +11,10 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertise
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
 import 'package:cv_mec/models/msg_types.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:get/get.dart';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:logger/logger.dart';
 import 'dart:math';
 import 'dart:io';
 import 'package:path/path.dart' as p;
@@ -45,7 +45,7 @@ class ASNService extends GetxController {
   late final Map<String, MsgType> messageTypeMap;
   Random random = Random();
 
-  final Logger _logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
   ASNService() {
     if (Platform.isLinux) {
       DynamicLibrary dylib;
@@ -346,7 +346,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        _logger.w("DECODE: Failed to Decode Message ${hexInput}");
+        loggingService.showWarning("DECODE: Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -354,7 +354,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      _logger.e("Unknown Failure during decoding: $e, $hexInput");
+      loggingService.showError("Unknown Failure during decoding: $e, $hexInput");
     }
 
     return ptrToPtr;
@@ -388,7 +388,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        _logger.w("Failed to Decode Message ${hexInput}");
+        loggingService.showWarning("Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -396,7 +396,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      _logger.e("Exception during decode: $e");
+      loggingService.showError("Exception during decode: $e");
     }
 
     return ptrToPtr;
@@ -457,7 +457,7 @@ class ASNService extends GetxController {
 
     
     if (rval.encoded < 0) {
-      _logger.e("Failed to encode TumData: $e");
+      loggingService.showError("Failed to encode TumData: $e");
       return "";
     }
 
