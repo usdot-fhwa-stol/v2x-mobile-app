@@ -605,20 +605,20 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
             )) : Container(),
-            Platform.isLinux ? Padding(
+            Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: SwitchListTile(  
                 title: const Text("Change Screen Size"),
                 value: controller.showScreenSizeSettings.value,
                 onChanged: (value) async {
-                  controller.showScreenSizeSettings.value = value;
+                  controller.setShowScreenSizeSettings(value);
                   if (value && (controller.screenWidth.value == 0 || controller.screenHeight.value == 0)) {
                     controller.setScreenHeight(screenHeight(Get.context!).toInt());
                     controller.setScreenWidth(screenWidth(Get.context!).toInt());
                   }
                 }
               ),
-            ) : Container(),
+            ),
             controller.showScreenSizeSettings.value ? Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Column(

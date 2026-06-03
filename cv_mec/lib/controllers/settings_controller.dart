@@ -183,10 +183,9 @@ class SettingsController extends GetxController {
     screenWidth.value = await sharedPrefs.getScreenWidthFromPrefs() ?? 0;
     screenHeight.value = await sharedPrefs.getScreenHeightFromPrefs() ?? 0;
 
-    if (screenWidth.value != 0 || screenHeight.value != 0) {
-      showScreenSizeSettings.value = true;
-      screenLocation.value = await sharedPrefs.getScreenLocationFromPrefs() ?? Alignment.center;
-    }
+    showScreenSizeSettings.value = await sharedPrefs.getShowScreenSizeSettingsFromPrefs() ?? false;
+
+    screenLocation.value = await sharedPrefs.getScreenLocationFromPrefs() ?? Alignment.center;
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform(); // Fetch the app version
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
@@ -249,6 +248,11 @@ class SettingsController extends GetxController {
     await sharedPrefs.saveIconSizeToPrefs(iconSize.value);
   }
 
+  void setShowScreenSizeSettings(bool value) async {
+    showScreenSizeSettings.value = value;
+    await sharedPrefs.saveShowScreenSizeSettingsToPrefs(value);
+  }
+  
   void setScreenWidth(int width) async {
     screenWidth.value = width;
     await sharedPrefs.saveScreenWidthToPrefs(width);
