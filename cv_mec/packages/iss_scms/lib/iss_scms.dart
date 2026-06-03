@@ -16,6 +16,7 @@ class IssScms {
 
   late IssSigningApiService apiService;
   bool isMobile = Platform.isAndroid || Platform.isIOS;
+  Future<void> _validationTail = Future.value();
 
   IssScms(){
     init();
@@ -79,10 +80,31 @@ class IssScms {
   }
 
   Future<ValidateStatus> validate(List<int> bytes){
-    if (isMobile) {
-      return IssScmsPlatform.instance.validate(bytes, true);
-    } else {
-      return apiService.validate(bytes); // For Linux users
+    final completer = Completer<ValidateStatus>();
+
+    _validationTail = _validationTail.then((_) async {
+      final status = await _validateInternal(bytes);
+      if (!completer.isCompleted) {
+        completer.complete(status);
+      }
+    }).catchError((_) {
+      if (!completer.isCompleted) {
+        completer.complete(ValidateStatus.FAILURE);
+      }
+    });
+
+    return completer.future;
+  }
+
+  Future<ValidateStatus> _validateInternal(List<int> bytes) async {
+    try {
+      if (isMobile) {
+        return await IssScmsPlatform.instance.validate(bytes, true);
+      }
+
+      return await apiService.validate(bytes); // For Linux users
+    } catch (_) {
+      return ValidateStatus.FAILURE;
     }
   }
 

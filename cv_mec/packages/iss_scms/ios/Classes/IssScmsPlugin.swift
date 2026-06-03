@@ -37,20 +37,44 @@ public class IssScmsPlugin: NSObject, FlutterPlugin {
         localSigning = LocalSigning.init(scmsEnv: ScmsEnvironment.PREPRODUCTION)
         result(nil)
       case "validate":
-        if let signer = localSigning {
-          if let args = call.arguments as? Dictionary<String, Any>{
-            let message = args["message"] as! FlutterStandardTypedData
-            do{
-              let (valid, _) = try signer.validate(message:message.data, shouldValidate:true)
-              result(getNameForValidateStatus(status:valid))
-            } catch{
-              result(getNameForValidateStatus(status:ValidateStatus.FAILURE))
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+          guard let self = self else { return }
+
+          let validationStart = Date()
+          defer {
+            let elapsedMs = Date().timeIntervalSince(validationStart) * 1000
+            DispatchQueue.main.async {
+              print("⏱️ Validation completed in \(String(format: \"%.2f\", elapsedMs)) ms")
             }
-          }else{
-            result(getNameForValidateStatus(status:ValidateStatus.FAILURE))
           }
-        }else{
-          result(getNameForValidateStatus(status:ValidateStatus.FAILURE))
+
+          guard let signer = self.localSigning else {
+            DispatchQueue.main.async {
+              result(self.getNameForValidateStatus(status: ValidateStatus.FAILURE))
+            }
+            return
+          }
+
+          guard let args = call.arguments as? Dictionary<String, Any>,
+                let message = args["message"] as? FlutterStandardTypedData else {
+            DispatchQueue.main.async {
+              result(self.getNameForValidateStatus(status: ValidateStatus.FAILURE))
+            }
+            return
+          }
+
+          let shouldValidate = args["shouldValidate"] as? Bool ?? true
+
+          do {
+            let (valid, _) = try signer.validate(message: message.data, shouldValidate: shouldValidate)
+            DispatchQueue.main.async {
+              result(self.getNameForValidateStatus(status: valid))
+            }
+          } catch {
+            DispatchQueue.main.async {
+              result(self.getNameForValidateStatus(status: ValidateStatus.FAILURE))
+            }
+          }
         }
       case "sign":
         if let args = call.arguments as? Dictionary<String, Any>{
