@@ -1505,6 +1505,7 @@ class MapState extends State<MapPage> with RouteAware {
   List<Polyline<PolyLineHitValue>> getPolylines() {
     DateTime start = timingService.getTime();
     List<Polyline<PolyLineHitValue>> polylines = [];
+    StrokePattern dashedPattern = StrokePattern.dashed(segments: [5, 8]);
 
     Position? pos = currentPosition;
 
@@ -1526,25 +1527,25 @@ class MapState extends State<MapPage> with RouteAware {
           // Iterate over the pre-calculated lines and assign each connection a color
           for (RenderLaneConnection connection in map.laneConnections) {
             Color connectionColor = Colors.grey;
-            StrokePattern pattern = StrokePattern.dashed(segments: [5, 8]);
+            StrokePattern pattern = dashedPattern;
             if (stateMap.containsKey(connection.signalGroup)) {
               MovementPhaseState lightState = stateMap[connection.signalGroup]!.eventState;
 
               if (lightState == MovementPhaseState.DARK) {
                 connectionColor = Colors.grey.shade900;
-                pattern = StrokePattern.dashed(segments: [5, 8]);
+                pattern = dashedPattern;
               } else if (lightState == MovementPhaseState.STOP_THEN_PROCEED) {
                 connectionColor = Colors.red;
-                pattern = StrokePattern.dashed(segments: [5, 8]);
+                pattern = dashedPattern;
               } else if (lightState == MovementPhaseState.STOP_AND_REMAIN) {
                 connectionColor = Colors.red;
                 pattern = const StrokePattern.solid();
               } else if (lightState == MovementPhaseState.PRE_MOVEMENT) {
                 connectionColor = Colors.orange;
-                pattern = StrokePattern.dashed(segments: [5, 8]);
+                pattern = dashedPattern;
               } else if (lightState == MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED) {
                 connectionColor = Colors.green;
-                pattern = StrokePattern.dashed(segments: [5, 8]);
+                pattern = dashedPattern;
               } else if (lightState == MovementPhaseState.PROTECTED_MOVEMENT_ALLOWED) {
                 connectionColor = Colors.green;
                 pattern = const StrokePattern.solid();
@@ -1556,7 +1557,7 @@ class MapState extends State<MapPage> with RouteAware {
                 pattern = const StrokePattern.solid();
               } else if (lightState == MovementPhaseState.PERMISSIVE_CLEARANCE) {
                 connectionColor = Colors.yellow;
-                pattern = StrokePattern.dashed(segments: [5, 8]);
+                pattern = dashedPattern;
               }
             }
 
