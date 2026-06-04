@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/pages/home_page.dart';
 import 'package:cv_mec/pages/missing_permissions.dart';
 import 'package:cv_mec/services/location_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
+import 'package:cv_mec/styles/screen_size.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -36,21 +38,29 @@ class Load extends StatelessWidget {
     return FutureBuilder(
         future: _init(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              image: DecorationImage(
-                image: AssetImage(dotenv.env["LOAD_PAGE_PATH"] ?? 'assets/images/Default/load_page.png'), 
-                fit: BoxFit.cover,
+          SettingsController settingsController = Get.find<SettingsController>();
+          return Obx(() => Align(
+            alignment: settingsController.screenLocation.value,
+            child: SizedBox(
+              width: screenWidth(context),
+              height: screenHeight(context),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  image: DecorationImage(
+                    image: AssetImage(dotenv.env["LOAD_PAGE_PATH"] ?? 'assets/images/Default/load_page.png'), 
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: const Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
               ),
             ),
-            child: const Scaffold(
-              backgroundColor: Colors.transparent,
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          );
+          ));
         });
   }
 }

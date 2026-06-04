@@ -67,7 +67,6 @@ class MqttAgent{
 
   void callback(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
     final recMess = message.payload as MqttPublishMessage;
-    print("Agent Callback received data");
     processingFunction(connectionUrl, message.topic, recMess.payload.message, recTime, null, agentName);
   }
 

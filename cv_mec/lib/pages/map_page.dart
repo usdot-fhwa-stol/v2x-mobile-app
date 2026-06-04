@@ -583,9 +583,13 @@ class MapState extends State<MapPage> with RouteAware {
         heading += 360;
       }
 
+      //round longitude / latitude to 6 decimal places to simulate gps precision
+      double roundedLongitude = double.parse(route[index][0].toStringAsFixed(6));
+      double roundedLatitude = double.parse(route[index][1].toStringAsFixed(6));
+
       return Position(
-          longitude: route[index][0],
-          latitude: route[index][1],
+          longitude: roundedLongitude,
+          latitude: roundedLatitude,
           timestamp: DateTime.now(),
           accuracy: 0,
           altitude: 1600,
@@ -648,11 +652,11 @@ class MapState extends State<MapPage> with RouteAware {
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        addToAppLog("Identified Message as MAP $hex");
+        addToAppLog("Identified Message as MAP");
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
-        addToAppLog("Identified Message as TIM");
+        addToAppLog("Identified Message as TIM $hex");
         if (settingsController.showTims.value) {
           processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         }
@@ -752,7 +756,7 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
-
+    
     mapManager.addOrUpdate(map);
 
     updateGraphics();
@@ -1734,121 +1738,131 @@ class MapState extends State<MapPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    heightBottomDisplay = getHeightBottomDisplay(MediaQuery.of(context).size.height);
+    double displayWidth = screenWidth(context);
+    double displayHeight = screenHeight(context);
+    heightBottomDisplay = getHeightBottomDisplay(displayHeight);
     markerSize = getMarkerSize();
 
     const String appTitle = "MAP";
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              sendMessageTimer?.cancel(); 
-              uploadTimer?.cancel();
-              mqttAgents.disconnectAll();
-              Get.back();
-            }),
-        title: const Text(appTitle),
-        actions: <Widget>[
-          navigationMenu(context),
-        ],
-      ),
-      body: showVehicleStats
-          ? Container(
-              width: screenWidth,
-              height: screenHeight,
-              color: Theme.of(context).dialogBackgroundColor,
-              child: Stack(alignment: AlignmentDirectional.topStart, children: [
-                Positioned(
-                  top: 50,
-                  child: Obx(() => vehicleStatsPage()),
-                ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: vehicleStatsBar(),
-                ),
-              ]),
-            )
-          : SafeArea(
-            child: Stack(alignment: AlignmentDirectional.topStart, children: [
-                Center(child: map(context, _mapController)),
-                Align(
-                    alignment: Alignment.topLeft,
-                    child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
-                Positioned(
-                  top: 60,
-                  right: 0,
-                  child: showLightText && nextLightText.isNotEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Container(
-                              width: screenWidth * 0.20,
-                              // height: screenHeight * 0.25,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
-                                borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
-                                color: Colors.grey.shade800, // Optional: Background color
-                              ),
-                              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                Text("Current Light State",
-                                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
-                                SizedBox(
-                                    width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
-                                Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
-                              ])))
-                      : (!showLightText && nextLightText.isNotEmpty)
-                          ? SizedBox(width: (Platform.isAndroid || Platform.isIOS) ? screenWidth * 0.15 : screenWidth * 0.12, height: (Platform.isAndroid || Platform.isIOS) ? screenHeight * 0.15 : screenHeight * 0.4, child: currentLightState)
-                          : Container(),
-                ),
-                Positioned(
-                    top: configController.isVehicleConfig.value ? 60 : 0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                        managementButtons(),
-                        verticalSpaceSmall,
-                        settingsController.tollingEnabled.value ? fourTireButton() : Container(),
-                        settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
-                        configController.hasASiren()
-                            ? sirenButton()
-                            : (configController.isVehicleConfig.value &&
-                                    configController.selectedVehicle.value.classification == VehicleType.BUS)
-                                ? busWarningButton()
-                                : (configController.isVehicleConfig.value &&
-                                        configController.selectedVehicle.value.classification ==
-                                            VehicleType.ICE_CREAM_TRUCK)
-                                    ? iceCreamSongButton()
-                                    : Container(width: 60),
-                      ]),
-                    )),
-                Align(
-                    alignment: Alignment.bottomLeft,
-                    child: SizedBox(
-                      height: heightBottomDisplay + 20,
-                      child: Row(children: [
-                        Expanded(
-                          child: timsDisplay(heightBottomDisplay, screenWidth),
-                        ),
-                        configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
-                      ]),
-                    )),
-                Align(
-                  alignment: Alignment.center,
-                  child: showLoadingIcon
-                      ? const SpinKitSpinningLines(
-                          color: Colors.white,
-                          size: 140,
-                          lineWidth: 4,
-                        )
-                      : null,
-                )
-              ]),
+    return Obx(() => Align(
+      alignment: settingsController.screenLocation.value,
+      child: SizedBox(
+        width: displayWidth,
+        height: displayHeight,
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  sendMessageTimer?.cancel(); 
+                  uploadTimer?.cancel();
+                  mqttAgents.disconnectAll();
+                  Get.back();
+                }),
+            title: const Text(appTitle),
+            actions: <Widget>[
+              navigationMenu(context),
+            ],
           ),
-    );
+          body: showVehicleStats
+              ? Center(
+                child: Container(
+                  width: displayWidth,
+                  height: displayHeight,
+                  color: Theme.of(context).dialogBackgroundColor,
+                  child: Stack(alignment: AlignmentDirectional.topStart, children: [
+                    Positioned(
+                      top: 50,
+                      child: Obx(() => vehicleStatsPage()),
+                    ),
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: vehicleStatsBar(),
+                    ),
+                  ]),
+                )
+              )
+              : SafeArea(
+                child: Stack(alignment: AlignmentDirectional.topStart, children: [
+                  Center(child: map(context, _mapController)),
+                  Align(
+                      alignment: Alignment.topLeft,
+                      child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
+                  Positioned(
+                    top: 60,
+                    right: 0,
+                    child: showLightText && nextLightText.isNotEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Container(
+                                width: displayWidth * 0.20,
+                                // height: screenHeight * 0.25,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
+                                  borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
+                                  color: Colors.grey.shade800, // Optional: Background color
+                                ),
+                                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                  Text("Current Light State",
+                                      textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
+                                  SizedBox(
+                                      width: displayWidth * 0.15, height: displayHeight * 0.15, child: currentLightState),
+                                  Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
+                                ])))
+                        : (!showLightText && nextLightText.isNotEmpty)
+                            ? SizedBox(width: (Platform.isAndroid || Platform.isIOS) ? displayWidth * 0.15 : displayWidth * 0.12, height: (Platform.isAndroid || Platform.isIOS) ? displayHeight * 0.15 : displayHeight * 0.4, child: currentLightState)
+                            : Container(),
+                  ),
+                  Positioned(
+                      top: configController.isVehicleConfig.value ? 60 : 0,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                          managementButtons(),
+                          verticalSpaceSmall,
+                          settingsController.tollingEnabled.value ? fourTireButton() : Container(),
+                          settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
+                          configController.hasASiren()
+                              ? sirenButton()
+                              : (configController.isVehicleConfig.value &&
+                                      configController.selectedVehicle.value.classification == VehicleType.BUS)
+                                  ? busWarningButton()
+                                  : (configController.isVehicleConfig.value &&
+                                          configController.selectedVehicle.value.classification ==
+                                              VehicleType.ICE_CREAM_TRUCK)
+                                      ? iceCreamSongButton()
+                                      : Container(width: 60),
+                        ]),
+                      )),
+                  Align(
+                      alignment: Alignment.bottomLeft,
+                      child: SizedBox(
+                        height: heightBottomDisplay + 20,
+                        child: Row(children: [
+                          Expanded(
+                            child: timsDisplay(heightBottomDisplay, displayWidth),
+                          ),
+                          configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
+                        ]),
+                      )),
+                  Align(
+                    alignment: Alignment.center,
+                    child: showLoadingIcon
+                        ? const SpinKitSpinningLines(
+                            color: Colors.white,
+                            size: 140,
+                            lineWidth: 4,
+                          )
+                        : null,
+                  )
+                ]
+              ),
+            )
+          ),
+        )
+    ));
   }
 
   Widget map(BuildContext context, MapController mapController) {
@@ -2417,7 +2431,7 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   Widget notConnectedToOBDPage() {
-    return Container(
+    return SizedBox(
       width: screenWidth(context),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2431,49 +2445,55 @@ class MapState extends State<MapPage> with RouteAware {
                   SpinKitSpinningLines(color: Colors.black, size: 90)
                 ])
               : (obdController.isRunningAsRoot && Platform.isLinux) || !Platform.isLinux
-                  ? Column(
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: AutoSizeTextWidget(
-                            text: "OBD-II Connection", 
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                            maxLines: 1,
+                  ? Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: AutoSizeTextWidget(
+                              text: "OBD-II Connection", 
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                            ),
                           ),
-                        ),
-                        verticalSpaceSmall,
-                        SizedBox(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
-                            child: const SingleChildScrollView(
-                              child: Text(
-                                "1. Ensure your OBD-II device is powered on and in range.\n"
-                                "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
-                                "3. Click the button below to connect.",
+                          verticalSpaceSmall,
+                          SizedBox(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
+                              child: const SingleChildScrollView(
+                                child: Text(
+                                  "1. Ensure your OBD-II device is powered on and in range.\n"
+                                  "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                                  "3. Click the button below to connect.",
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        verticalSpaceSmall,
-                        ElevatedButton(
-                          onPressed: () async {
-                            if (Platform.isLinux) {
-                              await tryToConnectLinux();
-                            } else {
-                              await tryToConnect();
-                            }
-                          },
-                          child: const Text("Connect to OBD-II"),
-                        ),
-                      ],
+                          verticalSpaceSmall,
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (Platform.isLinux) {
+                                await tryToConnectLinux();
+                              } else {
+                                await tryToConnect();
+                              }
+                            },
+                            child: const Text("Connect to OBD-II"),
+                          ),
+                        ],
+                      ),
+                  )
+                  : const Padding( 
+                      padding: EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Text(
+                              "OBD-II Connection is only available when running as root. Please re-launch the app with root privileges.",
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        ],
+                      )),
                     )
-                  : const Column(
-                      children: [
-                        Text(
-                            "OBD-II Connection is only available when running as root. Please re-launch the app with root privileges.",
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      ],
-                    )),
         ],
       ),
     );
