@@ -301,59 +301,63 @@ class SettingsPage extends StatelessWidget {
               )
             : const SizedBox.shrink()),
         Obx(() => controller.gpsType.value == GPSType.static
-            ? Column(children: [
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Static GPS Latitude'),
-                  controller: staticGPSLatitudeController,
-                  obscureText: false,
-                  onChanged: (value) async {
-                    if (value != controller.staticGPSLatitude.value.toString()) {
-                      final parsed = double.tryParse(value);
-                      if (parsed != null) {
-                        controller.staticGPSLatitude.value = parsed;
-                        await controller.secureStorage.setStaticGPSLatitude(parsed);
+            ? Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: Column(children: [
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Static GPS Latitude'),
+                    controller: staticGPSLatitudeController,
+                    obscureText: false,
+                    onChanged: (value) async {
+                      if (value != controller.staticGPSLatitude.value.toString()) {
+                        final parsed = double.tryParse(value);
+                        if (parsed != null) {
+                          controller.staticGPSLatitude.value = parsed;
+                          await controller.secureStorage.setStaticGPSLatitude(parsed);
+                        }
                       }
-                    }
-                  },
-                ),
-                verticalSpaceSmall,
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Static GPS Longitude'),
-                  controller: staticGPSLongitudeController,
-                  obscureText: false,
-                  onChanged: (value) async {
-                    if (value != controller.staticGPSLongitude.value.toString()) {
-                      final parsed = double.tryParse(value);
-                      if (parsed != null) {
-                        controller.staticGPSLongitude.value = parsed;
-                        await controller.secureStorage.setStaticGPSLongitude(parsed);
+                    },
+                  ),
+                  verticalSpaceSmall,
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Static GPS Longitude'),
+                    controller: staticGPSLongitudeController,
+                    obscureText: false,
+                    onChanged: (value) async {
+                      if (value != controller.staticGPSLongitude.value.toString()) {
+                        final parsed = double.tryParse(value);
+                        if (parsed != null) {
+                          controller.staticGPSLongitude.value = parsed;
+                          await controller.secureStorage.setStaticGPSLongitude(parsed);
+                        }
                       }
-                    }
-                  },
-                ),
-              ])
+                    },
+                  ),
+                ]),
+            )
             : const SizedBox.shrink(),
         ),
-        verticalSpaceSmall,
         controller.showPathGPSType ? verticalSpaceSmall : Container(),
         controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
-        controller.showBroadcastRate ? TextField(
-          decoration: const InputDecoration(labelText: 'Broadcast Rate'),
-          controller: broadcastRateController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
-            RangeInputFormatter(min: 1, max: 10),
-          ],
-          onChanged: (value) async {
-            final parsed = int.tryParse(value);
-            if (parsed != null && parsed != controller.broadcastRate.value) {
-              controller.broadcastRate.value = parsed;
-              await controller.secureStorage.setBroadcastRate(parsed);
-            }
-          },
+        controller.showBroadcastRate ? Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: TextField(
+            decoration: const InputDecoration(labelText: 'Broadcast Rate'),
+            controller: broadcastRateController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
+              RangeInputFormatter(min: 1, max: 10),
+            ],
+            onChanged: (value) async {
+              final parsed = int.tryParse(value);
+              if (parsed != null && parsed != controller.broadcastRate.value) {
+                controller.broadcastRate.value = parsed;
+                await controller.secureStorage.setBroadcastRate(parsed);
+              }
+            },
+          ),
         ) : Container(),
-        controller.showBroadcastRate ? verticalSpaceSmall : Container(),
         controller.showPc5 ? SwitchListTile(
             title: const Text("Enable PC5 MQTT Broker"),
             value: controller.enablePC5.value,
@@ -376,43 +380,47 @@ class SettingsPage extends StatelessWidget {
                   }
                 },
               )
-            : const SizedBox.shrink()),
-        controller.showPc5 ? verticalSpaceSmall : Container(),
-        controller.showIss ? SwitchListTile(
-            title: const Text("Enable ISS MQTT Broker"),
-            value: controller.enableIssMqtt.value,
-            onChanged: (value) async {
-              if (value != controller.enableIssMqtt.value) {
-                controller.enableIssMqtt.value = value;
-                await controller.secureStorage.setIssMqttEnabled(value);
-                controller.changedBrokerSettings.value = true; 
+            : Container()),
+        controller.showIss ? Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: SwitchListTile(
+              title: const Text("Enable ISS MQTT Broker"),
+              value: controller.enableIssMqtt.value,
+              onChanged: (value) async {
+                if (value != controller.enableIssMqtt.value) {
+                  controller.enableIssMqtt.value = value;
+                  await controller.secureStorage.setIssMqttEnabled(value);
+                  controller.changedBrokerSettings.value = true; 
+                }
               }
-            }
-          ) : Container(),
-        verticalSpaceSmall,
-        (controller.showIssBrokerUrl && controller.enableIssMqtt.value) ? TextField(
-          decoration: const InputDecoration(labelText: 'ISS MQTT Broker URL'),
-          controller: issMqttBrokerUrlController,
-          onChanged: (value) async {
-            if (value != controller.issMqttBrokerUrl.value) {
-              controller.issMqttBrokerUrl.value = value;
-              await controller.secureStorage.setISSMqttBrokerUrl(value);
-            }
-          },
+            ),
         ) : Container(),
-        controller.showIssBrokerUrl ? verticalSpaceSmall : Container(),
-        controller.showIss ? verticalSpaceSmall : Container(),
-        controller.showEtx ? SwitchListTile(
-            title: const Text("Enable ETX MQTT Broker"),
-            value: controller.enableEtxMqtt.value,
+        (controller.showIssBrokerUrl && controller.enableIssMqtt.value) ? Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: TextField(
+            decoration: const InputDecoration(labelText: 'ISS MQTT Broker URL'),
+            controller: issMqttBrokerUrlController,
             onChanged: (value) async {
-              if (value != controller.enableEtxMqtt.value) {
-                controller.enableEtxMqtt.value = value;
-                await controller.secureStorage.setEtxMqttEnabled(value);
-                controller.changedBrokerSettings.value = true; 
+              if (value != controller.issMqttBrokerUrl.value) {
+                controller.issMqttBrokerUrl.value = value;
+                await controller.secureStorage.setISSMqttBrokerUrl(value);
               }
-            }) : Container(),
-        controller.showEtx ? verticalSpaceSmall : Container(),
+            },
+          ),
+        ) : Container(),
+        controller.showEtx ? Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: SwitchListTile(
+              title: const Text("Enable ETX MQTT Broker"),
+              value: controller.enableEtxMqtt.value,
+              onChanged: (value) async {
+                if (value != controller.enableEtxMqtt.value) {
+                  controller.enableEtxMqtt.value = value;
+                  await controller.secureStorage.setEtxMqttEnabled(value);
+                  controller.changedBrokerSettings.value = true; 
+                }
+              }),
+        ) : Container(),
         controller.showManualRegistration ? Obx(() => SwitchListTile(
             title: const Text("Enable Manual Registration"),
             value: paramController.manualRegistrationMode.value,
@@ -453,17 +461,18 @@ class SettingsPage extends StatelessWidget {
               ],
             )
             : Container()),
-        controller.showVzMode ? verticalSpaceSmall : Container(),
-        controller.showVzMode ? Obx(() => SwitchListTile(
-            title: const Text("VZ Mode"),
-            value: controller.vzMode.value,
-            onChanged: (value) async {
-              if (value != controller.vzMode.value) {
-                controller.vzMode.value = value;
-                await controller.secureStorage.setVZMode(value);
-              }
-            })) : Container(),
-        controller.showVzMode ? verticalSpaceSmall : Container(),
+        controller.showVzMode ? Obx(() => Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: SwitchListTile(
+              title: const Text("VZ Mode"),
+              value: controller.vzMode.value,
+              onChanged: (value) async {
+                if (value != controller.vzMode.value) {
+                  controller.vzMode.value = value;
+                  await controller.secureStorage.setVZMode(value);
+                }
+              }),
+        )) : Container(),
         Obx(() => SwitchListTile(
             title: const Text("Enable Notifications"), 
             value: controller.notificationsEnabled.value,
