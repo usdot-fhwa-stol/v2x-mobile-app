@@ -631,11 +631,11 @@ class MapState extends State<MapPage> with RouteAware {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity = ValidateStatus.FAILURE;
-    try {
-      validity = await scms.validate(bytes);
-    } catch (e) {
-      showError("SCMS validation failed: $e");
-    }
+    // try {
+    //   validity = await scms.validate(bytes);
+    // } catch (e) {
+    //   showError("SCMS validation failed: $e");
+    // }
 
     switch (msgType) {
       case MsgType.BSM:
