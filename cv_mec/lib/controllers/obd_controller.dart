@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:bluez/bluez.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:get/get.dart';
@@ -9,7 +10,6 @@ import 'package:bluetooth_classic/models/device.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:conversion/conversion.dart';
-import 'package:logger/logger.dart';
 
 typedef OBDCallback = void Function(String rawResponse);
 
@@ -60,7 +60,7 @@ class OBDController extends GetxController {
 
   bool isRunningAsRoot = false;
 
-  final Logger _logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
 
   void startBluezDevicePolling() {
     _bluezDeviceTimer?.cancel();
@@ -68,7 +68,7 @@ class OBDController extends GetxController {
       try {
         bluezDevices.value = bluez.devices;
       } catch (e) {
-        _logger.e("Error polling BlueZ devices: $e");
+        loggingService.showError("Error polling BlueZ devices: $e");
       }
     });
   }
@@ -119,7 +119,7 @@ class OBDController extends GetxController {
       await bluez.connect();
       startBluezDevicePolling();
     } catch (e) {
-      _logger.e("ERROR scanning bluetooth devices in Linux: $e");
+      loggingService.showError("Error scanning Bluetooth devices on Linux: $e");
     }
   }
 
@@ -155,7 +155,7 @@ class OBDController extends GetxController {
         showOBDStats.value = false;
       }
     } catch (e) {
-      _logger.e("Error disconnecting rfcomm: $e");
+      loggingService.showError("Error disconnecting rfcomm: $e");
     }
   }
 
@@ -175,7 +175,7 @@ class OBDController extends GetxController {
         }
       });
     } catch (e) {
-      _logger.e("Error starting OBD data retrieval: $e");
+      loggingService.showError("Error starting OBD data retrieval: $e");
     }
   }
 
@@ -226,7 +226,7 @@ class OBDController extends GetxController {
             rpm.value = (rpmValue[0] * 256 + rpmValue[1]) / 4;
           }
         } else {
-          _logger.w("RPM response is too short: $hexRpm");
+          loggingService.showWarning("RPM response is too short: $hexRpm");
         }
       }
     });
@@ -342,7 +342,7 @@ class OBDController extends GetxController {
         }
       });
     } catch (e) {
-      _logger.e("Error starting OBD data retrieval: $e");
+      loggingService.showError("Error starting OBD data retrieval: $e");
     }
   }
 
@@ -402,7 +402,7 @@ class OBDController extends GetxController {
         return;
       }
     } catch (e) {
-      _logger.e("Error checking root status: $e");
+      loggingService.showError("Error checking root status: $e");
     }
   }
 }

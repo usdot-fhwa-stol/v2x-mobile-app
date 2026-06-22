@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cv_mec/pages/load.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/itis_decoding_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/theme_setting.dart';
@@ -39,10 +40,11 @@ void main() async {
 
 
   await clearKeychainValues();
+  Get.put(FileService());
+  LoggingService loggingService = Get.put(LoggingService());
   Get.put(GeometryService());
   Get.put(LocationService());
   Get.put(Timing());
-  Get.put(FileService());
   SettingsController settingsController = Get.put(SettingsController());
   await settingsController.initialize();
   ApiService apiService = Get.put(ApiService());
@@ -60,6 +62,7 @@ void main() async {
   Get.put(S3Service());
   Get.put(ItisDecodingService());
   Get.put(IssScms());
+  loggingService.initialize();
   
   runApp(
     Platform.isAndroid || Platform.isIOS

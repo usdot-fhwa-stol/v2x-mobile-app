@@ -5,27 +5,21 @@ import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/etx/registration.dart';
 import 'package:cv_mec/pages/settings_page.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:get/get.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:logger/logger.dart';
 
 class RemoteGPSService extends GetxController {
   //final String baseURI = "http://cvmecapidns.eastus.azurecontainer.io:8080"; //SETTINGS Configuration
   SettingsController settingsController = Get.find<SettingsController>();
-  late DataQueue appLogQueue;
-  final Logger _logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
 
   IOClient _createInsecureClient() {
     final httpClient = HttpClient()..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
     return IOClient(httpClient);
-  }
-
-  void addToAppLog(String message) {
-    _logger.i("APPLOG: $message");
-    appLogQueue.addItem("$message\n");
   }
 
   Future getToken() async {
@@ -111,7 +105,7 @@ class RemoteGPSService extends GetxController {
               speedAccuracy: 0,
             );
           } catch (e) {
-            addToAppLog('RemoteGPSService error: $e');
+            loggingService.showError('RemoteGPSService error: $e');
             return null;
           }
         })

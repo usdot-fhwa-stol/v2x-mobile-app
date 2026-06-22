@@ -1,16 +1,17 @@
 import 'dart:math';
 
 import 'package:cv_mec/models/msg_types.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:logger/logger.dart';
+import 'package:get/get.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 
 class MqttAgent{
   
   String agentName;
   MqttService mqttService = MqttService();
-  Logger logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
   Position? currentPosition;
   String? connectionUrl;
   Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction;
@@ -43,23 +44,23 @@ class MqttAgent{
     if(!isReconnecting){
       isReconnecting = true;
       while(!isConnected()){
-        logger.i("Attempting to Reconnect MQTT Agent $agentName. Attempt number ${reconnectAttempts + 1}");
+        loggingService.addToAppLog("Attempting to Reconnect MQTT Agent $agentName. Attempt number ${reconnectAttempts + 1}");
         await connect();
         reconnectAttempts++;
         
         if(!isConnected()){
           int delayMilliseconds = min(1000 * (1 << reconnectAttempts), 60000); // Exponential backoff: 2s, 4s, 8s, 16s, max 60s
-          logger.i("Reconnection attempt $reconnectAttempts failed. Waiting ${delayMilliseconds}ms before retry...");
+          loggingService.addToAppLog("Reconnection attempt $reconnectAttempts failed. Waiting ${delayMilliseconds}ms before retry...");
           await Future.delayed(Duration(milliseconds: delayMilliseconds));
         }
       }
 
       if(isConnected()){
-        logger.i("Successfully reconnected MQTT Agent $agentName after $reconnectAttempts attempts");
+        loggingService.addToAppLog("Successfully reconnected MQTT Agent $agentName after $reconnectAttempts attempts");
         reconnectAttempts = 0;
         isReconnecting = false;
       } else {
-        logger.w("Failed to reconnect MQTT Agent $agentName after 5 attempts");
+        loggingService.showWarning("Failed to reconnect MQTT Agent $agentName after 5 attempts");
         isReconnecting = false;
       }
     }

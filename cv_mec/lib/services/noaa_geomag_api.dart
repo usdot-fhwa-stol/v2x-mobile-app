@@ -5,11 +5,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:cv_mec/models/declination_data.dart';
-import 'package:logger/logger.dart';
+import 'package:cv_mec/services/logging_service.dart';
 
 // Documentation: https://www.ngdc.noaa.gov/geomag/CalcSurveyFin.shtml
 class NoaaGeomagApi {
-  static final Logger _logger = Logger();
+  static final LoggingService loggingService = LoggingService();
   static final String _apiKey = dotenv.env['NOAA_GEOMAG_API_TOKEN']!;
   static const String _baseUrl =
       'https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1={LATITUDE}&lon1={LONGITUDE}&key={API_KEY}&resultFormat=json';
@@ -31,16 +31,16 @@ class NoaaGeomagApi {
       switch (response.statusCode) {
         case 401:
         case 403:
-          _logger.e("Invalid API key");
+          loggingService.showError("Invalid API key");
           return null;
         case 408:
-          _logger.e("Timeout, request timed out");
+          loggingService.showError("Timeout, request timed out");
           return null;
         default:
           return DeclinationData.fromJson(json.decode(response.body));
       }
     } on SocketException catch (_) {
-      _logger.e("Socket Exception in getDeclination");
+      loggingService.showError("Socket Exception in getDeclination");
       return null;
     }
   }

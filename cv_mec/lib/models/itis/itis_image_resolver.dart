@@ -1,9 +1,11 @@
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
+import 'package:get/get.dart';
 import 'package:image/image.dart' as img_lib;
 
 class ItisImageResolver{
-  final Logger logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
+  
   Future<ImageProvider> getImage(String imageName) async {
     throw UnimplementedError("This is an abstract class - Make sure to only call this method on subclasses");
   }

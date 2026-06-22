@@ -21,15 +21,16 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:dart_jts/dart_jts.dart';
+import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:logger/logger.dart';
 import 'package:geodesy/geodesy.dart' as geo;
 
 class GeometryService {
   GeometryFactory geometryFactory = GeometryFactory.defaultPrecision();
   final geodesy = geo.Geodesy();
-  final Logger _logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
 
   Map<TravelerDataFrame, DataFrameGeometry> getTimPolyRegion(TravelerInformation tim) {
     Map<TravelerDataFrame, DataFrameGeometry> dataFrameRegions = <TravelerDataFrame, DataFrameGeometry>{};
@@ -71,14 +72,14 @@ class GeometryService {
         if(nodeListXY.nodeListXY is NodeSetXY) {
           return getLatLngCoordinatesFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, path.anchor!);
         } else if (nodeListXY.nodeListXY is ComputedLane) {
-          _logger.w("Unable to Parse Computed NodeListXY System. Not Supported");
+          loggingService.showWarning("Unable to Parse Computed NodeListXY System. Not Supported");
         } else {
-          _logger.w("Unable to Identify the Type of NodeListXY");
+          loggingService.showWarning("Unable to Identify the Type of NodeListXY");
         }
       } else if (offsetSystem.offset is NodeListLL) {
         return getLatLngCoordinatesFromNodeListLL(offsetSystem.offset as NodeListLL, path.anchor!);
       } else {
-        _logger.w("Unable to Identify the Type of OffsetSystem");
+        loggingService.showWarning("Unable to Identify the Type of OffsetSystem");
       }
     }
 
@@ -100,13 +101,13 @@ class GeometryService {
         return getGeometryFromOffsetSystem(
           path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
       } else {
-      _logger.w("Unable to Parse Path. OffsetSystem requires Anchor and Lane Width");
+      loggingService.showWarning("Unable to Parse Path. OffsetSystem requires Anchor and Lane Width");
       return null;
       }
     } else if (path.description is GeometricProjection) {
       return getGeometryFromGeometricProjection(path.description as GeometricProjection);
     } else {
-      _logger.w("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
+      loggingService.showWarning("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
       return null;
     }
   }
@@ -117,7 +118,7 @@ class GeometryService {
     } else if (offsetSystem.offset is NodeListLL) {
       return getClosedGeometryFromNodeListLL(offsetSystem.offset as NodeListLL, anchor);
     } else {
-      _logger.w("Unable to Identify the Type of OffsetSystem for closed path geometry");
+      loggingService.showWarning("Unable to Identify the Type of OffsetSystem for closed path geometry");
     }
     return null;
   }
@@ -128,7 +129,7 @@ class GeometryService {
     } else if (offsetSystem.offset is NodeListLL) {
       return getGeometryFromNodeListLL(offsetSystem.offset as NodeListLL, anchor, laneWidth);
     } else {
-      _logger.w("Unable to Identify the Type of OffsetSystem");
+      loggingService.showWarning("Unable to Identify the Type of OffsetSystem");
     }
     return null;
   }
@@ -137,10 +138,10 @@ class GeometryService {
     if (nodeListXY.nodeListXY is NodeSetXY) {
       return getClosedGeometryFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, anchor);
     } else if (nodeListXY.nodeListXY is ComputedLane) {
-      _logger.w("Unable to Parse Computed NodeListXY System. Not Supported");
+      loggingService.showWarning("Unable to Parse Computed NodeListXY System. Not Supported");
       return null;
     } else {
-      _logger.w("Unable to Identify the Type of NodeListXY");
+      loggingService.showWarning("Unable to Identify the Type of NodeListXY");
     }
     return null;
   }
@@ -152,7 +153,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Closed Geometry. Issue in decoding Node List LL. Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
+      loggingService.showWarning("Unable to Add Closed Geometry. Issue in decoding Node List LL. Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -164,7 +165,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Closed Geometry. Issue in decoding Node Set XY Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
+      loggingService.showWarning("Unable to Add Closed Geometry. Issue in decoding Node Set XY Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -173,10 +174,10 @@ class GeometryService {
     if (nodeListXY.nodeListXY is NodeSetXY) {
       return getGeometryFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, anchor, laneWidth);
     } else if (nodeListXY.nodeListXY is ComputedLane) {
-      _logger.w("Unable to Parse Computed NodeListXY System. Not Supported");
+      loggingService.showWarning("Unable to Parse Computed NodeListXY System. Not Supported");
       return null;
     } else {
-      _logger.w("Unable to Identify the Type of NodeListXY");
+      loggingService.showWarning("Unable to Identify the Type of NodeListXY");
     }
     return null;
   }
@@ -188,7 +189,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Geometry. Issue in decoding Node List LL. Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
+      loggingService.showWarning("Unable to Add Geometry. Issue in decoding Node List LL. Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
     }
 
     return null;
@@ -202,7 +203,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      _logger.w("Unable to Add Geometry. Issue in decoding Node Set XY Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
+      loggingService.showWarning("Unable to Add Geometry. Issue in decoding Node Set XY Anchor Point: ${anchor.lat.latitude}, ${anchor.long.longitude}, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -234,7 +235,7 @@ class GeometryService {
     double maxLaneWidth = calculateMaximumExpansion(lineString);
 
     if (laneWidth > maxLaneWidth) {
-      _logger.w("Provided lane width of $laneWidth meters exceeds the maximum lane width of $maxLaneWidth meters for this geometry. The geometry will be expanded to the maximum possible lane width.");
+      loggingService.showWarning("Provided lane width of $laneWidth meters exceeds the maximum lane width of $maxLaneWidth meters for this geometry. The geometry will be expanded to the maximum possible lane width.");
       laneWidth = maxLaneWidth;
     }
 

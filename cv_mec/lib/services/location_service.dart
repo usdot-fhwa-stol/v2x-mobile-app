@@ -11,12 +11,14 @@ import 'package:get/get.dart';
 import 'package:cv_mec/models/declination_data.dart';
 import 'package:cv_mec/services/mock_location_service.dart';
 import 'package:cv_mec/services/noaa_geomag_api.dart';
-import 'package:logger/logger.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 class LocationService extends GetxService {
+
+  LoggingService loggingService = Get.find<LoggingService>();
+  
   // Static variables
-  final Logger _logger = Logger();
   static final MockLocationService _mockLocationService = MockLocationService();
   LocationSettings _locationSettings =
       const LocationSettings(accuracy: LocationAccuracy.bestForNavigation, distanceFilter: 0);
@@ -154,9 +156,9 @@ class LocationService extends GetxService {
         await Future.delayed(const Duration(milliseconds: 200));
         // Request system's tracking authorization dialog
         TrackingStatus status = await AppTrackingTransparency.requestTrackingAuthorization();
-        _logger.i("Tracking permission status: $status");
+        loggingService.addToAppLog("Tracking permission status: $status");
         if(status != TrackingStatus.authorized){
-          _logger.w("Tracking permissions not granted, location permissions may not work correctly on iOS");
+          loggingService.showWarning("Tracking permissions not granted, location permissions may not work correctly on iOS");
         }
       }
     }
@@ -167,7 +169,7 @@ class LocationService extends GetxService {
       // Location services are not enabled don't continue
       // accessing the position and request users of the
       // App to enable the location services.
-      _logger.w("Location services are disabled");
+      loggingService.showWarning("Location services are disabled");
       return Future.error('Location services are disabled.');
     }
     _permission = await Geolocator.checkPermission();
@@ -194,13 +196,13 @@ class LocationService extends GetxService {
         // Android's shouldShowRequestPermissionRationale
         // returned true. According to Android guidelines
         // your App should show an explanatory UI now.
-        _logger.w("Location permissions are denied after requesting");
+        loggingService.showWarning("Location permissions are denied after requesting");
         return Future.error('Location permissions are denied');
       }
     }
     if (_permission == LocationPermission.deniedForever) {
       // Permissions are denied forever, handle appropriately.
-      _logger.w("Location permissions are permanently denied, we cannot request permissions.");
+      loggingService.showWarning("Location permissions are permanently denied, we cannot request permissions.");
       return Future.error('Location permissions are permanently denied, we cannot request permissions.');
     }
     return true;
@@ -240,7 +242,7 @@ class LocationService extends GetxService {
       return _mockLocationService.getCurrentLocation();
     }
     if (!await isPermissionGranted()) {
-      _logger.w("Location permissions not granted, cannot get current location");
+      loggingService.showWarning("Location permissions not granted, cannot get current location");
       return null;
     }
     return await Geolocator.getCurrentPosition();

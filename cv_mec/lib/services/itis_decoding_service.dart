@@ -21,9 +21,9 @@ import 'package:cv_mec/models/text_overlay.dart';
 import 'package:cv_mec/models/tim_definition.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/file_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:logger/logger.dart';
 import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as Image;
@@ -35,7 +35,7 @@ class ItisDecodingService{
   final int minItisLargeNumber = 11531;
   final int maxItisLargeNumber = 11613;
 
-  final Logger logger = Logger();
+  LoggingService loggingService = Get.find<LoggingService>();
   final String fontDirectory = "assets/fonts";
 
   Map<String, ItisSequence> graphicsMap = {};
@@ -60,7 +60,7 @@ class ItisDecodingService{
       if(mapManifest.containsKey("version")){
         String version = mapManifest['version'];
         String manifestFileName = "tim_manifest_$version.json";
-        logger.i("Loading TIM Manifest Version $version");
+        loggingService.addToAppLog("Loading TIM Manifest Version $version");
         if(!await fileService.checkIfFileExists(manifestFileName)){
           Uint8List? timFile = await apiService.getTimIcons(version);
           if(timFile != null){
@@ -84,7 +84,7 @@ class ItisDecodingService{
     }
 
     if(!loadTimsSuccessful){
-      logger.i("Loading TIMs from bundled asset file");
+      loggingService.addToAppLog("Loading TIMs from bundled asset file");
       await loadTimsFromFile();
     }
   }
@@ -109,7 +109,7 @@ class ItisDecodingService{
       category = "advisory";
       items = (frame.content as ITIS_ITIScodesAndText).item;
     } else {
-      logger.e("Unable to Map category for content type ${frame.content}");
+      loggingService.showError("Unable to Map category for content type ${frame.content}");
       return ItisSequence([], await imageResolver.getMissing());
     }
 
@@ -133,7 +133,7 @@ class ItisDecodingService{
         return graphicsMap[key]!;
       }
     }
-    logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)} ${ItisConverter.getItisListAsCodeString(items)}");
+    loggingService.showError("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)} ${ItisConverter.getItisListAsCodeString(items)}");
     return ItisSequence(items, await imageResolver.getMissing());
   }
 
@@ -183,7 +183,7 @@ class ItisDecodingService{
         String key = getKeyForTimDefinition(def.type, def.codes);
 
         if(graphicsMap.containsKey(key)){
-          logger.w("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
+          loggingService.showWarning("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
         }else{
           ImageProvider image = await imageResolver.getImage(def.graphic);
           graphicsMap[key] = ItisSequence.fromText(def.codes, image);
@@ -227,11 +227,11 @@ class ItisDecodingService{
         }
         return MemoryImage(Image.encodePng(baseSizeImage));
       }else{
-        logger.e("Unable to Load Base Image when creating dynamic Image.");
+        loggingService.showError("Unable to Load Base Image when creating dynamic Image.");
         return imageResolver.getMissing();
       }
     }on Exception catch(e){
-      logger.e("Generic Exception in creating Dynamic Image $e");
+      loggingService.showError("Generic Exception in creating Dynamic Image $e");
       return imageResolver.getMissing();
     }
   }
@@ -246,7 +246,7 @@ class ItisDecodingService{
       }
       
     } on Exception catch(e){
-      logger.e("Unable to Load Image from Path $imagePath");
+      loggingService.showError("Unable to Load Image from Path $imagePath");
       return imageResolver.getMissing();
     }
   }
@@ -301,7 +301,7 @@ class ItisDecodingService{
       // Advisory
       return "advisory";
     } else {
-      logger.e("Unable to Map category for content type $content");
+      loggingService.showError("Unable to Map category for content type $content");
       return "";
     }
   }
