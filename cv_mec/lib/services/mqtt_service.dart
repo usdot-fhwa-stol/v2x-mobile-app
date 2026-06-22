@@ -91,7 +91,7 @@ class MqttService extends GetxService {
 
     // Setup Universal Subscriber. This will get parsed to individual subscribers as they are registered
     client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? receivedMessages) {
-      DateTime recTime = timingService.getTime();
+      DateTime recTime = DateTime.now();
       for (MqttReceivedMessage<MqttMessage?> message in receivedMessages!) {
         for (String key in subscriberList.keys) {
           if (matchTopic(message.topic, key)) {

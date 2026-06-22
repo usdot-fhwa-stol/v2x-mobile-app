@@ -308,7 +308,8 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       if(settingsController.enableIssScmsSigning.value){
-        scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
+        // scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
+        scms.activateScms("chkB7jWxykVIVDP7psQzNAvSMJ2UFi0l19dcEH9SVpzLx3O4L8E2Kw==", "obu").then((result) {
           scmsActive = result;
           if(!scmsActive){
             showError("Unable to Activate SCMS Signing");
@@ -631,16 +632,23 @@ class MapState extends State<MapPage> with RouteAware {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity = ValidateStatus.FAILURE;
+
+    DateTime preScmsTime = DateTime.now();
     try {
       validity = await scms.validate(bytes);
     } catch (e) {
       showError("SCMS validation failed: $e");
     }
+    DateTime postScmsTime = DateTime.now();
+
+    // sendTime = postScmsTime;
+
+    // print("Message Time Process Delay: ${timingService.getTime().difference(recTime).inMilliseconds} ms");
 
     switch (msgType) {
       case MsgType.BSM:
-        addToAppLog("Identified Message as BSM");
-        processNewBsm(broker, topic, hex, recTime, sendTime, source, validity);
+        // addToAppLog("Identified Message as BSM");
+        processNewBsm(broker, topic, hex, recTime, sendTime, source, validity, preScmsTime, postScmsTime);
         break;
       case MsgType.PSM:
         addToAppLog("Identified Message as PSM");
@@ -655,7 +663,7 @@ class MapState extends State<MapPage> with RouteAware {
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
-        addToAppLog("Identified Message as TIM $hex");
+        addToAppLog("Identified Message as TIM $topic $hex");
         if (settingsController.showTims.value) {
           processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         }
@@ -679,15 +687,17 @@ class MapState extends State<MapPage> with RouteAware {
     }
   }
 
-  void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+  void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity, preScmsTime, postScmsTime) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
+    DateTime decodeStartTime = DateTime.now();
     BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
+    DateTime bsmDecodeTime = DateTime.now();
     String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
 
-    if (vehicleID == bsmBuilder.vehicleId) {
-      return;
-    }
+    // if (vehicleID == bsmBuilder.vehicleId) {
+    //   return;
+    // }
 
       LightbarInUse lights = LightbarInUse.unavailable;
       SirenInUse sirens = SirenInUse.unavailable;
@@ -711,6 +721,11 @@ class MapState extends State<MapPage> with RouteAware {
 
       ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
       messageManager.addOrUpdate(msg);
+
+      DateTime finalParseTime = DateTime.now();
+      // print("Message Received Time: ${recTime.toIso8601String()}, SCMS Validation Time: ${postScmsTime.difference(preScmsTime).inMicroseconds} µs, Decode Time ${bsmDecodeTime.difference(decodeStartTime).inMicroseconds} µs, Total Time: ${finalParseTime.difference(recTime).inMicroseconds} µs");
+
+      // print("BSM Delay: ${timingService.getTime().difference(recTime).inMilliseconds} ms");
       addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
     
   }
@@ -720,7 +735,6 @@ class MapState extends State<MapPage> with RouteAware {
     PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
 
     String remoteDeviceId = ASNService.bytesToHex(psm.id.temporaryID);
-
     if(remoteDeviceId == psmBuilder.deviceId){
       return;
     }
@@ -742,11 +756,20 @@ class MapState extends State<MapPage> with RouteAware {
 
     spatManager.addOrUpdate(spat);
 
+    
+    if(spat.intersections.intersectionStateList.first.id.id.intersectionID == 5036){
+      print("Spat 5036 HEX: $hex");
+    }
+
+    
+
     updateGraphics();
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
     }
+
+    
 
     addToReceiveLog(broker, topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source, validity);
   }
@@ -758,10 +781,22 @@ class MapState extends State<MapPage> with RouteAware {
     
     mapManager.addOrUpdate(map);
 
+    // if(map.intersections!.intersectionGeometryList.first.id.id.intersectionID == 5036){
+    //   printLongString("Map 5036 HEX: $hex");
+    // }
+    // print("Received MAP with First Intersection ID: ${map.intersections.intersectionList.first.id.id.intersectionID}");
+
     updateGraphics();
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
   }
+
+  // void printLongString(String str) {
+  //   int chunkSize = 800;
+  //   for (int i = 0; i < str.length; i += chunkSize) {
+  //     print("Long Print: " + str.substring(i, i + chunkSize > str.length ? str.length : i + chunkSize));
+  //   }
+  // }
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
@@ -899,12 +934,15 @@ class MapState extends State<MapPage> with RouteAware {
 
     sendMessageTimer = Timer.periodic(Duration(milliseconds: broadcastIntervalMilliseconds), (timer) {
       sendMessage();
+      updateTimeToChange();
+
     });
   }
 
   List<int>? lastSignedMessage = null;
 
   void sendMessage() async {
+    DateTime sendStartTime = DateTime.now();
     if (currentPosition == null) {
       addToAppLog("Cannot Send BSM. Location is Null");
       updateConnectedStatus(ConnectedStatus.PARTIAL);
@@ -916,7 +954,9 @@ class MapState extends State<MapPage> with RouteAware {
     int psid = PSID.BSM.code;
     MsgType messageType = MsgType.BSM;
 
-
+    DateTime configureStartTime = DateTime.now();
+    DateTime buildStartTime = DateTime.now();
+    DateTime hexEncodeTime = DateTime.now();
     // Switch to PSM messages depending on config settings.
     if (configController.isVehicleConfig.value) {
       bsmBuilder.setPosition(currentPosition!);
@@ -951,17 +991,26 @@ class MapState extends State<MapPage> with RouteAware {
       }
       psid = PSID.PSM.code;
       messageType = MsgType.PSM;
+      buildStartTime = DateTime.now();
       hex = psmBuilder.build();
+      
     }
 
     bool signed = false;
     if (hex != "") {
       List<int> messageBytes = ASNService.hexToBytes(hex);
-      
+      hexEncodeTime = DateTime.now();
+      DateTime startSigningTime = DateTime.now();
+      DateTime endSigningTime = DateTime.now();
+      int size = messageBytes.length;
       if(scmsActive){
         try {
+          startSigningTime = DateTime.now();
           List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
+          
+          endSigningTime = DateTime.now();
           if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
+            size = signedMessageBytes.length;
             messageBytes = signedMessageBytes;
             signed = true;
           }else{
@@ -972,7 +1021,11 @@ class MapState extends State<MapPage> with RouteAware {
         }
       }
       
+      DateTime endTime = DateTime.now();
       mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
+
+      print("Message Send Time: ${sendTime.toIso8601String()}, Building Time: ${buildStartTime.difference(configureStartTime).inMicroseconds} µs, Encode Time ${hexEncodeTime.difference(buildStartTime).inMicroseconds} µs, SCMS Signing Time: ${endSigningTime.difference(startSigningTime).inMicroseconds} µs, Total Time: ${endTime.difference(sendStartTime).inMicroseconds} µs");
+
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
         updateConnectedStatus(ConnectedStatus.CONNECTED);
@@ -1045,6 +1098,10 @@ class MapState extends State<MapPage> with RouteAware {
   DateTime prevSystemTime = DateTime.now();
 
   Future<void> updatePosition(Position position) async {
+    if(position.timestamp.difference(timingService.getTime()).inSeconds > 2){
+      addToAppLog("Skipping GPS Position Update Timing doesn't line up.");
+      return;
+    }
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
 
@@ -1279,8 +1336,8 @@ class MapState extends State<MapPage> with RouteAware {
     Position? pos = currentPosition;
   
     DateTime compTime = timingService.getTime();
-    DateTime endTime = compTime.add(const Duration(seconds: 3));
-    DateTime startTime = compTime.subtract(const Duration(seconds: 3));
+    DateTime endTime = compTime.add(const Duration(seconds: 2));
+    DateTime startTime = compTime.subtract(const Duration(seconds: 2));
 
     List<String> removeKeys = [];
     for (String key in messageManager.receivedMsgs.keys) {
@@ -1514,6 +1571,7 @@ class MapState extends State<MapPage> with RouteAware {
       for (GeoMap map in geoMaps) {
         List<IntersectionState> states =
             spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
+
         for (IntersectionState state in states) {
           // This code indexes light colors by signal group to allow easy lookup down the line
           Map<int, MovementEvent> stateMap = {};
