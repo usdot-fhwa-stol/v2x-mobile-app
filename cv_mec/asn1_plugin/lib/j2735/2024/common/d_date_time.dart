@@ -163,7 +163,10 @@ class DDateTime {
   }
 
   DateTime getAsDateTime() {
+    int second = ((this.second?.dSecond ?? 0) / 1000).toInt();
+    int millisecond = (this.second?.dSecond ?? 0) % 1000;
+
     return DateTime(this.year?.dYear ?? 0, this.month?.dMonth ?? 0, this.day?.dDay ?? 0, this.hour?.dHour ?? 0,
-        this.minute?.dMinute ?? 0, this.second?.dSecond ?? 0);
+        this.minute?.dMinute ?? 0, second, millisecond);
   }
 }

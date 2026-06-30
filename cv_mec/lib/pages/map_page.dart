@@ -789,7 +789,7 @@ class MapState extends State<MapPage> with RouteAware {
     sdsm.sDSMTimeStamp.day ??= DDay(recTime.day);
     sdsm.sDSMTimeStamp.hour ??= DHour(recTime.hour);
     sdsm.sDSMTimeStamp.minute ??= DMinute(recTime.minute);
-    sdsm.sDSMTimeStamp.second ??= DSecond(recTime.second);
+    sdsm.sDSMTimeStamp.second ??= DSecond(recTime.second * 1000 + recTime.millisecond);
 
     LatLng refPos = LatLng(sdsm.refPos.lat.getDecimalLatitude(), sdsm.refPos.long.getDecimalLongitude());
 
