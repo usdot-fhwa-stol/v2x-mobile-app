@@ -15,8 +15,10 @@ class DDateTime {
   DDay? day;
   DHour? hour;
   DMinute? minute;
-  DSecond? second;
+  DSecond? second; // This is the millisecond of the minute. It is a value between 0 and 60,000. 
   DOffset? offset;
+
+  static const int SECOND_TO_MS = 1000;
 
   DDateTime.fromDateTime(DateTime dateTime) {
     year = DYear(dateTime.year);
@@ -24,7 +26,7 @@ class DDateTime {
     day = DDay(dateTime.day);
     hour = DHour(dateTime.hour);
     minute = DMinute(dateTime.minute);
-    second = DSecond(dateTime.second * 1000 + dateTime.millisecond);
+    second = DSecond(dateTime.second * SECOND_TO_MS + dateTime.millisecond);
     // Offset in minutes from UTC
     offset = DOffset(dateTime.timeZoneOffset.inMinutes);
   }
@@ -163,8 +165,10 @@ class DDateTime {
   }
 
   DateTime getAsDateTime() {
-    int second = ((this.second?.dSecond ?? 0) / 1000).toInt();
-    int millisecond = (this.second?.dSecond ?? 0) % 1000;
+
+    // Break apart D Second into seconds and milliseconds parts to build the date time. 
+    int second = ((this.second?.dSecond ?? 0) / SECOND_TO_MS).toInt();
+    int millisecond = (this.second?.dSecond ?? 0) % SECOND_TO_MS;
 
     return DateTime(this.year?.dYear ?? 0, this.month?.dMonth ?? 0, this.day?.dDay ?? 0, this.hour?.dHour ?? 0,
         this.minute?.dMinute ?? 0, second, millisecond);
