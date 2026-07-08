@@ -51,6 +51,9 @@ cp sample.env .env
 | S3_REGION             | The AWS region hosting the S3 Bucket and IAM credentials          |               | No       | No |
 | S3_DESTINATION        | A subfolder within the Bucket to Place Log files                  |               | No       | No |
 | PC5_MQTT_BROKER       | Ettifos OBU Server location. Should be formatted as mqtt://<hostname>:1883 | | No | Yes |
+| ENABLE_ISS_BROKER     | Default for if the ISS broker should be used or not               | false         | No       | Yes |
+| ENABLE_ETX_BROKER     | Default for if the ETX broker should be used or not               | false         | No       | Yes |
+| Enable_PC5_BROKER     | Default for if the PC% broker should be used or not               | false         | No       | Yes |
 | GPS_TYPE              | Specifies the default GPS type to use within the app, valid values: mobile, obu, cradle | | No | Yes |
 | GPS_USERNAME | If using a remote GPS (Cradlepoint), username to use when connecting | | No | Yes |
 | GPS_PASSWORD | If using a remote GPS (Cradlepoint), password to use when connecting | | No | Yes |

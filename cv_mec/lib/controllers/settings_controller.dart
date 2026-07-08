@@ -83,8 +83,8 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
-  Rx<bool> enableIssMqtt = true.obs;
-  Rx<bool> enableEtxMqtt = true.obs;
+  Rx<bool> enableIssMqtt = false.obs;
+  Rx<bool> enableEtxMqtt = false.obs;
   RxInt broadcastRate = 10.obs;
 
   RxList<String> availablePaths = <String>[].obs;
@@ -99,8 +99,8 @@ class SettingsController extends GetxController {
   List<GPSType> gpsTypes = GPSType.values;
 
 
-  // Automatically enable PC5 if the environment variable is configured
-  Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
+  Rx<bool> enablePC5 = false.obs;
+
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
@@ -183,10 +183,9 @@ class SettingsController extends GetxController {
     screenWidth.value = await sharedPrefs.getScreenWidthFromPrefs() ?? 0;
     screenHeight.value = await sharedPrefs.getScreenHeightFromPrefs() ?? 0;
 
-    if (screenWidth.value != 0 || screenHeight.value != 0) {
-      showScreenSizeSettings.value = true;
-      screenLocation.value = await sharedPrefs.getScreenLocationFromPrefs() ?? Alignment.center;
-    }
+    showScreenSizeSettings.value = await sharedPrefs.getShowScreenSizeSettingsFromPrefs() ?? false;
+
+    screenLocation.value = await sharedPrefs.getScreenLocationFromPrefs() ?? Alignment.center;
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform(); // Fetch the app version
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
@@ -249,6 +248,11 @@ class SettingsController extends GetxController {
     await sharedPrefs.saveIconSizeToPrefs(iconSize.value);
   }
 
+  void setShowScreenSizeSettings(bool value) async {
+    showScreenSizeSettings.value = value;
+    await sharedPrefs.saveShowScreenSizeSettingsToPrefs(value);
+  }
+  
   void setScreenWidth(int width) async {
     screenWidth.value = width;
     await sharedPrefs.saveScreenWidthToPrefs(width);
