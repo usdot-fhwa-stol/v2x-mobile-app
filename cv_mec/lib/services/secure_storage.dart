@@ -64,9 +64,9 @@ class SecureStorage {
   static final _startDemoMode = false;
   static final _startDeveloperMode = false;
   static final _startEnableSoundEffects = false;
-  static final _startEnablePC5 = false;
-  static final _startEnableIssMqtt = true;
-  static final _startEnableEtxMqtt = true;
+  static final _startEnablePC5 = dotenv.env['ENABLE_PC5_BROKER'] != null && (dotenv.env['ENABLE_PC5_BROKER']!.toLowerCase() == 'true') && dotenv.env['PC5_MQTT_BROKER'] != null ? true : false;
+  static final _startEnableIssMqtt = dotenv.env['ENABLE_ISS_BROKER'] != null && (dotenv.env['ENABLE_ISS_BROKER']!.toLowerCase() == 'true') ? true : false;
+  static final _startEnableEtxMqtt = dotenv.env['ENABLE_ETX_BROKER'] != null && (dotenv.env['ENABLE_ETX_BROKER']!.toLowerCase() == 'true') ? true : false;
   static final _startIssScmsSigningEnabled = dotenv.env['ISS_SCMS_TOKEN'] != null ? true : false;
   static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(10, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;
 
