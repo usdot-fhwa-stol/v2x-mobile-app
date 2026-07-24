@@ -7,7 +7,6 @@ import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
-import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -16,29 +15,29 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
-  SettingsController controller = Get.find<SettingsController>();
-  ParamController paramController = Get.find<ParamController>();
-  TextEditingController usernameController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-  TextEditingController baseUriController = TextEditingController();
-  TextEditingController deviceIDController = TextEditingController();
-  TextEditingController gpsIPController = TextEditingController();
-  TextEditingController gpsUsernameController = TextEditingController();
-  TextEditingController gpsPasswordController = TextEditingController();
-  TextEditingController obuIPController = TextEditingController();
-  TextEditingController pc5BrokerUrlController = TextEditingController();
-  TextEditingController issScmsTokenController = TextEditingController();
-  TextEditingController registrationLatitudeController = TextEditingController();
-  TextEditingController registrationLongitudeController = TextEditingController();
-  TextEditingController scmsApiTokenController = TextEditingController();
-  TextEditingController broadcastRateController = TextEditingController();
-  TextEditingController staticGPSLatitudeController = TextEditingController();
-  TextEditingController staticGPSLongitudeController = TextEditingController();
-  TextEditingController issMqttBrokerUrlController = TextEditingController();
-  TextEditingController screenWidthController = TextEditingController();
-  TextEditingController screenHeightController = TextEditingController();
+  final SettingsController controller = Get.find<SettingsController>();
+  final ParamController paramController = Get.find<ParamController>();
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController baseUriController = TextEditingController();
+  final TextEditingController deviceIDController = TextEditingController();
+  final TextEditingController gpsIPController = TextEditingController();
+  final TextEditingController gpsUsernameController = TextEditingController();
+  final TextEditingController gpsPasswordController = TextEditingController();
+  final TextEditingController obuIPController = TextEditingController();
+  final TextEditingController pc5BrokerUrlController = TextEditingController();
+  final TextEditingController issScmsTokenController = TextEditingController();
+  final TextEditingController registrationLatitudeController = TextEditingController();
+  final TextEditingController registrationLongitudeController = TextEditingController();
+  final TextEditingController scmsApiTokenController = TextEditingController();
+  final TextEditingController broadcastRateController = TextEditingController();
+  final TextEditingController staticGPSLatitudeController = TextEditingController();
+  final TextEditingController staticGPSLongitudeController = TextEditingController();
+  final TextEditingController issMqttBrokerUrlController = TextEditingController();
+  final TextEditingController screenWidthController = TextEditingController();
+  final TextEditingController screenHeightController = TextEditingController();
 
-  FileService fileService = Get.find<FileService>();
+  final FileService fileService = Get.find<FileService>();
   
 
   
@@ -117,6 +116,54 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         headerElement("Configuration", Icons.settings),
+        verticalSpaceMedium,
+        TextField(
+          decoration: const InputDecoration(labelText: 'Username'),
+          controller: usernameController,
+          obscureText: false,
+          onChanged: (value) async {
+            if (value != controller.username.value) {
+              controller.username.value = value;
+              await controller.secureStorage.setUsername(value);
+            }
+          },
+        ),
+        verticalSpaceSmall,
+        TextField(
+          decoration: const InputDecoration(labelText: 'Password'),
+          controller: passwordController,
+          obscureText: true,
+          onChanged: (value) async {
+            if (value != controller.password.value) {
+              controller.password.value = value;
+              await controller.secureStorage.setPassword(value);
+            }
+          },
+        ),
+        verticalSpaceSmall,
+        TextField(
+          decoration: const InputDecoration(labelText: 'Base URI'),
+          controller: baseUriController,
+          obscureText: false,
+          onChanged: (value) async {
+            if (value != controller.baseUri.value) {
+              controller.baseUri.value = value;
+              await controller.secureStorage.setBaseURI(value);
+            }
+          },
+        ),
+        verticalSpaceSmall,
+        TextField(
+          decoration: const InputDecoration(labelText: 'Device ID'),
+          controller: deviceIDController,
+          obscureText: false,
+          onChanged: (value) async {
+            if (value != controller.deviceID.value) {
+              controller.deviceID.value = value;
+              await controller.secureStorage.setDeviceID(value);
+            }
+          },
+        ),
         verticalSpaceMedium,
         controller.gpsTypes.isNotEmpty
           ? Padding(
@@ -692,6 +739,9 @@ class SettingsPage extends StatelessWidget {
       return false;
     }
     if (baseUriController.text.isEmpty) {
+      return false;
+    }
+    if (deviceIDController.text.isEmpty) {
       return false;
     }
     return true;
