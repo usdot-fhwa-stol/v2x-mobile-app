@@ -132,7 +132,7 @@ class MapState extends State<MapPage> with RouteAware {
   ParamController paramController = Get.find<ParamController>();
   GeometryService geometryService = Get.find<GeometryService>();
   ASNService asnService = Get.find<ASNService>();
-  
+
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   PathService pathService = Get.find<PathService>();
@@ -151,7 +151,7 @@ class MapState extends State<MapPage> with RouteAware {
   MapManager mapManager = MapManager();
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
-  TamManager tamManager = TamManager(); 
+  TamManager tamManager = TamManager();
   TumManager tumManager = TumManager();
   TumAckManager tumAckManager = TumAckManager();
 
@@ -225,7 +225,7 @@ class MapState extends State<MapPage> with RouteAware {
   double heightBottomDisplay = 0.0;
   double markerSize = 60.0;
   double zoomLevel = 16.0;
-  
+
   void _safeSetState(VoidCallback fn) {
     if (mounted) {
       setState(fn);
@@ -327,9 +327,9 @@ class MapState extends State<MapPage> with RouteAware {
       if (!mounted) {
         return;
       }
-      
+
       startSendingBSM();
-      
+
       if (Platform.isAndroid || Platform.isIOS) {
         WakelockPlus.enable();
       }
@@ -364,7 +364,7 @@ class MapState extends State<MapPage> with RouteAware {
     if (positionSubscription != null) {
       positionSubscription!.cancel();
       positionSubscription = null;
-    } 
+    }
   }
 
   @override
@@ -372,7 +372,7 @@ class MapState extends State<MapPage> with RouteAware {
     if (positionSubscription != null) {
       positionSubscription!.cancel();
       positionSubscription = null;
-    } 
+    }
   }
 
   @override
@@ -396,21 +396,21 @@ class MapState extends State<MapPage> with RouteAware {
     mqttAgents.clearAgents();
 
     if(settingsController.enableEtxMqtt.value){
-      loggingService.addToAppLog("Adding ETX MQTT Agent"); 
+      loggingService.addToAppLog("Adding ETX MQTT Agent");
       mqttAgents.addAgent(EtxMqttAgent(processIncomingMessage));
 
     }
 
     if(settingsController.enablePC5.value){
-      loggingService.addToAppLog("Adding PC5 MQTT Agent"); 
+      loggingService.addToAppLog("Adding PC5 MQTT Agent");
       mqttAgents.addAgent(Pc5MqttAgent(processIncomingMessage));
     }
-    
+
     if(settingsController.enableIssMqtt.value){
-      loggingService.addToAppLog("Adding ISS MQTT Agent"); 
+      loggingService.addToAppLog("Adding ISS MQTT Agent");
       mqttAgents.addAgent(IssMqttAgent(processIncomingMessage));
     }
-    
+
     mqttAgents.setPosition(currentPosition);
     var success = await mqttAgents.connectAll();
     if(success != 0){
@@ -469,14 +469,14 @@ class MapState extends State<MapPage> with RouteAware {
         // Catch exception in case stream has already been listened to.
         loggingService.showWarning("caught error with stream.first called on existing stream"); 
       }
-    }  
+    }
   }
 
   void updateGPSStreamType(){
     positionSubscription?.cancel();
     createGPSStream();
   }
-  
+
 
   void updateGraphics(){
     if (mounted) {
@@ -618,10 +618,10 @@ class MapState extends State<MapPage> with RouteAware {
 
   Future<int> enableLogging() async {
     
-    createMessageDataQueues(); 
-    uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) { 
-      rotateAndUploadMessageLogs();
-      loggingService.rotateAndUploadAppLog(deviceID); 
+    createMessageDataQueues();
+    uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+      await rotateAndUploadMessageLogs();
+      await loggingService.rotateAndUploadAppLog(deviceID);
     });
 
     return 0;
@@ -640,43 +640,43 @@ class MapState extends State<MapPage> with RouteAware {
 
     switch (msgType) {
       case MsgType.BSM:
-        loggingService.addToAppLog("Identified Message as BSM");  
+        loggingService.addToAppLog("Identified Message as BSM");
         processNewBsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.PSM:
-        loggingService.addToAppLog("Identified Message as PSM"); 
+        loggingService.addToAppLog("Identified Message as PSM");
         processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
-        loggingService.addToAppLog("Identified Message as SPaT $hex"); 
+        loggingService.addToAppLog("Identified Message as SPaT $hex");
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        loggingService.addToAppLog("Identified Message as MAP"); 
+        loggingService.addToAppLog("Identified Message as MAP");
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
-        loggingService.addToAppLog("Identified Message as TIM $hex"); 
+        loggingService.addToAppLog("Identified Message as TIM $hex");
         if (settingsController.showTims.value) {
           processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         }
         break;
       case MsgType.SDSM:
-        loggingService.addToAppLog("Identified Message as SDSM"); 
+        loggingService.addToAppLog("Identified Message as SDSM");
         processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TAM:
-        loggingService.addToAppLog("Identified Message as TAM"); 
+        loggingService.addToAppLog("Identified Message as TAM");
         if (settingsController.tollingEnabled.value) {
           processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
         }
         break;
       case MsgType.TUMACK:
-        loggingService.addToAppLog("Identified Message as TUMACK"); 
+        loggingService.addToAppLog("Identified Message as TUMACK");
         processNewTumAck(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       default:
-        loggingService.addToAppLog("Unable to Identify Message Type: $msgType"); 
+        loggingService.addToAppLog("Unable to Identify Message Type: $msgType");
     }
   }
 
@@ -690,28 +690,28 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
 
-      LightbarInUse lights = LightbarInUse.unavailable;
-      SirenInUse sirens = SirenInUse.unavailable;
-      if (bsm.partII != null) {
-        for (BSMpartIIExtension ext in bsm.partII!) {
-          if (ext is SupplementalVehicleExtensions) {
-            if (ext.classification != null) {
-              vehicleClass = ext.classification!.getVehicleClass();
-            }
-          } else if (ext is SpecialVehicleExtensions) {
-            if (ext.vehicleAlerts != null) {
-              lights = ext.vehicleAlerts!.lightsUse;
-              sirens = ext.vehicleAlerts!.sirenUse;
-            }
+    LightbarInUse lights = LightbarInUse.unavailable;
+    SirenInUse sirens = SirenInUse.unavailable;
+    if (bsm.partII != null) {
+      for (BSMpartIIExtension ext in bsm.partII!) {
+        if (ext is SupplementalVehicleExtensions) {
+          if (ext.classification != null) {
+            vehicleClass = ext.classification!.getVehicleClass();
+          }
+        } else if (ext is SpecialVehicleExtensions) {
+          if (ext.vehicleAlerts != null) {
+            lights = ext.vehicleAlerts!.lightsUse;
+            sirens = ext.vehicleAlerts!.sirenUse;
           }
         }
       }
+    }
       LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
 
-      DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
+    DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
       ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
-      messageManager.addOrUpdate(msg);
+    messageManager.addOrUpdate(msg);
       addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
     
   }
@@ -756,7 +756,7 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
-    
+
     mapManager.addOrUpdate(map);
 
     updateGraphics();
@@ -819,13 +819,13 @@ class MapState extends State<MapPage> with RouteAware {
   void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!; 
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
-    
+
     if(tumAckManager.isNewTumAck(tumAck)){
       tumManager.cancelTimer(tumAck.tumAck.tumAck.first.tempId);
       VehicleNotificationManager.sendPaymentMessage("Toll Message Acknowledged");
       tumAckManager.add(tumAck);
     }else{
-      loggingService.addToAppLog("Duplicate TUMAck Received. Ignoring."); 
+      loggingService.addToAppLog("Duplicate TUMAck Received. Ignoring.");
     }
     addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
   }
@@ -897,7 +897,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   void sendMessage() async {
     if (currentPosition == null) {
-      loggingService.addToAppLog("Cannot Send BSM. Location is Null"); 
+      loggingService.addToAppLog("Cannot Send BSM. Location is Null");
       updateConnectedStatus(ConnectedStatus.PARTIAL);
       return;
     }
@@ -948,7 +948,7 @@ class MapState extends State<MapPage> with RouteAware {
     bool signed = false;
     if (hex != "") {
       List<int> messageBytes = ASNService.hexToBytes(hex);
-      
+
       if(scmsActive){
         try {
           List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
@@ -962,7 +962,7 @@ class MapState extends State<MapPage> with RouteAware {
           loggingService.showError("SCMS signing failed: $e");
         }
       }
-      
+
       mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
@@ -977,7 +977,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   bool sendTumMessage(TollAdvertisementMessage tam) {
     if (currentPosition == null) {
-      loggingService.addToAppLog("Cannot Send TUM. Location is Null"); 
+      loggingService.addToAppLog("Cannot Send TUM. Location is Null");
       updateConnectedStatus(ConnectedStatus.PARTIAL);
       return false;
     }
@@ -987,18 +987,18 @@ class MapState extends State<MapPage> with RouteAware {
 
     TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, sendTime);
     if (!tumResult.isSuccess) {
-      loggingService.showError(tumResult.errorMessage!); 
+      loggingService.showError(tumResult.errorMessage!);
       return false;
     }
-    
+
     TollUsageMessage tum = tumResult.tollUsageMessage!;
 
     String tumHex = tumBuilder.convertTumToHex(tum);
     if(tumHex == ""){
-      loggingService.showError("Failed to convert TUM to Hex"); 
+      loggingService.showError("Failed to convert TUM to Hex");
       return false;
     }
-    loggingService.addToAppLog("Generated TUM Hex $tumHex"); 
+    loggingService.addToAppLog("Generated TUM Hex $tumHex");
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
@@ -1020,7 +1020,7 @@ class MapState extends State<MapPage> with RouteAware {
           }
         });
         tumManager.addTimer(tum.tempID, sendingTumTimer);
-      } 
+      }
       return true;
     }
     return false;
@@ -1051,7 +1051,7 @@ class MapState extends State<MapPage> with RouteAware {
     if (settingsController.tollingEnabled.value) {
       checkAndSendTum();
     }
-    
+
     if (tamManager.inTamZone) {
       tumBuilder.addLocation(position, kronos);
     }
@@ -1065,13 +1065,13 @@ class MapState extends State<MapPage> with RouteAware {
 
 
     if(!configController.isVehicleConfig.value && configController.selectedPedestrian != PersonalDeviceUserType.APEDALCYCLIST) {
-      return; // Skip all of the TIM logic if we are a not a vehicle or a cyclist. 
+      return; // Skip all of the TIM logic if we are a not a vehicle or a cyclist.
     }
 
     List<TravelerDataFrame> newActiveTims = [];
     List<ReceivedMsg> newReceivedMessages = messageManager.getNewReceivedMessages(
         LatLng(currentPosition!.latitude, currentPosition!.longitude), currentPosition!.heading);
-    
+
     List<ItisSequence> receivedMessageItisSequence = messageManager.convertToItisSequence(newReceivedMessages);
 
     secureStorage.getNotificationsEnabled().then((enabled) {
@@ -1148,7 +1148,7 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   void onMqttDisconnect() {
-    loggingService.showError("Lost Connection to All MQTT Brokers"); 
+    loggingService.showError("Lost Connection to All MQTT Brokers");
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
     mqttAgents.clearAgents();
@@ -1268,7 +1268,7 @@ class MapState extends State<MapPage> with RouteAware {
     List<Marker> markerList = [];
 
     Position? pos = currentPosition;
-  
+
     DateTime compTime = timingService.getTime();
     DateTime endTime = compTime.add(const Duration(seconds: 3));
     DateTime startTime = compTime.subtract(const Duration(seconds: 3));
@@ -1327,7 +1327,7 @@ class MapState extends State<MapPage> with RouteAware {
                   color: Colors.green,
                   width: 2,
                 ),
-              ), 
+              ),
               child: const Icon(
                 Icons.attach_money,
                 color: Colors.green,
@@ -1344,11 +1344,11 @@ class MapState extends State<MapPage> with RouteAware {
           point: coord,
           rotate: false,
           child: Transform.rotate(
-            angle: mappableTam.approachMarkerRotation * pi / 180, 
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.white,
-              size: 40,
+              angle: mappableTam.approachMarkerRotation * pi / 180,
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 40,
             )
           ),
         ));
@@ -1405,7 +1405,7 @@ class MapState extends State<MapPage> with RouteAware {
         }
       }
     }
-    
+
     return markerList;
   }
 
@@ -1563,7 +1563,7 @@ class MapState extends State<MapPage> with RouteAware {
           }
         }
 
-        
+
         for (GenericLane lane in map.intersectionGeometry.laneSet.laneList) {
           
           List<LatLng> laneCoordinates = geometryService.getLatLngCoordinatesFromNodeSetXY(
@@ -1643,7 +1643,7 @@ class MapState extends State<MapPage> with RouteAware {
       if (mappableTam.entireTollZoneBorder.isEmpty) {
         continue;
       }
-      Polygon<HitValue> hitPoly = Polygon(  
+      Polygon<HitValue> hitPoly = Polygon(
         points: mappableTam.entireTollZoneBorder,
         borderColor: Colors.white,
         borderStrokeWidth: 5,
@@ -1664,9 +1664,9 @@ class MapState extends State<MapPage> with RouteAware {
     }
   }
 
-  void rotateAndUploadMessageLogs() { 
-
-    loggingService.addToAppLog("Rotating Log File. Current Time ${timingService.getTime()}");
+  Future<bool> rotateAndUploadMessageLogs() async {
+    loggingService.addToAppLog(
+        "Rotating Log File. Current Time ${timingService.getTime()}");
 
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
@@ -1675,17 +1675,25 @@ class MapState extends State<MapPage> with RouteAware {
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
     createMessageDataQueues();
 
-    loggingService.addToAppLog("Log Rotation Complete. Current Time ${timingService.getTime()}");
-
+    loggingService.addToAppLog(
+        "Log Rotation Complete. Current Time ${timingService.getTime()}");
 
     if (settingsController.deviceID.value.isNotEmpty) {
-      awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}");
-      awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}");
-      awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}");
+      final recSuccess = await awsService.uploadFile(
+          recDataPath, "subscribe/${settingsController.deviceID.value}");
+      final pubSuccess = await awsService.uploadFile(
+          pubDataPath, "publish/${settingsController.deviceID.value}");
+      final timSuccess = await awsService.uploadFile(
+          timDataPath, "tim/${settingsController.deviceID.value}");
+      return recSuccess && pubSuccess && timSuccess;
     } else {
-      awsService.uploadFile(recDataPath, "subscribe/$deviceID");
-      awsService.uploadFile(pubDataPath, "publish/$deviceID");
-      awsService.uploadFile(timDataPath, "tim/$deviceID");
+      final recSuccess =
+          await awsService.uploadFile(recDataPath, "subscribe/$deviceID");
+      final pubSuccess =
+          await awsService.uploadFile(pubDataPath, "publish/$deviceID");
+      final timSuccess =
+          await awsService.uploadFile(timDataPath, "tim/$deviceID");
+      return recSuccess && pubSuccess && timSuccess;
     }
   }
 
@@ -1734,118 +1742,118 @@ class MapState extends State<MapPage> with RouteAware {
 
     const String appTitle = "MAP";
     return Obx(() => Align(
-      alignment: settingsController.screenLocation.value,
-      child: SizedBox(
-        width: displayWidth,
-        height: displayHeight,
-        child: Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  sendMessageTimer?.cancel(); 
-                  uploadTimer?.cancel();
-                  mqttAgents.disconnectAll();
-                  Get.back();
-                }),
-            title: const Text(appTitle),
-            actions: <Widget>[
-              navigationMenu(context),
-            ],
-          ),
-          body: showVehicleStats
-              ? Center(
-                child: Container(
-                  width: displayWidth,
-                  height: displayHeight,
-                  color: Theme.of(context).dialogBackgroundColor,
+        alignment: settingsController.screenLocation.value,
+        child: SizedBox(
+          width: displayWidth,
+          height: displayHeight,
+          child: Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      sendMessageTimer?.cancel();
+                      uploadTimer?.cancel();
+                      mqttAgents.disconnectAll();
+                      Get.back();
+                    }),
+                title: const Text(appTitle),
+                actions: <Widget>[
+                  navigationMenu(context),
+                ],
+              ),
+              body: showVehicleStats
+                  ? Center(
+                      child: Container(
+                      width: displayWidth,
+                      height: displayHeight,
+                      color: Theme.of(context).dialogBackgroundColor,
                   child: Stack(alignment: AlignmentDirectional.topStart, children: [
-                    Positioned(
-                      top: 50,
-                      child: Obx(() => vehicleStatsPage()),
-                    ),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: vehicleStatsBar(),
-                    ),
-                  ]),
+                            Positioned(
+                              top: 50,
+                              child: Obx(() => vehicleStatsPage()),
+                            ),
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: vehicleStatsBar(),
+                            ),
+                          ]),
                 )
               )
-              : SafeArea(
+                  : SafeArea(
                 child: Stack(alignment: AlignmentDirectional.topStart, children: [
-                  Center(child: map(context, _mapController)),
-                  Align(
-                      alignment: Alignment.topLeft,
+                            Center(child: map(context, _mapController)),
+                            Align(
+                                alignment: Alignment.topLeft,
                       child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
-                  Positioned(
-                    top: 60,
-                    right: 0,
-                    child: showLightText && nextLightText.isNotEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Container(
-                                width: displayWidth * 0.20,
-                                // height: screenHeight * 0.25,
-                                decoration: BoxDecoration(
+                            Positioned(
+                              top: 60,
+                              right: 0,
+                              child: showLightText && nextLightText.isNotEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Container(
+                                          width: displayWidth * 0.20,
+                                          // height: screenHeight * 0.25,
+                                          decoration: BoxDecoration(
                                   border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
                                   borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
                                   color: Colors.grey.shade800, // Optional: Background color
-                                ),
+                                          ),
                                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                  Text("Current Light State",
+                                                Text("Current Light State",
                                       textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
-                                  SizedBox(
+                                                SizedBox(
                                       width: displayWidth * 0.15, height: displayHeight * 0.15, child: currentLightState),
                                   Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
-                                ])))
-                        : (!showLightText && nextLightText.isNotEmpty)
+                                              ])))
+                                  : (!showLightText && nextLightText.isNotEmpty)
                             ? SizedBox(width: (Platform.isAndroid || Platform.isIOS) ? displayWidth * 0.15 : displayWidth * 0.12, height: (Platform.isAndroid || Platform.isIOS) ? displayHeight * 0.15 : displayHeight * 0.4, child: currentLightState)
-                            : Container(),
-                  ),
-                  Positioned(
+                                      : Container(),
+                            ),
+                            Positioned(
                       top: configController.isVehicleConfig.value ? 60 : 0,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                          managementButtons(),
-                          verticalSpaceSmall,
+                                      children: [
+                                        managementButtons(),
+                                        verticalSpaceSmall,
                           settingsController.tollingEnabled.value ? fourTireButton() : Container(),
                           settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
-                          configController.hasASiren()
-                              ? sirenButton()
+                                        configController.hasASiren()
+                                            ? sirenButton()
                               : (configController.isVehicleConfig.value &&
                                       configController.selectedVehicle.value.classification == VehicleType.BUS)
-                                  ? busWarningButton()
+                                                ? busWarningButton()
                                   : (configController.isVehicleConfig.value &&
                                           configController.selectedVehicle.value.classification ==
                                               VehicleType.ICE_CREAM_TRUCK)
-                                      ? iceCreamSongButton()
-                                      : Container(width: 60),
-                        ]),
-                      )),
-                  Align(
-                      alignment: Alignment.bottomLeft,
-                      child: SizedBox(
-                        height: heightBottomDisplay + 20,
-                        child: Row(children: [
-                          Expanded(
+                                                    ? iceCreamSongButton()
+                                                    : Container(width: 60),
+                                      ]),
+                                )),
+                            Align(
+                                alignment: Alignment.bottomLeft,
+                                child: SizedBox(
+                                  height: heightBottomDisplay + 20,
+                                  child: Row(children: [
+                                    Expanded(
                             child: timsDisplay(heightBottomDisplay, displayWidth),
-                          ),
+                                    ),
                           configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
-                        ]),
-                      )),
-                  Align(
-                    alignment: Alignment.center,
-                    child: showLoadingIcon
-                        ? const SpinKitSpinningLines(
-                            color: Colors.white,
-                            size: 140,
-                            lineWidth: 4,
-                          )
-                        : null,
-                  )
+                                  ]),
+                                )),
+                            Align(
+                              alignment: Alignment.center,
+                              child: showLoadingIcon
+                                  ? const SpinKitSpinningLines(
+                                      color: Colors.white,
+                                      size: 140,
+                                      lineWidth: 4,
+                                    )
+                                  : null,
+                            )
                 ]
               ),
             )
@@ -1969,7 +1977,7 @@ class MapState extends State<MapPage> with RouteAware {
               color: Colors.black.withOpacity(0.8),
               spreadRadius: 1,
               blurRadius: 5,
-              offset: const Offset(-1, 3), 
+              offset: const Offset(-1, 3),
             ),
           ],
         ),
@@ -2022,8 +2030,8 @@ class MapState extends State<MapPage> with RouteAware {
                 style: ElevatedButton.styleFrom(
                   shape: const CircleBorder(),
                   padding: const EdgeInsets.all(10),
-                  backgroundColor: connectedButtonColor, 
-                  foregroundColor: Colors.black, 
+                  backgroundColor: connectedButtonColor,
+                  foregroundColor: Colors.black,
                   shadowColor: Colors.black,
                   elevation: 4,
                 ),
@@ -2038,24 +2046,47 @@ class MapState extends State<MapPage> with RouteAware {
                 style: ElevatedButton.styleFrom(
                   shape: const CircleBorder(),
                   padding: const EdgeInsets.all(10),
-                  backgroundColor: followUser ? Colors.green : Colors.blue, 
-                  foregroundColor: Colors.black, 
+                  backgroundColor: followUser ? Colors.green : Colors.blue,
+                  foregroundColor: Colors.black,
                   shadowColor: Colors.black,
                   elevation: 4,
                 ),
                 child: const Icon(Icons.directions_car, color: Colors.white),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   loggingService.addToAppLog("Upload Log Files");
-                  rotateAndUploadMessageLogs();
-                  loggingService.rotateAndUploadAppLog(deviceID); 
+                  final messageUploadSuccess =
+                      await rotateAndUploadMessageLogs();
+                  final appUploadSuccess =
+                      await loggingService.rotateAndUploadAppLog(deviceID);
+                  final uploadSuccess =
+                      messageUploadSuccess && appUploadSuccess;
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  toastification.show(
+                    context: context,
+                    type: uploadSuccess
+                        ? ToastificationType.success
+                        : ToastificationType.error,
+                    style: ToastificationStyle.flatColored,
+                    title: Text(uploadSuccess
+                        ? "Log upload succeeded"
+                        : "Log upload failed"),
+                    alignment: Alignment.topCenter,
+                    autoCloseDuration: const Duration(seconds: 5),
+                    showProgressBar: false,
+                    dragToClose: true,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   shape: const CircleBorder(),
                   padding: const EdgeInsets.all(10),
                   backgroundColor: Colors.green,
-                  foregroundColor: Colors.black, 
+                  foregroundColor: Colors.black,
                   shadowColor: Colors.black,
                   elevation: 4,
                 ),
@@ -2066,59 +2097,59 @@ class MapState extends State<MapPage> with RouteAware {
         ),
         horizontalSpaceSmall,
         !(Platform.isAndroid || Platform.isIOS) ? Column(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: primaryColor,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.8),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                    offset: const Offset(-1, 3), 
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: primaryColor,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.8),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(-1, 3),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        zoomLevel += 1;
+                        _mapController.move(getUserLocation(), zoomLevel);
+                      },
+                    ),
                   ),
+                  verticalSpaceSmall,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: primaryColor,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.8),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(-1, 3),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () {
+                        zoomLevel -= 1;
+                        _mapController.move(getUserLocation(), zoomLevel);
+                      },
+                    ),
+                  )
                 ],
-              ),
-              child: IconButton(  
-                icon: const Icon(Icons.add),
-                onPressed: () {
-                  zoomLevel += 1;
-                  _mapController.move(getUserLocation(), zoomLevel); 
-                },
-              ),
-            ),
-            verticalSpaceSmall,
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: primaryColor,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.8),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                    offset: const Offset(-1, 3), 
-                  ),
-                ],
-              ),
-              child: IconButton(  
-                icon: const Icon(Icons.remove),
-                onPressed: () {
-                  zoomLevel -= 1;
-                  _mapController.move(getUserLocation(), zoomLevel);
-                },
-              ),
-            )
-          ],
         ) : Container(),
       ],
     );
@@ -2148,7 +2179,7 @@ class MapState extends State<MapPage> with RouteAware {
                   color: Colors.black.withOpacity(0.8),
                   spreadRadius: 1,
                   blurRadius: 5,
-                  offset: const Offset(-1, 3), 
+                  offset: const Offset(-1, 3),
                 ),
               ],
             ),
@@ -2164,7 +2195,7 @@ class MapState extends State<MapPage> with RouteAware {
         ));
   }
 
-  Widget fourTireButton() { 
+  Widget fourTireButton() {
     return Obx(() => GestureDetector(
           onTap: () {
             configController.isFourTire.value = !configController.isFourTire.value;
@@ -2190,30 +2221,30 @@ class MapState extends State<MapPage> with RouteAware {
             );
           },
           child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: lightGrey,
-              shape: BoxShape.circle,
-              border: Border.all(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: lightGrey,
+                shape: BoxShape.circle,
+                border: Border.all(
                 color: configController.isFourTire.value ? Colors.blue : Colors.green,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.8),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(-1, 3), 
+                  width: 2,
                 ),
-              ],
-            ),
-            child: Center(
-              child: Icon(  
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.8),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                    offset: const Offset(-1, 3),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
                 IconManager.getIconForBSM(configController.selectedVehicle.value.classification),
                 color: configController.isFourTire.value ? Colors.blue : Colors.green,
-                size: 30,
-              ),
+                  size: 30,
+                ),
             )
           ),
         ));
@@ -2348,30 +2379,30 @@ class MapState extends State<MapPage> with RouteAware {
               width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
               height: heightBottomDisplay * 0.3, // Constrain height
               child: FittedBox (  
-                fit: BoxFit.contain,
-                child: Stack(
-                children: [
-                  // Outline layers
-                  Text(
-                    "MPH",
-                    style: TextStyle(
-                      fontSize: 32.0,
-                      foreground: Paint()
-                        ..style = PaintingStyle.stroke
-                        ..strokeWidth = 2.0
+                  fit: BoxFit.contain,
+                  child: Stack(
+                    children: [
+                      // Outline layers
+                      Text(
+                        "MPH",
+                        style: TextStyle(
+                          fontSize: 32.0,
+                          foreground: Paint()
+                            ..style = PaintingStyle.stroke
+                            ..strokeWidth = 2.0
                         ..color = primaryColor.withOpacity(0.5), // Outline color
-                    ),
-                  ),
-                  // Main text
-                  const Text(
-                    "MPH",
-                    style: TextStyle(
-                      fontSize: 32.0,
-                      color: Colors.black, // Fill color
-                    ),
-                  ),
-                ],
-              )
+                        ),
+                      ),
+                      // Main text
+                      const Text(
+                        "MPH",
+                        style: TextStyle(
+                          fontSize: 32.0,
+                          color: Colors.black, // Fill color
+                        ),
+                      ),
+                    ],
+                )
               ),
             ),
           ]),
@@ -2383,7 +2414,7 @@ class MapState extends State<MapPage> with RouteAware {
   Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
     final int maxTimsInRow = (screenWidth / (heightBottomDisplay / 2)).floor();
-    for (ItisSequence sequence in showTims) {  
+    for (ItisSequence sequence in showTims) {
       timIcons.add(Image(image: sequence.image));
     }
     if (timIcons.length <= maxTimsInRow) {
@@ -2393,8 +2424,8 @@ class MapState extends State<MapPage> with RouteAware {
           // Dynamically calculate the size based on the number of icons
           double timsDisplayWidth = screenWidth - ((heightBottomDisplay * (2 / 3)) + 20);
           double iconSize = (timsDisplayWidth / timIcons.length) > heightBottomDisplay
-              ? heightBottomDisplay
-              : timsDisplayWidth / timIcons.length;
+                  ? heightBottomDisplay
+                  : timsDisplayWidth / timIcons.length;
           return SizedBox(
             width: iconSize,
             height: iconSize,
@@ -2406,7 +2437,7 @@ class MapState extends State<MapPage> with RouteAware {
       // Create a grid with 2 rows
       return GridView.count(
         shrinkWrap: true,
-        crossAxisCount: maxTimsInRow, 
+        crossAxisCount: maxTimsInRow,
         mainAxisSpacing: 8.0,
         crossAxisSpacing: 8.0,
         children: timIcons,
@@ -2429,61 +2460,61 @@ class MapState extends State<MapPage> with RouteAware {
         children: [
           verticalSpaceMedium,
           Obx(() => obdConnecting.value
-              ? const Column(children: [
+                ? const Column(children: [
                   Text("Connecting to OBD-II...", style: TextStyle(fontSize: 24)),
-                  verticalSpaceLarge,
-                  SpinKitSpinningLines(color: Colors.black, size: 90)
-                ])
+                    verticalSpaceLarge,
+                    SpinKitSpinningLines(color: Colors.black, size: 90)
+                  ])
               : (obdController.isRunningAsRoot && Platform.isLinux) || !Platform.isLinux
-                  ? Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: AutoSizeTextWidget(
-                              text: "OBD-II Connection", 
+                    ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: AutoSizeTextWidget(
+                                text: "OBD-II Connection",
                               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                              maxLines: 1,
+                                maxLines: 1,
+                              ),
                             ),
-                          ),
-                          verticalSpaceSmall,
-                          SizedBox(
-                            child: ConstrainedBox(
+                            verticalSpaceSmall,
+                            SizedBox(
+                              child: ConstrainedBox(
                               constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
-                              child: const SingleChildScrollView(
-                                child: Text(
-                                  "1. Ensure your OBD-II device is powered on and in range.\n"
-                                  "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
-                                  "3. Click the button below to connect.",
+                                child: const SingleChildScrollView(
+                                  child: Text(
+                                    "1. Ensure your OBD-II device is powered on and in range.\n"
+                                    "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                                    "3. Click the button below to connect.",
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          verticalSpaceSmall,
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (Platform.isLinux) {
-                                await tryToConnectLinux();
-                              } else {
-                                await tryToConnect();
-                              }
-                            },
-                            child: const Text("Connect to OBD-II"),
-                          ),
-                        ],
-                      ),
-                  )
-                  : const Padding( 
-                      padding: EdgeInsets.all(8.0),
-                      child: Column(
-                        children: [
-                          Text(
-                              "OBD-II Connection is only available when running as root. Please re-launch the app with root privileges.",
+                            verticalSpaceSmall,
+                            ElevatedButton(
+                              onPressed: () async {
+                                if (Platform.isLinux) {
+                                  await tryToConnectLinux();
+                                } else {
+                                  await tryToConnect();
+                                }
+                              },
+                              child: const Text("Connect to OBD-II"),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Text(
+                                "OBD-II Connection is only available when running as root. Please re-launch the app with root privileges.",
                               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        ],
-                      )),
-                    )
+                          ],
+                        )),
+          )
         ],
       ),
     );
@@ -2614,15 +2645,15 @@ class MapState extends State<MapPage> with RouteAware {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                Text(
-                  "${obdController.vehicleInfo.value?['Year'] ?? ''} ${obdController.vehicleInfo.value?['Make'] ?? ''} ${obdController.vehicleInfo.value?['Model'] ?? ''}",
+                    Text(
+                      "${obdController.vehicleInfo.value?['Year'] ?? ''} ${obdController.vehicleInfo.value?['Make'] ?? ''} ${obdController.vehicleInfo.value?['Model'] ?? ''}",
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  obdController.vehicleInfo.value?['Type'] ?? '',
+                    ),
+                    Text(
+                      obdController.vehicleInfo.value?['Type'] ?? '',
                       style: const TextStyle(fontSize: 16),
-                ),
-              ]),
+                    ),
+                  ]),
             )),
         verticalSpaceMedium,
         Padding(

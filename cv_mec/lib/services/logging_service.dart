@@ -1,14 +1,9 @@
-
-
-
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:get/get.dart';
-import 'package:iss_scms/models/validate_status.dart';
 import 'package:logger/logger.dart';
-import 'package:geolocator_platform_interface/src/models/position.dart';
 
 class LoggingService extends GetxService {
   late Timing timingService;
@@ -29,7 +24,7 @@ class LoggingService extends GetxService {
     initialized = true;
   }
 
-  void createAppDataQueue(){ 
+  void createAppDataQueue() {
     late DateTime logTime;
     if (!initialized) {
       logTime = DateTime.now().toUtc();
@@ -40,7 +35,7 @@ class LoggingService extends GetxService {
   }
 
   void addToAppLog(String message) {
-    _logger.i("APPLOG: $message"); 
+    _logger.i("APPLOG: $message");
     appDataQueue.addItem("$message\n");
   }
 
@@ -54,21 +49,23 @@ class LoggingService extends GetxService {
     addToAppLog("WARNING: $message");
   }
 
-  void rotateAndUploadAppLog(String deviceID) {
-
-    addToAppLog("Rotating App Log File. Current Time ${timingService.getTime()}");
+  Future<bool> rotateAndUploadAppLog(String deviceID) async {
+    addToAppLog(
+        "Rotating App Log File. Current Time ${timingService.getTime()}");
 
     String appLogPath = appDataQueue.filePath;
 
     // Assigns new Data Queue objects for the app log. Rotate before upload to ensure no data is lost
     createAppDataQueue();
 
-    addToAppLog("App Log Rotation Complete. Current Time ${timingService.getTime()}");
+    addToAppLog(
+        "App Log Rotation Complete. Current Time ${timingService.getTime()}");
 
     if (settingsController.deviceID.value.isNotEmpty) {
-      awsService.uploadFile(appLogPath, "app_logs/${settingsController.deviceID.value}");
+      return await awsService.uploadFile(
+          appLogPath, "app_logs/${settingsController.deviceID.value}");
     } else {
-      awsService.uploadFile(appLogPath, "app_logs/$deviceID");
+      return await awsService.uploadFile(appLogPath, "app_logs/$deviceID");
     }
   }
 }

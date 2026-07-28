@@ -48,7 +48,14 @@ class S3Service extends GetxService {
       loggingService.addToAppLog("File Uploaded with Result: $result");
 
       final code = int.tryParse(result);
-      return true;
+
+      if (code != null && code >= 200 && code < 300) {
+        loggingService.addToAppLog("File Uploaded Successfully: ${gzFile.path}");
+        return true;
+      } else {
+        loggingService.showError("Failed to upload file. Result: $result");
+        return false;
+      }
     } catch (e) {
       loggingService.showError("Failed to upload file: $e");
       return false;
