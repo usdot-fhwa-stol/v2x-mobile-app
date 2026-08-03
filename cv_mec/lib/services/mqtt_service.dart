@@ -22,6 +22,7 @@ class MqttService extends GetxService {
   static const String pc5Tag = "PC5";
 
   Future<int> connect(String connectionURL, Registration? registration) async {
+    pongCount=0;
     try {
       String clientId = 'cv-mec-${const Uuid().v4().substring(0, 16)}';
       if (registration != null) {
@@ -144,8 +145,9 @@ class MqttService extends GetxService {
   }
 
   void pong() {
-    loggingService.addToAppLog('CV_MEC::Ping response client callback invoked');
+    
     pongCount++;
+    loggingService.addToAppLog('CV_MEC::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()}');
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
