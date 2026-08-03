@@ -46,8 +46,11 @@ import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/main.dart';
 import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
+import 'package:cv_mec/models/augmented_position.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/models/icon_manager.dart';
 import 'package:cv_mec/models/itis/itis_converter.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
@@ -429,7 +432,7 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   Future<void> createGPSStream() async{
-    Stream<Position> stream;
+    Stream<AugmentedPosition> stream;
     if (debugMode) {
       stream = fakePosition(TestData.mdotTestTimPosition);
     } else if (settingsController.gpsType.value == GPSType.static) {
@@ -445,7 +448,8 @@ class MapState extends State<MapPage> with RouteAware {
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {
-      gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
+      Map<String, dynamic> hostAndPort = gpsdService.parseHostAndPort(settingsController.obuIP.value);
+      gpsdService.connectToGPSD(hostAndPort["host"], hostAndPort["port"]);
       stream = gpsdService.locationStream.stream;
     } else {
       loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}"); 
@@ -561,8 +565,8 @@ class MapState extends State<MapPage> with RouteAware {
 
   
 
-  Stream<Position> fakePosition(List<List<double>> fakePosition) {
-    return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
+  Stream<AugmentedPosition> fakePosition(List<List<double>> fakePosition) {
+    return Stream<AugmentedPosition>.periodic(const Duration(milliseconds: 500), (count) {
       List<List<double>> route = fakePosition.reversed.toList();
       int index = count % route.length;
       int prevIndex = (count - 1) % route.length;
@@ -586,7 +590,7 @@ class MapState extends State<MapPage> with RouteAware {
       double roundedLongitude = double.parse(route[index][0].toStringAsFixed(6));
       double roundedLatitude = double.parse(route[index][1].toStringAsFixed(6));
 
-      return Position(
+      return AugmentedPosition(
           longitude: roundedLongitude,
           latitude: roundedLatitude,
           timestamp: DateTime.now(),
@@ -596,7 +600,10 @@ class MapState extends State<MapPage> with RouteAware {
           heading: heading,
           headingAccuracy: 0,
           speed: speed,
-          speedAccuracy: 0);
+          speedAccuracy: 0,
+          gpsType: GPSType.static,
+          gpsStatus: GPSStatus.simulated,
+        );
     });
   }
 

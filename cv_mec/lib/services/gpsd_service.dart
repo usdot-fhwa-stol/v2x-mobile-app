@@ -1,15 +1,37 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:cv_mec/models/augmented_position.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/services/logging_service.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
 class GPSDService extends GetxService {
   LoggingService loggingService = Get.find<LoggingService>();
-  final StreamController<Position> locationStream = StreamController<Position>.broadcast();
+  final StreamController<AugmentedPosition> locationStream = StreamController<AugmentedPosition>.broadcast();
+
+  Map<String, dynamic> parseHostAndPort(String input) {
+    final parts = input.split(':');
+    if (parts.length >= 2) {
+      final host = parts[0];
+      final port = int.tryParse(parts[1]);
+      if (port != null) {
+        return {'host': host, 'port': port};
+      }else{
+        loggingService.showError("Invalid port number in GPSD connection string: $input. Will use default port 2947 instead.");
+        return {'host': host, 'port': 2947};
+      }
+    }else if(parts.length == 1){
+      final host = parts[0];
+      return {'host': host, 'port': 2947};
+    } 
+    return {'host': input, 'port': 2947};
+  }
 
   void connectToGPSD(String host, int port) async {
+
+    loggingService.addToAppLog("Connecting to GPSD at $host:$port");
     try {
       final socket = await Socket.connect(host, port);
 
@@ -31,7 +53,7 @@ class GPSDService extends GetxService {
           Map<String,dynamic> jsonData = json.decode(lastRecord);
 
           if(jsonData.containsKey("lat")){ // Sometimes the GPS forwards a control packet that doesn't contain any other data
-            locationStream.sink.add(Position(
+            locationStream.sink.add(AugmentedPosition(
             latitude: jsonData["lat"],
             longitude: jsonData["lon"],
             timestamp: DateTime.tryParse(jsonData["time"]) ?? DateTime.now(),
@@ -42,6 +64,8 @@ class GPSDService extends GetxService {
             altitudeAccuracy: jsonData["epv"], // Estimated Position Error Vertical
             headingAccuracy: jsonData["epc"], // Estimated Course Error
             speedAccuracy: jsonData["eps"], // Estimated Speed Error
+            gpsType: GPSType.obu,
+            gpsStatus: GPSStatus.fromInt(jsonData["status"] ?? 0),
             ));
           }
             

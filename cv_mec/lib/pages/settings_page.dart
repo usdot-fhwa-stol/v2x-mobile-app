@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
