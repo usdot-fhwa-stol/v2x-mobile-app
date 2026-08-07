@@ -165,7 +165,7 @@ class MqttService extends GetxService {
   void pong() {
     
     pongCount++;
-    loggingService.addToAppLog('CV_MEC::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()}');
+    loggingService.addToAppLog('CV_MEC::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()} Current number of Subscriptions: ${subscriberList.keys.length}');
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {

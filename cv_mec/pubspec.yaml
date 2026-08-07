@@ -2,7 +2,7 @@ name: cv_mec
 description: "A new Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 12.5.0+101
+version: 12.5.3+104
 
 environment:
   sdk: ">=3.4.3 <4.0.0"
