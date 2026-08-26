@@ -640,7 +640,7 @@ class MapState extends State<MapPage> with RouteAware {
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
-    ValidateStatus validity = ValidateStatus.FAILURE;
+    ValidateStatus validity = ValidateStatus.NOT_CHECKED;
     // Temporarily disabling SCMS validation due to performance issues. Will re-enable once performance is improved.
     // try {
     //   validity = await scms.validate(bytes);
