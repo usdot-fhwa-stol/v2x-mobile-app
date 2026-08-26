@@ -1,27 +1,30 @@
-// GPS Fix values for standard GGA sentences
-// Additional information available here: https://mapitgis.com/docs/external-gnss/rtk-and-fix-types/
+// GPS Fix values for GPSD TPV Status values
 
 enum GPSStatus {
-  no_fix,
-  two_d_fix,
-  three_d_fix,
-  dgps_fix,
-  rtk_fix,
-  rtk_float,
+  unknown,
+  normal,
+  dgps,
+  rtk_fixed,
+  rtk_floating,
   dead_reckoning,
-  manual_input,
-  simulated;
+  gnss_dr,
+  time,
+  simulated,
+  p_y;
+
+
 
   static GPSStatus fromInt(int value) => switch (value) {
-        0 => GPSStatus.no_fix,
-        1 => GPSStatus.two_d_fix,
-        2 => GPSStatus.three_d_fix,
-        3 => GPSStatus.dgps_fix,
-        4 => GPSStatus.rtk_fix,
-        5 => GPSStatus.rtk_float,
-        6 => GPSStatus.dead_reckoning,
-        7 => GPSStatus.manual_input,
+        0 => GPSStatus.unknown,
+        1 => GPSStatus.normal,
+        2 => GPSStatus.dgps,
+        3 => GPSStatus.rtk_fixed,
+        4 => GPSStatus.rtk_floating,
+        5 => GPSStatus.dead_reckoning,
+        6 => GPSStatus.gnss_dr,
+        7 => GPSStatus.time,
         8 => GPSStatus.simulated,
-        _ => GPSStatus.no_fix,
+        10 => GPSStatus.unknown,
+        _ => GPSStatus.unknown,
       };
 }

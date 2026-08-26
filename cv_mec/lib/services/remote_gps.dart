@@ -107,7 +107,7 @@ class RemoteGPSService extends GetxController {
               headingAccuracy: 0,
               speedAccuracy: 0,
               gpsType: GPSType.cradle,
-              gpsStatus: GPSStatus.no_fix,
+              gpsStatus: GPSStatus.normal,
             );
           } catch (e) {
             loggingService.showError('RemoteGPSService error: $e');

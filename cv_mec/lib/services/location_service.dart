@@ -220,7 +220,7 @@ class LocationService extends GetxService {
   }
 
   void _onPositionUpdate(Position position) {
-    AugmentedPosition pos = AugmentedPosition.fromPosition(position, GPSType.mobile, GPSStatus.no_fix);
+    AugmentedPosition pos = AugmentedPosition.fromPosition(position, GPSType.mobile, GPSStatus.normal);
     _locationController.add(pos);
     latestPosition = position; // Store latest position
   }
