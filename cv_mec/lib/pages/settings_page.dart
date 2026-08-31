@@ -576,8 +576,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  
-
   appearanceSettings() {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),

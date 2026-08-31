@@ -42,7 +42,9 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_mes
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:bluetooth_classic/models/device.dart';
+import 'package:cv_mec/controllers/imu_controller.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
+import 'package:cv_mec/controllers/raw_imu_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/main.dart';
 import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
@@ -109,6 +111,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:imu_plugin_native/imu_plugin_native.dart';
 import 'package:iss_scms/iss_scms.dart';
 import 'package:iss_scms/models/psid.dart';
 import 'package:iss_scms/models/validate_status.dart';
@@ -168,6 +171,7 @@ class MapState extends State<MapPage> with RouteAware {
   late TumMessageBuilder tumBuilder;
 
   Timer? uploadTimer;
+  Timer? imuLogTimer;
 
   Color connectedButtonColor = Colors.red;
 
@@ -182,6 +186,8 @@ class MapState extends State<MapPage> with RouteAware {
   late DataQueue recDataQueue;
   late DataQueue pubDataQueue;
   late DataQueue timDataQueue;
+  late DataQueue imuDataQueue;
+  DataQueue? sensorEventDataQueue;
 
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
   final LayerHitNotifier<PolyLineHitValue> _polyLineHitNotifier = ValueNotifier(null);
@@ -217,6 +223,8 @@ class MapState extends State<MapPage> with RouteAware {
   RxBool obdConnecting = false.obs;
 
   OBDController obdController = Get.find<OBDController>();
+  IMUController imuController = Get.put(IMUController());
+  RawIMUController rawImuController = Get.put(RawIMUController());
 
   DateTime lastRedrawTime = DateTime.now();
 
@@ -279,6 +287,9 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     flutterTts = FlutterTts();
+
+    rawImuController.onImuEventReceived = _logImuEvent;
+    obdController.onObdDataReceived = _logObdDataEvent;
 
 
 
@@ -345,6 +356,8 @@ class MapState extends State<MapPage> with RouteAware {
     updateGraphics();
 
     obdController.checkRootStatus();
+    imuController.initialize();
+    rawImuController.initialize();
   }
 
   @override
@@ -503,6 +516,9 @@ class MapState extends State<MapPage> with RouteAware {
     positionSubscription?.cancel();
     sendMessageTimer?.cancel();
     uploadTimer?.cancel();
+    imuLogTimer?.cancel();
+    rawImuController.onImuEventReceived = null;
+    obdController.onObdDataReceived = null;
     routeObserver.unsubscribe(this);
     configController.stopSiren();
     configController.isBusWarningOn.value = false;
@@ -616,9 +632,126 @@ class MapState extends State<MapPage> with RouteAware {
     timDataQueue.addItem(timHeader);
   }
 
+  void createIMUDataQueues() { 
+    DateTime logTime = timingService.getTime();
+    imuDataQueue = DataQueue("IMU_LOG_${logTime.millisecondsSinceEpoch}.csv");
+    String imuHeader = "time,vehicle_latitude,vehicle_longitude,u_acc__x,u_acc__y,u_acc__z,gyro_x,gyro_y,gyro_z,rv_x,rv_y,rv_z,rv_yaw,compass,rv_pitch,rv_roll,l_acc_x,l_acc_y,l_acc_z,obd_speed_mph,obd_rpm\n";
+    imuDataQueue.addItem(imuHeader);
+  }
+
+  void createSensorEventDataQueue() {
+    final DateTime logTime = timingService.getTime();
+    sensorEventDataQueue = DataQueue(
+      "SENSOR_EVENT_LOG_${logTime.millisecondsSinceEpoch}.csv",
+    );
+    const String header =
+        "source,event_type,request_time_ms,source_time_ms,receive_time_ms,latency_ms,latitude,longitude,heading,speed_mph,rpm,gyro_z_rad_per_sec,yaw_deg,accel_x,accel_y,accel_z,accuracy,sensor_name,raw_value\n";
+    sensorEventDataQueue?.addItem(header);
+  }
+
+  void startIMUDataLogging() {
+    imuLogTimer?.cancel();
+    imuLogTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      final timestamp = timingService.getTime().millisecondsSinceEpoch;
+      final row =
+          "$timestamp,${_csvNum(currentPosition?.latitude)},${_csvNum(currentPosition?.longitude)},${_csvNum(imuController.userAccX)},${_csvNum(imuController.userAccY)},${_csvNum(imuController.userAccZ)},"
+          "${_csvNum(imuController.gyroX)},${_csvNum(imuController.gyroY)},${_csvNum(imuController.gyroZ)},"
+          "${_csvNum(rawImuController.rotationVectorX)},${_csvNum(rawImuController.rotationVectorY)},${_csvNum(rawImuController.rotationVectorZ)},"
+          "${_csvNum(rawImuController.rotationVectorYawDeg.value)},${_csvNum((rawImuController.rotationVectorYawDeg.value % 360 + 360) % 360)},${_csvNum(rawImuController.rotationVectorPitchDeg.value)},${_csvNum(rawImuController.rotationVectorRollDeg.value)},"
+          "${_csvNum(rawImuController.linearAccelerationX)},${_csvNum(rawImuController.linearAccelerationY)},${_csvNum(rawImuController.linearAccelerationZ)},"
+          "${_csvNum(obdController.speed.value)},${_csvNum(obdController.rpm.value)}\n";
+      imuDataQueue.addItem(row);
+    });
+  }
+
+  String _csvNum(double? value) {
+    if (value == null) {
+      return "";
+    }
+    return value.toStringAsFixed(6);
+  }
+
+  String _csvInt(int? value) {
+    if (value == null) {
+      return "";
+    }
+    return value.toString();
+  }
+
+  String _csvText(String? value) {
+    if (value == null || value.isEmpty) {
+      return "";
+    }
+    final String escaped = value.replaceAll('"', '""');
+    return '"$escaped"';
+  }
+
+  void _logGpsEvent(Position position) {
+    final DataQueue? queue = sensorEventDataQueue;
+    if (queue == null) {
+      return;
+    }
+
+    final DateTime receiveTime = DateTime.now();
+    final int receiveTimeMs = receiveTime.millisecondsSinceEpoch;
+    final int? sourceTimeMs = position.timestamp?.millisecondsSinceEpoch;
+    final int? latencyMs =
+        sourceTimeMs == null ? null : receiveTimeMs - sourceTimeMs;
+    final String row =
+        'gps,position,,${_csvInt(sourceTimeMs)},$receiveTimeMs,${_csvInt(latencyMs)},${_csvNum(position.latitude)},${_csvNum(position.longitude)},${_csvNum(position.heading)},${_csvNum(position.speed * 2.2369362920544)},,,,,,,,'
+        '\n';
+    queue.addItem(row);
+  }
+
+  void _logImuEvent(ImuEvent event, DateTime receivedAt) {
+    final DataQueue? queue = sensorEventDataQueue;
+    if (queue == null) {
+      return;
+    }
+
+    final String sensorName = event.sensorName ?? event.androidSensorType.toString();
+    final String eventType = event.sensorType?.name ?? sensorName;
+    final String row =
+        'imu,$eventType,,${event.timestampNanos},${receivedAt.millisecondsSinceEpoch},,,,,,,${_csvNum(event.sensorType == ImuSensorType.gyroscope ? event.z : null)},${_csvNum(event.yawDeg)},${_csvNum(event.x)},${_csvNum(event.y)},${_csvNum(event.z)},${event.accuracy},${_csvText(sensorName)},${_csvText(event.values.join('|'))}'
+        '\n';
+    queue.addItem(row);
+  }
+
+  void _logObdDataEvent({
+    required String pid,
+    required String measurement,
+    required double value,
+    required String rawResponse,
+    required DateTime? requestTime,
+    required DateTime receivedTime,
+  }) {
+    final DataQueue? queue = sensorEventDataQueue;
+    if (queue == null) {
+      return;
+    }
+
+    final int receiveTimeMs = receivedTime.millisecondsSinceEpoch;
+    final int? requestTimeMs = requestTime?.millisecondsSinceEpoch;
+    final int? latencyMs = requestTimeMs == null
+        ? null
+        : receiveTimeMs - requestTimeMs;
+    final String speedMph = measurement == 'speed_mph'
+        ? _csvNum(value)
+        : _csvNum(obdController.speed.value);
+    final String rpm = measurement == 'rpm'
+        ? _csvNum(value)
+        : _csvNum(obdController.rpm.value);
+    final String row =
+        'obd,$measurement,${_csvInt(requestTimeMs)},,$receiveTimeMs,${_csvInt(latencyMs)},${_csvNum(currentPosition?.latitude)},${_csvNum(currentPosition?.longitude)},${_csvNum(currentPosition?.heading)},$speedMph,$rpm,,,,,,${_csvText(pid)},${_csvText(rawResponse)}'
+        '\n';
+    queue.addItem(row);
+  }
+
   Future<int> enableLogging() async {
-    
-    createMessageDataQueues(); 
+    createMessageDataQueues();
+    createIMUDataQueues();
+    createSensorEventDataQueue();
+    startIMUDataLogging();
     uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) { 
       rotateAndUploadMessageLogs();
       loggingService.rotateAndUploadAppLog(deviceID); 
@@ -1037,6 +1170,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
+    _logGpsEvent(position);
     mqttAgents.setPosition(currentPosition);
 
     DateTime now = DateTime.now();
@@ -1364,7 +1498,22 @@ class MapState extends State<MapPage> with RouteAware {
             sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
             busWarningOn: configController.isBusWarningOn.value),
       );
+      Marker userDirection = Marker(
+        point: getUserLocation(),
+        width: markerSize,
+        height: markerSize,
+        rotate: false,
+        child: Transform.rotate(
+          angle: (rawImuController.gameRotationVectorYawDeg.value + 180) * pi / 180, // Convert degrees to radians
+          child: Icon(
+            Icons.navigation,
+            color: Colors.black.withValues(alpha: 0.5),
+            size: markerSize,
+          ),
+        ),
+      );
       markerList.add(userMarker);
+      markerList.add(userDirection);
       if (_mapController.camera.zoom > 17.5) {
         // Get Maps that the user is near or in
         List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
@@ -1671,9 +1820,12 @@ class MapState extends State<MapPage> with RouteAware {
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
     String timDataPath = timDataQueue.filePath;
+    String imuDataPath = imuDataQueue.filePath;
 
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
     createMessageDataQueues();
+    createIMUDataQueues();
+    createSensorEventDataQueue();
 
     loggingService.addToAppLog("Log Rotation Complete. Current Time ${timingService.getTime()}");
 
@@ -1682,10 +1834,12 @@ class MapState extends State<MapPage> with RouteAware {
       awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}");
       awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}");
       awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}");
+      awsService.uploadFile(imuDataPath, "imu/${settingsController.deviceID.value}"); 
     } else {
       awsService.uploadFile(recDataPath, "subscribe/$deviceID");
       awsService.uploadFile(pubDataPath, "publish/$deviceID");
       awsService.uploadFile(timDataPath, "tim/$deviceID");
+      awsService.uploadFile(imuDataPath, "imu/$deviceID");
     }
   }
 
@@ -2483,7 +2637,16 @@ class MapState extends State<MapPage> with RouteAware {
                               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                         ],
                       )),
-                    )
+                    ),
+          Obx(() => Column(  
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [ 
+              Text(rawImuController.rotationVectorDisplay.value),
+              Text(rawImuController.rotationVectorYawDeg.value.toString()),
+            ]
+          )),
+          verticalSpaceSmall,
+          compassDisplay()
         ],
       ),
     );
@@ -2625,13 +2788,42 @@ class MapState extends State<MapPage> with RouteAware {
               ]),
             )),
         verticalSpaceMedium,
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [speedDisplay(), rpmDisplay()],
-          ),
-        )
+        Obx(() => Text("${obdController.speed.value}", style: const TextStyle(fontSize: 16))),
+        verticalSpaceMedium,
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [speedDisplay(), rpmDisplay()],
+              ),
+            ),
+            verticalSpaceSmall,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [compassDisplay()],
+              ),
+            ),
+          ],
+        ),
+        verticalSpaceMedium,
+        Obx(() => Column(  
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(imuController.userAccelerometerDisplay.value),
+              Text(imuController.accelerometerDisplay.value),
+              Text(imuController.gyroscopeDisplay.value),
+              verticalSpaceMedium,
+              Text(rawImuController.rotationVectorDisplay.value),
+              Text(rawImuController.gameRotationVectorDisplay.value),
+              Text(rawImuController.geomagneticRotationVectorDisplay.value),
+              Text(rawImuController.gravityDisplay.value),
+              Text(rawImuController.linearAccelerationDisplay.value)
+            ]
+          )),
       ],
     );
   }
@@ -2803,6 +2995,94 @@ class MapState extends State<MapPage> with RouteAware {
         child: Container(
           width: 175,
           height: 175,
+        ),
+      );
+    });
+  }
+
+  Widget compassDisplay() {
+    return Obx(() {
+      final _ = rawImuController.rotationVectorDisplay.value;
+      final yawDeg = rawImuController.rotationVectorYawDeg;
+      final bool isValidYaw = !yawDeg.isNaN && !yawDeg.isInfinite;
+      final double normalizedYaw = isValidYaw ? ((yawDeg % 360) + 360) % 360 : 0;
+      final int displayYaw = normalizedYaw.round() % 360;
+
+      return SizedBox(
+        width: 175,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 175,
+              height: 175,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [lightGrey, darkGrey],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.5),
+                    spreadRadius: 2,
+                    blurRadius: 7,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Colors.black, darkGrey, Colors.white],
+                      stops: const [0.9, 0.98, 1],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Transform.rotate(
+                              // Rotate opposite the phone heading so the arrow stays on true north.
+                              angle: -normalizedYaw * pi / 180.0,
+                              child: const Icon(
+                                Icons.navigation,
+                                color: Colors.redAccent,
+                                size: 52,
+                              ),
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment(0, 0.8),
+                            child: Text(
+                              isValidYaw ? "$displayYaw°" : "---",
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     });

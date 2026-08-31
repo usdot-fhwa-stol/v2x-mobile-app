@@ -55,7 +55,7 @@ class LocationService extends GetxService {
         accuracy: LocationAccuracy.high,
         distanceFilter: 0,
         forceLocationManager: true,
-        intervalDuration: const Duration(seconds: 1),
+        intervalDuration: const Duration(milliseconds: 100),  
         //(Optional) Set foreground notification config to keep the app alive
         //when going to the background
         // foregroundNotificationConfig: const ForegroundNotificationConfig(

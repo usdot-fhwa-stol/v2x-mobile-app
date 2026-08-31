@@ -12,6 +12,14 @@ import 'dart:convert';
 import 'package:conversion/conversion.dart';
 
 typedef OBDCallback = void Function(String rawResponse);
+typedef OBDDataReceivedCallback = void Function({
+  required String pid,
+  required String measurement,
+  required double value,
+  required String rawResponse,
+  required DateTime? requestTime,
+  required DateTime receivedTime,
+});
 
 class OBDController extends GetxController {
   Timer? _bluezDeviceTimer;
@@ -26,6 +34,7 @@ class OBDController extends GetxController {
   RxBool isConnected = false.obs;
 
   final Map<String, OBDCallback> _obdWatchers = {};
+  final Map<String, DateTime> _pendingRequestTimes = <String, DateTime>{};
 
   String _inputBuffer = '';
 
@@ -61,6 +70,7 @@ class OBDController extends GetxController {
   bool isRunningAsRoot = false;
 
   LoggingService loggingService = Get.find<LoggingService>();
+  OBDDataReceivedCallback? onObdDataReceived;
 
   void startBluezDevicePolling() {
     _bluezDeviceTimer?.cancel();
@@ -167,7 +177,7 @@ class OBDController extends GetxController {
       setupOBDWatchers();
       int obdTick = 0;
       final List<String> obdCommandList = [obdSpeedCommand, obdRpmCommand];
-      _obdTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _obdTimer = Timer.periodic(const Duration(milliseconds: 100), (_) { 
         _sendOBDCommand(obdCommandList[obdTick]);
         obdTick++;
         if (obdTick == obdCommandList.length) {
@@ -189,7 +199,12 @@ class OBDController extends GetxController {
     if (!isConnected.value) {
       return;
     }
+    _pendingRequestTimes[command] = DateTime.now();
     await _bluetoothClassicPlugin.write(cmd);
+  }
+
+  DateTime? _takePendingRequestTime(String command) {
+    return _pendingRequestTimes.remove(command);
   }
 
   void _handleOBDResponse(String response) {
@@ -209,6 +224,14 @@ class OBDController extends GetxController {
           List<int> speedKmh = convert.hexToDecimal(hexString: [hexSpeed]);
           double speedMph = speedKmh[0] * 0.621371;
           speed.value = speedMph;
+          onObdDataReceived?.call(
+            pid: obdSpeedCommand,
+            measurement: 'speed_mph',
+            value: speedMph,
+            rawResponse: resp,
+            requestTime: _takePendingRequestTime(obdSpeedCommand),
+            receivedTime: DateTime.now(),
+          );
         }
       }
     });
@@ -224,6 +247,14 @@ class OBDController extends GetxController {
             final b = match.group(2)!;
             List<int> rpmValue = convert.hexToDecimal(hexString: [a, b]);
             rpm.value = (rpmValue[0] * 256 + rpmValue[1]) / 4;
+            onObdDataReceived?.call(
+              pid: obdRpmCommand,
+              measurement: 'rpm',
+              value: rpm.value,
+              rawResponse: resp,
+              requestTime: _takePendingRequestTime(obdRpmCommand),
+              receivedTime: DateTime.now(),
+            );
           }
         } else {
           loggingService.showWarning("RPM response is too short: $hexRpm");
