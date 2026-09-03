@@ -120,6 +120,8 @@ class SettingsController extends GetxController {
 
   initialize() async {    
     baseUri.value = await secureStorage.getBaseURI();
+    username.value = await secureStorage.getUsername();
+    password.value = await secureStorage.getPassword();
     cradleGPSUsername.value = await secureStorage.getGPSUsername();
     cradleGPSPassword.value = await secureStorage.getGPSPassword();
     cradleGPSIP.value = await secureStorage.getGPSIP();

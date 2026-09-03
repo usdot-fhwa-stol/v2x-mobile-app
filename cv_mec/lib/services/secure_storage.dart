@@ -8,6 +8,8 @@ class SecureStorage {
   static const _storage = FlutterSecureStorage();
 
   static const _keyBaseURI = 'baseuri';
+  static const _keyUsername = 'username';
+  static const _keyPassword = 'password';
   static const _keyVzMode = "vzMode";
   static const _keyDeviceID = "deviceid";
   static const _keyNotificationsEnabled = "notificationsEnabled";
@@ -50,6 +52,9 @@ class SecureStorage {
   static const _keyDisableTUMRetry = "disableTUMRetry";
 
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
+  static final _startUsername = dotenv.env['USERNAME'] ?? "";
+  static final _startPassword = dotenv.env['PASSWORD'] ?? "";
+
   static final _startISSMqttBrokerUrl = dotenv.env['ISS_MQTT_BROKER'] ?? "";
   static final _startDeviceID = "";
 
@@ -89,6 +94,8 @@ class SecureStorage {
   static final _issScmsToken = dotenv.env['ISS_SCMS_TOKEN'] ?? "";
 
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
+  Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? _startUsername;
+  Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? _startPassword;
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
   Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
   Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? _issScmsToken;
@@ -124,6 +131,8 @@ class SecureStorage {
   Future<bool> getDisableTUMRetry() async => (await _storage.read(key: _keyDisableTUMRetry) ?? _startDisableTUMRetry.toString()) == "true";
 
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
+  Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
+  Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
   Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
   Future<void> setISSMqttBrokerUrl(String issMqttBrokerUrl) async => await _storage.write(key: _keyISSMqttBrokerUrl, value: issMqttBrokerUrl);
