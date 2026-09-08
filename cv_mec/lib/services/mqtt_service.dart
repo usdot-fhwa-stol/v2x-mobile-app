@@ -22,6 +22,7 @@ class MqttService extends GetxService {
   static const String pc5Tag = "PC5";
 
   Future<int> connect(String connectionURL, Registration? registration) async {
+    pongCount=0;
     try {
       String clientId = 'cv-mec-${const Uuid().v4().substring(0, 16)}';
       if (registration != null) {
@@ -46,7 +47,7 @@ class MqttService extends GetxService {
       client!.onDisconnected = onDisconnected;
       client!.onConnected = onConnected;
       client!.onSubscribed = onSubscribed;
-      client!.autoReconnect = true;
+      client!.disconnectOnNoResponsePeriod = 5;
       client!.autoReconnect = false;
 
       if (registration != null) {
@@ -79,7 +80,7 @@ class MqttService extends GetxService {
     }
 
     /// Check we are connected
-    if (client!.connectionStatus!.state == MqttConnectionState.connected) {
+    if ((client!.connectionStatus?.state ?? MqttConnectionState.disconnected) == MqttConnectionState.connected) {
       loggingService.addToAppLog('CV_MEC::Mosquitto client connected');
     } else {
       /// Use status here rather than state if you also want the broker return code.
@@ -88,17 +89,28 @@ class MqttService extends GetxService {
       return -1;
     }
 
-    // Setup Universal Subscriber. This will get parsed to individual subscribers as they are registered
-    client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? receivedMessages) {
-      DateTime recTime = timingService.getTime();
-      for (MqttReceivedMessage<MqttMessage?> message in receivedMessages!) {
-        for (String key in subscriberList.keys) {
-          if (matchTopic(message.topic, key)) {
-            subscriberList[key]!(message, recTime);
-          }
+    if(client!.updates != null){
+       // Setup Universal Subscriber. This will get parsed to individual subscribers as they are registered
+      client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? receivedMessages) {
+        DateTime recTime = timingService.getTime();
+        if(receivedMessages != null){
+          loggingService.addToAppLog("CV_MEC::Received ${receivedMessages.length} messages from broker at $recTime");
+            for (MqttReceivedMessage<MqttMessage?> message in receivedMessages) {
+              for (String key in subscriberList.keys) {
+                if (matchTopic(message.topic, key)) {
+                  subscriberList[key]!(message, recTime);
+                }
+              }
+            }
+        }else{
+          loggingService.showWarning("CV_MEC::Received Null Message List from Broker at $recTime");
         }
-      }
-    });
+      });
+    }else{
+      loggingService.showWarning("CV_MEC::Client Updates Stream is Null. No Messages will be received");
+    }
+
+   
 
     loggingService.addToAppLog("Completed MQTT Connection to $connectionURL");
 
@@ -127,16 +139,23 @@ class MqttService extends GetxService {
 
   void onDisconnected() {
     loggingService.showWarning('CV_MEC::OnDisconnected client callback - Client disconnection');
-    if (client!.connectionStatus!.disconnectionOrigin == MqttDisconnectionOrigin.solicited) {
-      loggingService.addToAppLog('CV_MEC::OnDisconnected callback is solicited, this is correct');
-    } else {
-      loggingService.showWarning('CV_MEC::OnDisconnected callback is unsolicited or none, this is incorrect - exiting');
+    if(client != null && client!.connectionStatus != null) {
+       if (client!.connectionStatus!.disconnectionOrigin == MqttDisconnectionOrigin.solicited) {
+        loggingService.addToAppLog('CV_MEC::OnDisconnected callback is solicited, this is correct');
+      } else {
+        loggingService.showWarning('CV_MEC::OnDisconnected callback is unsolicited or none, this is incorrect - exiting');
+      }
+      
+    }else{
+      loggingService.showWarning('CV_MEC::OnDisconnected callback - Client or Connection Status is null');
     }
+
     if (pongCount == 3) {
       loggingService.addToAppLog('CV_MEC:: Pong count is correct');
     } else {
       loggingService.showWarning('CV_MEC:: Pong count is incorrect, expected 3. actual $pongCount');
     }
+   
   }
 
   void onConnected() {
@@ -144,12 +163,13 @@ class MqttService extends GetxService {
   }
 
   void pong() {
-    loggingService.addToAppLog('CV_MEC::Ping response client callback invoked');
+    
     pongCount++;
+    loggingService.addToAppLog('CV_MEC::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()} Current number of Subscriptions: ${subscriberList.keys.length}');
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-
+    loggingService.addToAppLog("CV_MEC::Subscribing to Topic: $topicName");
     int retryCount = 0;
 
     if (client != null) {
@@ -171,6 +191,7 @@ class MqttService extends GetxService {
 
   void unsubscribe(String topicName) {
     if (client != null && subscriberList.containsKey(topicName)) {
+      loggingService.addToAppLog("CV_MEC::Unsubscribing from Topic: $topicName");
       client!.unsubscribe(topicName);
       subscriberList.remove(topicName);
     } else {
@@ -201,6 +222,7 @@ class MqttService extends GetxService {
   }
 
   void disconnect() {
+    loggingService.addToAppLog("Attempting to Disconnect MQTT Client");
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
       loggingService.addToAppLog('CV_MEC::Disconnecting from MQTT Broker');
       client!.disconnect();

@@ -55,8 +55,9 @@ class PsmMessageBuilder extends MessageBuilder {
     psm.position.lat = (position.latitude * 1E7).toInt();
     psm.heading = (position.heading * 0.0125).toInt();
 
-    psm.accuracy.semiMajor = (min(position.accuracy, 12.7) * 0.05).toInt();
-    psm.accuracy.semiMinor = (min(position.accuracy, 12.7) * 0.05).toInt();
+    psm.accuracy.semiMajor = (min(position.accuracy,12.7) * 20).toInt(); // Units of 0.05 m
+    psm.accuracy.semiMinor = (min(position.accuracy,12.7) * 20).toInt(); // Units of 0.05 m
+    psm.accuracy.orientation = max((position.headingAccuracy * 65535/360).toInt(),65534);
 
     if (position.headingAccuracy == 0) {
       psm.accuracy.orientation = 65535;

@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/etx/registration.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/pages/settings_page.dart';
 import 'package:cv_mec/services/logging_service.dart';
 import 'package:get/get.dart';
@@ -11,6 +13,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:cv_mec/models/augmented_position.dart';
 
 class RemoteGPSService extends GetxController {
   //final String baseURI = "http://cvmecapidns.eastus.azurecontainer.io:8080"; //SETTINGS Configuration
@@ -83,7 +86,7 @@ class RemoteGPSService extends GetxController {
     return Map<String, dynamic>.from(data.first as Map);
   }
 
-  Stream<Position> positionStream({
+  Stream<AugmentedPosition> positionStream({
     Duration interval = const Duration(seconds: 1),
   }) {
     return Stream.periodic(interval)
@@ -92,7 +95,7 @@ class RemoteGPSService extends GetxController {
             final headers = await getToken();
             final info = await getInfo(headers);
 
-            return Position(
+            return AugmentedPosition(
               latitude: (info['location.gnss.latitude'] as num).toDouble(),
               longitude: (info['location.gnss.longitude'] as num).toDouble(),
               altitude: (info['location.gnss.altitude'] as num).toDouble(),
@@ -103,6 +106,8 @@ class RemoteGPSService extends GetxController {
               altitudeAccuracy: 0,
               headingAccuracy: 0,
               speedAccuracy: 0,
+              gpsType: GPSType.cradle,
+              gpsStatus: GPSStatus.normal,
             );
           } catch (e) {
             loggingService.showError('RemoteGPSService error: $e');
@@ -112,6 +117,6 @@ class RemoteGPSService extends GetxController {
         // drop any nulls that came from errors
         .where((pos) => pos != null)
         // cast back to non-nullable
-        .cast<Position>();
+        .cast<AugmentedPosition>();
   }
 }

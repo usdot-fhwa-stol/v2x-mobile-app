@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cv_mec/models/augmented_position.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/models/position_with_declination.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -26,15 +29,15 @@ class LocationService extends GetxService {
   // Variables
   bool _serviceEnabled = false;
   bool _serviceMocked = false;
-  StreamSubscription<Position>? _mockedStreamListener;
+  StreamSubscription<AugmentedPosition>? _mockedStreamListener;
   late LocationPermission _permission;
   StreamSubscription<Position>? _positionStream;
   DeclinationData? _declinationData;
   Position? latestPosition;
 
   // Location Stream
-  final StreamController<Position> _locationController = StreamController<Position>.broadcast();
-  Stream<Position> get locationStream => _locationController.stream;
+  final StreamController<AugmentedPosition> _locationController = StreamController<AugmentedPosition>.broadcast();
+  Stream<AugmentedPosition> get locationStream => _locationController.stream;
 
   // LocationWithDeclination Stream
   bool declinationRequestOut = false;
@@ -69,11 +72,11 @@ class LocationService extends GetxService {
     //_start(mocked, latitude, longitude, mockedLocation);
   }
 
-  Future<void> init({bool mocked = false, double latitude = 0, double longitude = 0, Position? mockedLocation}) async {
+  Future<void> init({bool mocked = false, double latitude = 0, double longitude = 0, AugmentedPosition? mockedLocation}) async {
     await _start(mocked, latitude, longitude, mockedLocation);
   }
 
-  Future<void> _start(bool mocked, double latitude, double longitude, Position? mockedLocation) async {
+  Future<void> _start(bool mocked, double latitude, double longitude, AugmentedPosition? mockedLocation) async {
     _serviceMocked = mocked;
     if (_serviceMocked) {
       _mockedStreamListener?.cancel();
@@ -217,7 +220,8 @@ class LocationService extends GetxService {
   }
 
   void _onPositionUpdate(Position position) {
-    _locationController.add(position);
+    AugmentedPosition pos = AugmentedPosition.fromPosition(position, GPSType.mobile, GPSStatus.normal);
+    _locationController.add(pos);
     latestPosition = position; // Store latest position
   }
 

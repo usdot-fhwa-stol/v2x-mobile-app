@@ -1,4 +1,5 @@
 import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/path_service.dart';
 import 'package:flutter/material.dart';
@@ -10,14 +11,6 @@ import 'package:cv_mec/services/shared_pref.dart';
 
 import 'package:flutter/scheduler.dart';
 import 'dart:io';
-
-enum GPSType {
-  mobile,
-  path,
-  static,
-  obu,
-  cradle
-}
 
 enum IconSize {
   small,

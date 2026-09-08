@@ -104,6 +104,12 @@ class BsmMessageBuilder extends MessageBuilder {
   void setPosition(Position position) {
     bsm.coreData.Long = (position.longitude * 1E7).toInt();
     bsm.coreData.lat = (position.latitude * 1E7).toInt();
+    bsm.coreData.speed = (position.speed * 50).toInt(); // Units of 0.02 m/s
+    // bsm.coreData.elev = (position.altitude * 10).toInt(); // Units of 0.1 m // Not currently included since headings need to be normalized to the proper ellipsoid which may not be the same as the altitude provided.
+    bsm.coreData.heading = (position.heading / 0.0125).toInt(); // Units of 0.0125 degrees
+    bsm.coreData.accuracy.semiMajor = (min(position.accuracy,12.7) * 20).toInt(); // Units of 0.05 m
+    bsm.coreData.accuracy.semiMinor = (min(position.accuracy,12.7) * 20).toInt(); // Units of 0.05 m
+    bsm.coreData.accuracy.orientation = max((position.headingAccuracy * 65535/360).toInt(),65534);
   }
 
   void setPositionLatLng(double latitude, double longitude) {
