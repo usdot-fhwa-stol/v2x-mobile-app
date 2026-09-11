@@ -807,9 +807,13 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
-    Map<TravelerDataFrame, DataFrameGeometry> newFrames = timManager.addOrUpdate(tim, hex);
-    for (TravelerDataFrame frame in newFrames.keys) {
-      latencyTracker.recordReceived(frame, recTime);
+    bool isNewTim = tim.packetID == null ||
+        !timManager.storedTims.containsKey(ASNService.bytesToHex(tim.packetID!.uniqueMSGID));
+    timManager.addOrUpdate(tim, hex);
+    if (isNewTim) {
+      for (TravelerDataFrame frame in tim.dataFrames.travelerDataFrameList) {
+        latencyTracker.recordReceived(frame, recTime);
+      }
     }
     updateGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
