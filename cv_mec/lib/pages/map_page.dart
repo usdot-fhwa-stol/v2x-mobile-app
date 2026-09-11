@@ -17,6 +17,7 @@ import 'package:asn1_plugin/j2735/2024/common/d_second.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/intersection_geometry.dart';
 import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
@@ -62,6 +63,7 @@ import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/tum_message_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
+import 'package:cv_mec/models/message_managers/message_latency_tracker.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
 import 'package:cv_mec/models/message_managers/tam_manager.dart';
 import 'package:cv_mec/models/message_managers/tum_ack_manager.dart';
@@ -157,6 +159,7 @@ class MapState extends State<MapPage> with RouteAware {
   TamManager tamManager = TamManager();
   TumManager tumManager = TumManager();
   TumAckManager tumAckManager = TumAckManager();
+  MessageLatencyTracker latencyTracker = MessageLatencyTracker();
 
   SecureStorage secureStorage = SecureStorage();
 
@@ -185,6 +188,7 @@ class MapState extends State<MapPage> with RouteAware {
   late DataQueue recDataQueue;
   late DataQueue pubDataQueue;
   late DataQueue timDataQueue;
+  late DataQueue latencyDataQueue;
 
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
   final LayerHitNotifier<PolyLineHitValue> _polyLineHitNotifier = ValueNotifier(null);
@@ -342,7 +346,7 @@ class MapState extends State<MapPage> with RouteAware {
         showLoadingIcon = false;
       });
 
-      
+
     });
 
     updateGraphics();
@@ -455,7 +459,7 @@ class MapState extends State<MapPage> with RouteAware {
       stream = gpsdService.locationStream.stream;
       loggingService.addToAppLog("Using GPSD location stream");
     } else {
-      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}"); 
+      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
     }
 
@@ -474,7 +478,7 @@ class MapState extends State<MapPage> with RouteAware {
         await stream.first;
       }on StateError catch(e){
         // Catch exception in case stream has already been listened to.
-        loggingService.showWarning("caught error with stream.first called on existing stream"); 
+        loggingService.showWarning("caught error with stream.first called on existing stream");
       }
     }
   }
@@ -566,7 +570,7 @@ class MapState extends State<MapPage> with RouteAware {
     });
   }
 
-  
+
 
   Stream<AugmentedPosition> fakePosition(List<List<double>> fakePosition) {
     return Stream<AugmentedPosition>.periodic(const Duration(milliseconds: 500), (count) {
@@ -616,18 +620,21 @@ class MapState extends State<MapPage> with RouteAware {
     recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
+    latencyDataQueue = DataQueue("LATENCY_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
         "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
     String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes,signed,gps_source,gps_status\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
+    String latencyHeader = "message_type,key,rec_time_ms,drawn_time_ms,latency_ms\n";
 
     recDataQueue.addItem(subHeader);
     pubDataQueue.addItem(pubHeader);
     timDataQueue.addItem(timHeader);
+    latencyDataQueue.addItem(latencyHeader);
   }
 
   Future<int> enableLogging() async {
-    
+
     createMessageDataQueues();
     uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
       await rotateAndUploadMessageLogs();
@@ -640,7 +647,7 @@ class MapState extends State<MapPage> with RouteAware {
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
-    ValidateStatus validity = ValidateStatus.NOT_CHECKED;
+    ValidateStatus validity = ValidateStatus.FAILURE;
     // Temporarily disabling SCMS validation due to performance issues. Will re-enable once performance is improved.
     // try {
     //   validity = await scms.validate(bytes);
@@ -721,9 +728,13 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
       ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
+    bool isNewBsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
+    if (isNewBsm) {
+      latencyTracker.recordReceived(msg.getKey(), recTime);
+    }
       addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
-    
+
   }
 
   void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
@@ -742,7 +753,11 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime psmTime = psm.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
+    bool isNewPsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
+    if (isNewPsm) {
+      latencyTracker.recordReceived(msg.getKey(), recTime);
+    }
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
 
@@ -750,6 +765,12 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     Spat spat = asnService.decodeSpat(trimmedHex);
+
+    for (IntersectionState state in spat.intersections.intersectionStateList) {
+      if (!spatManager.storedIntersections.containsKey(state.id.id.intersectionID)) {
+        latencyTracker.recordReceived("SPAT:${state.id.id.intersectionID}", recTime);
+      }
+    }
 
     spatManager.addOrUpdate(spat);
 
@@ -767,6 +788,14 @@ class MapState extends State<MapPage> with RouteAware {
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
 
+    if (map.intersections != null) {
+      for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
+        if (!mapManager.storedMaps.containsKey(geo.id)) {
+          latencyTracker.recordReceived("MAP:${geo.id.id.intersectionID}", recTime);
+        }
+      }
+    }
+
     mapManager.addOrUpdate(map);
 
     updateGraphics();
@@ -778,7 +807,14 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
+    bool isNewTim = tim.packetID == null ||
+        !timManager.storedTims.containsKey(ASNService.bytesToHex(tim.packetID!.uniqueMSGID));
     timManager.addOrUpdate(tim, hex);
+    if (isNewTim) {
+      for (TravelerDataFrame frame in tim.dataFrames.travelerDataFrameList) {
+        latencyTracker.recordReceived(frame, recTime);
+      }
+    }
     updateGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
@@ -812,22 +848,35 @@ class MapState extends State<MapPage> with RouteAware {
 
       LatLng shiftedPosition = geometryService.shiftLatLngByMeters(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
-      messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
+      ReceivedSdsm receivedSdsm = ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType);
+      bool isNewSdsm = !messageManager.receivedMsgs.containsKey(receivedSdsm.getKey());
+      messageManager.addOrUpdate(receivedSdsm);
+      if (isNewSdsm) {
+        latencyTracker.recordReceived(receivedSdsm.getKey(), recTime);
+      }
     }
 
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
   void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!;
     TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
+    if (tam.tollAdvInfo != null) {
+      int tollPointId = tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID;
+      if (!tamManager.storedTams.containsKey(tollPointId)) {
+        // Only record the first reception of a given TAM; RSUs rebroadcast the same TAM
+        // repeatedly, and re-recording every rebroadcast would keep re-triggering latency logging.
+        latencyTracker.recordReceived("TAM:$tollPointId", recTime);
+      }
+    }
     tamManager.addOrUpdate(tam);
     updateGraphics();
     addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
   void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!; 
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!;
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
 
     if(tumAckManager.isNewTumAck(tumAck)){
@@ -890,6 +939,17 @@ class MapState extends State<MapPage> with RouteAware {
     String record =
         "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$broker,$hex,$source,${validity.name}\n";
     recDataQueue.addItem(record);
+  }
+
+  // Records the first draw of a message since its last reception, and logs the resulting
+  // reception-to-render latency. Subsequent draws of the same key before the next reception are ignored.
+  void recordAndLogDraw(String msgType, Object key, DateTime drawTime) {
+    DateTime? recTime = latencyTracker.recordDrawn(key, drawTime);
+    if (recTime != null) {
+      int latencyMs = drawTime.difference(recTime).inMilliseconds;
+      latencyDataQueue.addItem(
+          "$msgType,$key,${recTime.millisecondsSinceEpoch},${drawTime.millisecondsSinceEpoch},$latencyMs\n");
+    }
   }
 
   void startSendingBSM() {
@@ -1013,7 +1073,7 @@ class MapState extends State<MapPage> with RouteAware {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       int numOfRetries = tam.tollAdvInfo!.ackPolicy.numOfRetries.numOfRetriesInteger;
       int timeout = tam.tollAdvInfo!.ackPolicy.timeout.timeoutInteger;
-      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false, currentPosition!.gpsType, currentPosition!.gpsStatus); 
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false, currentPosition!.gpsType, currentPosition!.gpsStatus);
       VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
       if (!settingsController.disableTUMRetry.value) {
         Timer sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
@@ -1022,7 +1082,7 @@ class MapState extends State<MapPage> with RouteAware {
             tum.incrementTumSequenceNumber();
             String tumHex = tumBuilder.convertTumToHex(tum);
             List<int> tumBytes = ASNService.hexToBytes(tumHex);
-            mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false, currentPosition!.gpsType, currentPosition!.gpsStatus); 
+            mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false, currentPosition!.gpsType, currentPosition!.gpsStatus);
             VehicleNotificationManager.sendPaymentMessage("Resending Toll Message");
           } else {
             tumManager.cancelTimer(tum.tempID);
@@ -1287,6 +1347,7 @@ class MapState extends State<MapPage> with RouteAware {
       ReceivedMsg msg = messageManager.receivedMsgs[key]!;
 
       if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
+        recordAndLogDraw(msg.type.name, msg.getKey(), compTime);
         if (msg is ReceivedBsm) {
           Marker remoteMarker = Marker(
             point: msg.position,
@@ -1315,9 +1376,11 @@ class MapState extends State<MapPage> with RouteAware {
       if (messageManager.shown.containsKey(key)) {
         messageManager.shown.remove(key);
       }
+      latencyTracker.clear(key);
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
+      recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", compTime);
       for (LatLng coord in mappableTam.markerPoints) {
         markerList.add(Marker(
           width: markerSize * 0.8,
@@ -1379,11 +1442,13 @@ class MapState extends State<MapPage> with RouteAware {
         List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
 
         for (GeoMap map in geoMaps) {
+          recordAndLogDraw("MAP", "MAP:${map.intersectionGeometry.id.id.intersectionID}", compTime);
           // Get SPaT messages associated with the relavent MAP messages
           List<IntersectionState> states =
               spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
 
           for (IntersectionState state in states) {
+            recordAndLogDraw("SPAT", "SPAT:${state.id.id.intersectionID}", compTime);
             // This code indexes light colors by signal group to allow easy lookup down the line
             Map<int, MovementEvent> stateMap = {};
             for (MovementState movement in state.states.movementList) {
@@ -1513,9 +1578,11 @@ class MapState extends State<MapPage> with RouteAware {
       // Get Maps that the user is near or in
       List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
       for (GeoMap map in geoMaps) {
+        recordAndLogDraw("MAP", "MAP:${map.intersectionGeometry.id.id.intersectionID}", start);
         List<IntersectionState> states =
             spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
         for (IntersectionState state in states) {
+          recordAndLogDraw("SPAT", "SPAT:${state.id.id.intersectionID}", start);
           // This code indexes light colors by signal group to allow easy lookup down the line
           Map<int, MovementEvent> stateMap = {};
           for (MovementState movement in state.states.movementList) {
@@ -1574,7 +1641,7 @@ class MapState extends State<MapPage> with RouteAware {
 
 
         for (GenericLane lane in map.intersectionGeometry.laneSet.laneList) {
-          
+
           List<LatLng> laneCoordinates = geometryService.getLatLngCoordinatesFromNodeSetXY(
               lane.nodeList.nodeListXY as NodeSetXY, map.intersectionGeometry.refPoint);
 
@@ -1599,6 +1666,7 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       for (MappableTam mappableTam in tamManager.storedTams.values) {
+        recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", start);
         for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(
             points: lanePoints,
@@ -1627,11 +1695,13 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   List<Polygon<HitValue>> getPolygons() {
+    DateTime drawTime = timingService.getTime();
     List<Polygon<HitValue>> polygons = [];
 
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(false);
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
+      recordAndLogDraw("TIM", tdFrame, drawTime);
 
       for (GeometryDirection geoDir in frame.geometry) {
         List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
@@ -1649,6 +1719,7 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
+      recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", drawTime);
       if (mappableTam.entireTollZoneBorder.isEmpty) {
         continue;
       }
@@ -1680,6 +1751,7 @@ class MapState extends State<MapPage> with RouteAware {
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
     String timDataPath = timDataQueue.filePath;
+    String latencyDataPath = latencyDataQueue.filePath;
 
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
     createMessageDataQueues();
@@ -1694,7 +1766,9 @@ class MapState extends State<MapPage> with RouteAware {
           pubDataPath, "publish/${settingsController.deviceID.value}");
       final timSuccess = await awsService.uploadFile(
           timDataPath, "tim/${settingsController.deviceID.value}");
-      return recSuccess && pubSuccess && timSuccess;
+      final latencySuccess = await awsService.uploadFile(
+          latencyDataPath, "latency/${settingsController.deviceID.value}");
+      return recSuccess && pubSuccess && timSuccess && latencySuccess;
     } else {
       final recSuccess =
           await awsService.uploadFile(recDataPath, "subscribe/$deviceID");
@@ -1702,7 +1776,9 @@ class MapState extends State<MapPage> with RouteAware {
           await awsService.uploadFile(pubDataPath, "publish/$deviceID");
       final timSuccess =
           await awsService.uploadFile(timDataPath, "tim/$deviceID");
-      return recSuccess && pubSuccess && timSuccess;
+      final latencySuccess =
+          await awsService.uploadFile(latencyDataPath, "latency/$deviceID");
+      return recSuccess && pubSuccess && timSuccess && latencySuccess;
     }
   }
 
@@ -2220,12 +2296,12 @@ class MapState extends State<MapPage> with RouteAware {
               context: context,
               type: ToastificationType.info,
               style: ToastificationStyle.flatColored,
-              title: Text("Switched to ${VehicleType.vehicleTypeToString(configController.selectedVehicle.value.classification)}"), 
+              title: Text("Switched to ${VehicleType.vehicleTypeToString(configController.selectedVehicle.value.classification)}"),
               alignment: Alignment.topCenter,
               autoCloseDuration: const Duration(seconds: 5),
               showProgressBar: false,
               dragToClose: true,
-              icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)), 
+              icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)),
               primaryColor: Theme.of(context).primaryColor,
             );
           },
@@ -2387,7 +2463,7 @@ class MapState extends State<MapPage> with RouteAware {
             SizedBox(
               width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
               height: heightBottomDisplay * 0.3, // Constrain height
-              child: FittedBox (  
+              child: FittedBox (
                   fit: BoxFit.contain,
                   child: Stack(
                     children: [
@@ -2897,7 +2973,7 @@ class MapState extends State<MapPage> with RouteAware {
                             dense: false,
                           );
                         }
-                        // Default case: show nothing if there’s no data
+                        // Default case: show nothing if there's no data
                         return const SizedBox.shrink();
                       });
                 },
