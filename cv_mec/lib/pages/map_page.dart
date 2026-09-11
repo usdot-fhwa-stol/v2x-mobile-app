@@ -728,8 +728,11 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
       ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
+    bool isNewBsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
-    latencyTracker.recordReceived(msg.getKey(), recTime);
+    if (isNewBsm) {
+      latencyTracker.recordReceived(msg.getKey(), recTime);
+    }
       addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
 
   }
@@ -750,8 +753,11 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime psmTime = psm.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
+    bool isNewPsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
-    latencyTracker.recordReceived(msg.getKey(), recTime);
+    if (isNewPsm) {
+      latencyTracker.recordReceived(msg.getKey(), recTime);
+    }
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
 
@@ -761,7 +767,9 @@ class MapState extends State<MapPage> with RouteAware {
     Spat spat = asnService.decodeSpat(trimmedHex);
 
     for (IntersectionState state in spat.intersections.intersectionStateList) {
-      latencyTracker.recordReceived("SPAT:${state.id.id.intersectionID}", recTime);
+      if (!spatManager.storedIntersections.containsKey(state.id.id.intersectionID)) {
+        latencyTracker.recordReceived("SPAT:${state.id.id.intersectionID}", recTime);
+      }
     }
 
     spatManager.addOrUpdate(spat);
@@ -782,7 +790,9 @@ class MapState extends State<MapPage> with RouteAware {
 
     if (map.intersections != null) {
       for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
-        latencyTracker.recordReceived("MAP:${geo.id.id.intersectionID}", recTime);
+        if (!mapManager.storedMaps.containsKey(geo.id)) {
+          latencyTracker.recordReceived("MAP:${geo.id.id.intersectionID}", recTime);
+        }
       }
     }
 
@@ -835,8 +845,11 @@ class MapState extends State<MapPage> with RouteAware {
       LatLng shiftedPosition = geometryService.shiftLatLngByMeters(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
       ReceivedSdsm receivedSdsm = ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType);
+      bool isNewSdsm = !messageManager.receivedMsgs.containsKey(receivedSdsm.getKey());
       messageManager.addOrUpdate(receivedSdsm);
-      latencyTracker.recordReceived(receivedSdsm.getKey(), recTime);
+      if (isNewSdsm) {
+        latencyTracker.recordReceived(receivedSdsm.getKey(), recTime);
+      }
     }
 
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
