@@ -168,6 +168,7 @@ class MapState extends State<MapPage> with RouteAware {
   late TumMessageBuilder tumBuilder;
 
   Timer? uploadTimer;
+  Timer? graphicsUpdateTimer;
 
   Color connectedButtonColor = Colors.red;
 
@@ -246,6 +247,8 @@ class MapState extends State<MapPage> with RouteAware {
     psmBuilder = PsmMessageBuilder(vehicleId.sublist(0, 4));
 
     tumBuilder = TumMessageBuilder();
+
+    startGraphicsUpdateLoop();
 
     _safeSetState(() {
       showLoadingIcon = true;
@@ -341,8 +344,6 @@ class MapState extends State<MapPage> with RouteAware {
 
       
     });
-
-    updateGraphics();
 
     obdController.checkRootStatus();
   }
@@ -487,14 +488,12 @@ class MapState extends State<MapPage> with RouteAware {
         timManager.storedTims.clear();
         timManager.geometryMap.clear();
       }
-      if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
-        setState(() {
-          drawnPolygons = getPolygons();
-          drawnPolylines = getPolylines();
-          drawnMarkers = getMarkerList();
-          lastRedrawTime = DateTime.now();
-        });
-      }
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+        drawnMarkers = getMarkerList();
+        lastRedrawTime = DateTime.now();
+      });
     }
   }
 
@@ -638,45 +637,41 @@ class MapState extends State<MapPage> with RouteAware {
     //   loggingService.showError("SCMS validation failed: $e");
     // }
 
+    if(debugMode){
+      loggingService.addToAppLog("Identified Message as $msgType");
+    }
+
     switch (msgType) {
       case MsgType.BSM:
-        loggingService.addToAppLog("Identified Message as BSM");
         processNewBsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.PSM:
-        loggingService.addToAppLog("Identified Message as PSM");
         processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
-        loggingService.addToAppLog("Identified Message as SPaT $hex");
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        loggingService.addToAppLog("Identified Message as MAP");
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
-        loggingService.addToAppLog("Identified Message as TIM $hex");
         if (settingsController.showTims.value) {
           processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         }
         break;
       case MsgType.SDSM:
-        loggingService.addToAppLog("Identified Message as SDSM");
         processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TAM:
-        loggingService.addToAppLog("Identified Message as TAM");
         if (settingsController.tollingEnabled.value) {
           processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
         }
         break;
       case MsgType.TUMACK:
-        loggingService.addToAppLog("Identified Message as TUMACK");
         processNewTumAck(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       default:
-        loggingService.addToAppLog("Unable to Identify Message Type: $msgType");
+        loggingService.addToAppLog("Unable to Identify Message Type: $msgType $hex");
     }
   }
 
@@ -706,14 +701,14 @@ class MapState extends State<MapPage> with RouteAware {
         }
       }
     }
-      LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
+    LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
 
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
-      ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
+    ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
     messageManager.addOrUpdate(msg);
-      addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
-    
+    addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
+
   }
 
   void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
@@ -732,7 +727,7 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime psmTime = psm.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
-    messageManager.addOrUpdate(msg);
+    messageManager.addOrUpdate(msg);;
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
 
@@ -743,7 +738,6 @@ class MapState extends State<MapPage> with RouteAware {
 
     spatManager.addOrUpdate(spat);
 
-    updateGraphics();
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
@@ -759,7 +753,6 @@ class MapState extends State<MapPage> with RouteAware {
 
     mapManager.addOrUpdate(map);
 
-    updateGraphics();
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
   }
@@ -769,7 +762,6 @@ class MapState extends State<MapPage> with RouteAware {
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
     timManager.addOrUpdate(tim, hex);
-    updateGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
@@ -812,7 +804,6 @@ class MapState extends State<MapPage> with RouteAware {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
     TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
     tamManager.addOrUpdate(tam);
-    updateGraphics();
     addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
@@ -892,6 +883,15 @@ class MapState extends State<MapPage> with RouteAware {
       sendMessage();
     });
   }
+
+  void startGraphicsUpdateLoop(){
+    graphicsUpdateTimer?.cancel();
+
+    graphicsUpdateTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+      updateGraphics();
+    });
+  }
+
 
   List<int>? lastSignedMessage = null;
 
@@ -1056,7 +1056,6 @@ class MapState extends State<MapPage> with RouteAware {
       tumBuilder.addLocation(position, kronos);
     }
 
-    updateGraphics();
     updateTimeToChange();
 
     if (followUser) {
