@@ -42,6 +42,7 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_mes
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:bluetooth_classic/models/device.dart';
+import 'package:cv_mec/controllers/android_auto_controller.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/main.dart';
@@ -134,6 +135,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   ParamController paramController = Get.find<ParamController>();
   GeometryService geometryService = Get.find<GeometryService>();
+  AndroidAutoController androidAutoController = Get.put(AndroidAutoController());
   ASNService asnService = Get.find<ASNService>();
 
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
@@ -348,6 +350,7 @@ class MapState extends State<MapPage> with RouteAware {
     updateGraphics();
 
     obdController.checkRootStatus();
+    androidAutoController.initialize();
   }
 
   @override
@@ -2029,6 +2032,20 @@ class MapState extends State<MapPage> with RouteAware {
             ),
             child: Column(children: [
               verticalSpaceSmall,
+              ElevatedButton(  
+                onPressed: () {
+                  androidAutoController.showAlert("Alert", "This is an alert message");
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.black,
+                  shadowColor: Colors.black,
+                  elevation: 4,
+                ),
+                child: const Icon(Icons.warning, color: Colors.white),
+              ),
               ElevatedButton(
                 onPressed: () {
                   updateConnectedStatus(ConnectedStatus.DISCONNECTED);

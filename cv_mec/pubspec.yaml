@@ -70,6 +70,7 @@ dependencies:
   dart_geohash: ^2.1.0
   yaml_edit: ^2.2.4
   auto_size_text_pro: ^3.0.1
+  flutter_carplay: ^1.6.5
 
 dev_dependencies:
   flutter_test:
