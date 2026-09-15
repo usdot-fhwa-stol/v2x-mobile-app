@@ -47,7 +47,6 @@ class MqttService extends GetxService {
       client!.onConnected = onConnected;
       client!.onSubscribed = onSubscribed;
       client!.autoReconnect = true;
-      client!.autoReconnect = false;
 
       if (registration != null) {
         final context = SecurityContext.defaultContext;
@@ -69,7 +68,7 @@ class MqttService extends GetxService {
     }
 
     try {
-      var status = await client!.connect();
+      await client!.connect();
     } on NoConnectionException catch (e) {
       // Raised by the client when connection fails.
       loggingService.showError('CV_MEC::client exception - $e');
@@ -149,7 +148,6 @@ class MqttService extends GetxService {
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-
     int retryCount = 0;
 
     if (client != null) {

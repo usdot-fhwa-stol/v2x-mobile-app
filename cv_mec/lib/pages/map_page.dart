@@ -887,7 +887,7 @@ class MapState extends State<MapPage> with RouteAware {
   void startGraphicsUpdateLoop(){
     graphicsUpdateTimer?.cancel();
 
-    graphicsUpdateTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+    graphicsUpdateTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       updateGraphics();
     });
   }
