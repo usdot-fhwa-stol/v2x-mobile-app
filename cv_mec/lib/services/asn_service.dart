@@ -45,7 +45,8 @@ class ASNService extends GetxController {
   late final Map<String, MsgType> messageTypeMap;
   Random random = Random();
 
-  LoggingService loggingService = Get.find<LoggingService>();
+  final LoggingService? loggingService =
+      Get.isRegistered<LoggingService>() ? Get.find<LoggingService>() : null;
   ASNService() {
     if (Platform.isLinux) {
       DynamicLibrary dylib;
@@ -346,7 +347,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        loggingService.showWarning("DECODE: Failed to Decode Message ${hexInput}");
+        loggingService?.showWarning("DECODE: Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -354,7 +355,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      loggingService.showError("Unknown Failure during decoding: $e, $hexInput");
+      loggingService?.showError("Unknown Failure during decoding: $e, $hexInput");
     }
 
     return ptrToPtr;
@@ -388,7 +389,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        loggingService.showWarning("Failed to Decode Message ${hexInput}");
+        loggingService?.showWarning("Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -396,7 +397,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      loggingService.showError("Exception during decode: $e");
+      loggingService?.showError("Exception during decode: $e");
     }
 
     return ptrToPtr;
@@ -457,7 +458,7 @@ class ASNService extends GetxController {
 
     
     if (rval.encoded < 0) {
-      loggingService.showError("Failed to encode TumData: $e");
+      loggingService?.showError("Failed to encode TumData");
       return "";
     }
 

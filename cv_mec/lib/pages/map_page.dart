@@ -89,6 +89,7 @@ import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
+import 'package:cv_mec/services/mqtt_decode_isolate.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
@@ -177,6 +178,12 @@ class MapState extends State<MapPage> with RouteAware {
   List<Polyline<PolyLineHitValue>> drawnPolylines = [];
   List<Marker> lightMarkerList = [];
   List<Marker> drawnMarkers = [];
+  int? _polygonLayerSignature;
+  int? _polylineLayerSignature;
+  int? _markerLayerSignature;
+  bool _invalidatePolygonLayer = true;
+  bool _invalidatePolylineLayer = true;
+  bool _invalidateMarkerLayer = true;
 
   bool followUser = true;
 
@@ -192,6 +199,8 @@ class MapState extends State<MapPage> with RouteAware {
   late FlutterTts flutterTts;
 
   final MqttAgentManager mqttAgents = MqttAgentManager();
+  final MqttDecodeIsolate mqttDecodeIsolate = MqttDecodeIsolate();
+  bool decodeIsolateReady = false;
 
   final Map<MovementPhaseState, Image> lightStateMap = {
     MovementPhaseState.UNAVAILABLE: Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
@@ -286,6 +295,14 @@ class MapState extends State<MapPage> with RouteAware {
 
 
     Future.delayed(Duration.zero, () async {
+      try {
+        await mqttDecodeIsolate.start();
+        decodeIsolateReady = mqttDecodeIsolate.isReady;
+      } catch (e) {
+        decodeIsolateReady = false;
+        loggingService.showWarning("Decode isolate failed to start. Falling back to main isolate decoding: $e");
+      }
+
       int loggingEnabled = await enableLogging();
       if (loggingEnabled != 0) {
         return;
@@ -481,24 +498,224 @@ class MapState extends State<MapPage> with RouteAware {
 
   void updateGraphics(){
     if (mounted) {
+      bool cacheInvalidated = false;
       if (!settingsController.tollingEnabled.value && tamManager.storedTams.isNotEmpty) {
         tamManager.storedTams.clear();
+        cacheInvalidated = true;
+        invalidateAllLayers();
       }
       if (!settingsController.showTims.value && timManager.geometryMap.isNotEmpty) {
         timManager.storedTims.clear();
         timManager.geometryMap.clear();
+        cacheInvalidated = true;
+        invalidatePolygonLayer();
       }
+
+      final bool evaluatePolygons = cacheInvalidated || _invalidatePolygonLayer || _polygonLayerSignature == null;
+      final bool evaluatePolylines = cacheInvalidated || _invalidatePolylineLayer || _polylineLayerSignature == null;
+      final bool evaluateMarkers = cacheInvalidated || _invalidateMarkerLayer || _markerLayerSignature == null;
+
+      if (!evaluatePolygons && !evaluatePolylines && !evaluateMarkers) {
+        return;
+      }
+
+      int? polygonSignature;
+      int? polylineSignature;
+      int? markerSignature;
+
+      if (evaluatePolygons) {
+        polygonSignature = _buildPolygonLayerSignature();
+      }
+
+      if (evaluatePolylines) {
+        polylineSignature = _buildPolylineLayerSignature();
+      }
+
+      if (evaluateMarkers) {
+        markerSignature = _buildMarkerLayerSignature();
+      }
+
+      final bool rebuildPolygons = evaluatePolygons && (cacheInvalidated || _polygonLayerSignature != polygonSignature);
+      final bool rebuildPolylines = evaluatePolylines && (cacheInvalidated || _polylineLayerSignature != polylineSignature);
+      final bool rebuildMarkers = evaluateMarkers && (cacheInvalidated || _markerLayerSignature != markerSignature);
+
+      if (!rebuildPolygons && !rebuildPolylines && !rebuildMarkers) {
+        return;
+      }
+
+      List<Polygon<HitValue>>? nextPolygons;
+      List<Polyline<PolyLineHitValue>>? nextPolylines;
+      List<Marker>? nextMarkers;
+
+      if (rebuildPolygons) {
+        nextPolygons = getPolygons();
+      }
+
+      if (rebuildPolylines) {
+        nextPolylines = getPolylines();
+      }
+
+      if (rebuildMarkers) {
+        nextMarkers = getMarkerList();
+      }
+
       setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-        drawnMarkers = getMarkerList();
+        if (nextPolygons != null) {
+          drawnPolygons = nextPolygons;
+          _polygonLayerSignature = polygonSignature;
+          _invalidatePolygonLayer = false;
+        }
+
+        if (nextPolylines != null) {
+          drawnPolylines = nextPolylines;
+          _polylineLayerSignature = polylineSignature;
+          _invalidatePolylineLayer = false;
+        }
+
+        if (nextMarkers != null) {
+          drawnMarkers = nextMarkers;
+          // Marker generation can evict expired messages; resnapshot post-build state.
+          _markerLayerSignature = _buildMarkerLayerSignature();
+          _invalidateMarkerLayer = false;
+        }
+
         lastRedrawTime = DateTime.now();
       });
     }
   }
 
+  void invalidatePolygonLayer() {
+    _invalidatePolygonLayer = true;
+  }
+
+  void invalidatePolylineLayer() {
+    _invalidatePolylineLayer = true;
+  }
+
+  void invalidateMarkerLayer() {
+    _invalidateMarkerLayer = true;
+  }
+
+  void invalidateAllLayers() {
+    _invalidatePolygonLayer = true;
+    _invalidatePolylineLayer = true;
+    _invalidateMarkerLayer = true;
+  }
+
+  int _buildPolygonLayerSignature() {
+    final nowBucket = timingService.getTime().millisecondsSinceEpoch ~/ 1000;
+    int runningHash = Object.hash(nowBucket, settingsController.showTims.value, settingsController.tollingEnabled.value);
+
+    for (final entry in timManager.storedTims.entries) {
+      runningHash ^= Object.hash(entry.key, entry.value.dataFrames.travelerDataFrameList.length);
+    }
+
+    for (final frame in timManager.geometryMap.values) {
+      runningHash ^= Object.hash(
+        frame.active,
+        frame.shown,
+        frame.geometry.length,
+      );
+    }
+
+    for (final tam in tamManager.storedTams.values) {
+      runningHash ^= Object.hash(tam.entireTollZoneBorder.length, tam.laneTollZoneGeometries.length);
+    }
+
+    return runningHash;
+  }
+
+  int _buildPolylineLayerSignature() {
+    final nowBucket = timingService.getTime().millisecondsSinceEpoch ~/ 1000;
+    final pos = currentPosition;
+
+    int runningHash = Object.hash(
+      nowBucket,
+      settingsController.tollingEnabled.value,
+      pos == null ? 0 : pos.latitude.toStringAsFixed(5),
+      pos == null ? 0 : pos.longitude.toStringAsFixed(5),
+    );
+
+    for (final map in mapManager.storedMaps.values) {
+      runningHash ^= Object.hash(
+        map.intersectionGeometry.id.id.intersectionID,
+        map.map.msgIssueRevision.msgCount,
+        map.laneConnections.length,
+      );
+    }
+
+    for (final intersection in spatManager.storedIntersections.values) {
+      runningHash ^= Object.hash(
+        intersection.id.id.intersectionID,
+        intersection.getUtcTime().millisecondsSinceEpoch ~/ 1000,
+        intersection.states.movementList.length,
+      );
+    }
+
+    for (final tam in tamManager.storedTams.values) {
+      runningHash ^= Object.hash(
+        tam.tollZonePolylinePoints.length,
+        tam.approachPolylinePoints.length,
+      );
+    }
+
+    return runningHash;
+  }
+
+  int _buildMarkerLayerSignature() {
+    final nowBucket = timingService.getTime().millisecondsSinceEpoch ~/ 500;
+    final pos = currentPosition;
+
+    int runningHash = Object.hash(
+      nowBucket,
+      _mapController.camera.zoom.toStringAsFixed(1),
+      pos == null ? 0 : pos.latitude.toStringAsFixed(5),
+      pos == null ? 0 : pos.longitude.toStringAsFixed(5),
+      configController.isSirenOn.value,
+      configController.isBusWarningOn.value,
+      configController.isIceCreamSongOn.value,
+      settingsController.tollingEnabled.value,
+    );
+
+    for (final entry in messageManager.receivedMsgs.entries) {
+      final msg = entry.value;
+      runningHash ^= Object.hash(
+        entry.key,
+        msg.runtimeType,
+        msg.dateTime.millisecondsSinceEpoch ~/ 500,
+        msg.position.latitude.toStringAsFixed(5),
+        msg.position.longitude.toStringAsFixed(5),
+      );
+    }
+
+    for (final tam in tamManager.storedTams.values) {
+      runningHash ^= Object.hash(
+        tam.markerPoints.length,
+        tam.approachMarkerPoints.length,
+        tam.approachMarkerRotation.toStringAsFixed(2),
+      );
+    }
+
+    for (final map in mapManager.storedMaps.values) {
+      runningHash ^= Object.hash(
+        map.intersectionGeometry.id.id.intersectionID,
+        map.lightLocations.length,
+      );
+    }
+
+    for (final intersection in spatManager.storedIntersections.values) {
+      runningHash ^= Object.hash(
+        intersection.id.id.intersectionID,
+        intersection.getUtcTime().millisecondsSinceEpoch ~/ 500,
+      );
+    }
+
+    return runningHash;
+  }
+
   @override
   void dispose() {
+    mqttDecodeIsolate.stop();
     positionSubscription?.cancel();
     sendMessageTimer?.cancel();
     uploadTimer?.cancel();
@@ -627,6 +844,26 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
+    if (decodeIsolateReady) {
+      mqttDecodeIsolate.decodeMessage(
+        broker: broker,
+        topic: topic,
+        bytes: bytes,
+        recTime: recTime,
+        sendTime: sendTime,
+        source: source,
+        decodeTim: settingsController.showTims.value,
+        decodeTam: settingsController.tollingEnabled.value,
+        onResult: _processDecodedMessage,
+      );
+      return;
+    }
+
+    _processIncomingMessageOnMainIsolate(broker, topic, bytes, recTime, sendTime, source);
+  }
+
+  void _processIncomingMessageOnMainIsolate(
+      String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity = ValidateStatus.FAILURE;
@@ -675,10 +912,152 @@ class MapState extends State<MapPage> with RouteAware {
     }
   }
 
-  void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+  void _processDecodedMessage(Map<String, dynamic> result) {
+    if (!mounted) {
+      return;
+    }
+
+    final String? error = result['error'] as String?;
+    if (error != null) {
+      loggingService.showError("Decode isolate error: $error");
+      return;
+    }
+
+    final String msgTypeName = result['msgType'] as String? ?? MsgType.UNKNOWN.name;
+    final MsgType msgType = MsgType.values.firstWhere(
+      (MsgType value) => value.name == msgTypeName,
+      orElse: () => MsgType.UNKNOWN,
+    );
+
+    final String? broker = result['broker'] as String?;
+    final String topic = result['topic'] as String? ?? "";
+    final String source = result['source'] as String? ?? "";
+    final String hex = result['hex'] as String? ?? "";
+    final String? trimmedHex = result['trimmedHex'] as String?;
+    final DateTime recTime = DateTime.fromMillisecondsSinceEpoch(result['recTimeMs'] as int);
+    final int? sendTimeMs = result['sendTimeMs'] as int?;
+    final DateTime? sendTime = sendTimeMs == null ? null : DateTime.fromMillisecondsSinceEpoch(sendTimeMs);
+    final ValidateStatus validity = ValidateStatus.FAILURE;
+
+    switch (msgType) {
+      case MsgType.BSM:
+        processNewBsm(
+          broker,
+          topic,
+          hex,
+          recTime,
+          sendTime,
+          source,
+          validity,
+          trimmedHexOverride: trimmedHex,
+          decodedBsm: result['decoded'] as BasicSafetyMessage?,
+        );
+        break;
+      case MsgType.PSM:
+        processNewPsm(
+          broker,
+          topic,
+          hex,
+          recTime,
+          sendTime,
+          source,
+          validity,
+          trimmedHexOverride: trimmedHex,
+          decodedPsm: result['decoded'] as PersonalSafetyMessage?,
+        );
+        break;
+      case MsgType.SPAT:
+        processNewSpat(
+          broker,
+          topic,
+          hex,
+          recTime,
+          sendTime,
+          source,
+          validity,
+          trimmedHexOverride: trimmedHex,
+          decodedSpat: result['decoded'] as Spat?,
+        );
+        break;
+      case MsgType.MAP:
+        processNewMap(
+          broker,
+          topic,
+          hex,
+          recTime,
+          sendTime,
+          source,
+          validity,
+          trimmedHexOverride: trimmedHex,
+          decodedMap: result['decoded'] as MapData?,
+        );
+        break;
+      case MsgType.TIM:
+        if (settingsController.showTims.value) {
+          processNewTim(
+            broker,
+            topic,
+            hex,
+            recTime,
+            sendTime,
+            source,
+            validity,
+            trimmedHexOverride: trimmedHex,
+            decodedTim: result['decoded'] as TravelerInformation?,
+          );
+        }
+        break;
+      case MsgType.SDSM:
+        processNewSdsm(
+          broker,
+          topic,
+          hex,
+          recTime,
+          sendTime,
+          source,
+          validity,
+          trimmedHexOverride: trimmedHex,
+          decodedSdsm: result['decoded'] as SensorDataSharingMessage?,
+        );
+        break;
+      case MsgType.TAM:
+        if (settingsController.tollingEnabled.value) {
+          processNewTam(
+            broker,
+            topic,
+            hex,
+            recTime,
+            sendTime,
+            source,
+            validity,
+            trimmedHexOverride: trimmedHex,
+            decodedTam: result['decoded'] as TollAdvertisementMessage?,
+          );
+        }
+        break;
+      case MsgType.TUMACK:
+        processNewTumAck(
+          broker,
+          topic,
+          hex,
+          recTime,
+          sendTime,
+          source,
+          validity,
+          trimmedHexOverride: trimmedHex,
+          decodedTumAck: result['decoded'] as TollUsageAckMessage?,
+        );
+        break;
+      default:
+        loggingService.addToAppLog("Unable to Identify Message Type: $msgType $hex");
+    }
+  }
+
+  void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, BasicSafetyMessage? decodedBsm}) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
-    BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
+    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
+    BasicSafetyMessage bsm = decodedBsm ?? asnService.decodeBsm(trimmedHex);
     String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
 
     if (vehicleID == bsmBuilder.vehicleId) {
@@ -707,13 +1086,15 @@ class MapState extends State<MapPage> with RouteAware {
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
     messageManager.addOrUpdate(msg);
+    invalidateMarkerLayer();
     addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
 
   }
 
-  void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
-    PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
+  void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, PersonalSafetyMessage? decodedPsm}) {
+    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
+    PersonalSafetyMessage psm = decodedPsm ?? asnService.decodePsm(trimmedHex);
 
     String remoteDeviceId = ASNService.bytesToHex(psm.id.temporaryID);
 
@@ -728,15 +1109,19 @@ class MapState extends State<MapPage> with RouteAware {
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
     messageManager.addOrUpdate(msg);;
+    invalidateMarkerLayer();
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
 
-  void processNewSpat(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(
-        hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    Spat spat = asnService.decodeSpat(trimmedHex);
+  void processNewSpat(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, Spat? decodedSpat}) {
+    String trimmedHex =
+        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    Spat spat = decodedSpat ?? asnService.decodeSpat(trimmedHex);
 
     spatManager.addOrUpdate(spat);
+    invalidateMarkerLayer();
+    invalidatePolylineLayer();
 
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
@@ -746,22 +1131,26 @@ class MapState extends State<MapPage> with RouteAware {
     addToReceiveLog(broker, topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source, validity);
   }
 
-  void processNewMap(String? broker,String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(
-        hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    MapData map = asnService.decodeMap(trimmedHex);
+  void processNewMap(String? broker,String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, MapData? decodedMap}) {
+    String trimmedHex =
+        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    MapData map = decodedMap ?? asnService.decodeMap(trimmedHex);
 
     mapManager.addOrUpdate(map);
+    invalidateAllLayers();
 
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
   }
 
-  void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(
-        hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    TravelerInformation tim = asnService.decodeTim(trimmedHex);
+  void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, TravelerInformation? decodedTim}) {
+    String trimmedHex =
+        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    TravelerInformation tim = decodedTim ?? asnService.decodeTim(trimmedHex);
     timManager.addOrUpdate(tim, hex);
+    invalidatePolygonLayer();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
@@ -773,10 +1162,11 @@ class MapState extends State<MapPage> with RouteAware {
     });
   }
 
-  void processNewSdsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(
-        hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex);
+  void processNewSdsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, SensorDataSharingMessage? decodedSdsm}) {
+    String trimmedHex =
+        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    SensorDataSharingMessage sdsm = decodedSdsm ?? asnService.decodeSdsm(trimmedHex);
     sdsm.sDSMTimeStamp.year ??= DYear(recTime.year);
     sdsm.sDSMTimeStamp.month ??= DMonth(recTime.month);
     sdsm.sDSMTimeStamp.day ??= DDay(recTime.day);
@@ -797,19 +1187,24 @@ class MapState extends State<MapPage> with RouteAware {
       messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
     }
 
+    invalidateMarkerLayer();
+
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
-  void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
-    TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
+  void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, TollAdvertisementMessage? decodedTam}) {
+    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!;
+    TollAdvertisementMessage tam = decodedTam ?? asnService.decodeTam(trimmedHex);
     tamManager.addOrUpdate(tam);
+    invalidateAllLayers();
     addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
-  void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!; 
-    TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
+  void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
+      ValidateStatus validity, {String? trimmedHexOverride, TollUsageAckMessage? decodedTumAck}) {
+    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!;
+    TollUsageAckMessage tumAck = decodedTumAck ?? asnService.decodeTumAck(trimmedHex);
 
     if(tumAckManager.isNewTumAck(tumAck)){
       tumManager.cancelTimer(tumAck.tumAck.tumAck.first.tempId);
@@ -1038,6 +1433,8 @@ class MapState extends State<MapPage> with RouteAware {
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
+    invalidateMarkerLayer();
+    invalidatePolylineLayer();
 
     DateTime now = DateTime.now();
 
@@ -1874,6 +2271,7 @@ class MapState extends State<MapPage> with RouteAware {
                 // controller.mapController = mapController;
               },
               onPositionChanged: (position, hasGesture) {
+                invalidateMarkerLayer();
                 if (hasGesture && mounted) {
                   setState(() {
                     followUser = false;
