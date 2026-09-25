@@ -9,23 +9,29 @@ import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_message.dart';
+import 'package:cv_mec/models/mqtt_decode_settings.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/services/asn_service.dart';
+
 
 class MqttDecodeIsolate {
   Isolate? _isolate;
   ReceivePort? _receivePort;
   SendPort? _workerSendPort;
+
   int _requestId = 0;
   final Map<int, void Function(Map<String, dynamic>)> _pending = {};
 
-  Future<void> start() async {
+  Future<void> start({required MqttDecodeSettings decodeSettings}) async {
     if (_isolate != null) {
       return;
     }
 
     _receivePort = ReceivePort();
-    _isolate = await Isolate.spawn(_mqttDecodeWorkerEntrypoint, _receivePort!.sendPort);
+    _isolate = await Isolate.spawn(_mqttDecodeWorkerEntrypoint, {
+      'mainSendPort': _receivePort!.sendPort,
+      'decodeSettings': decodeSettings.toMap(),
+    });
 
     final completer = Completer<void>();
     _receivePort!.listen((dynamic message) {
@@ -73,8 +79,6 @@ class MqttDecodeIsolate {
     required DateTime recTime,
     required DateTime? sendTime,
     required String source,
-    required bool decodeTim,
-    required bool decodeTam,
     required void Function(Map<String, dynamic>) onResult,
   }) {
     final sendPort = _workerSendPort;
@@ -93,17 +97,23 @@ class MqttDecodeIsolate {
       'recTimeMs': recTime.millisecondsSinceEpoch,
       'sendTimeMs': sendTime?.millisecondsSinceEpoch,
       'source': source,
-      'decodeTim': decodeTim,
-      'decodeTam': decodeTam,
     });
   }
 }
 
-void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
+void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
+  final SendPort mainSendPort = initialData['mainSendPort'] as SendPort;
+  final Map<String, dynamic> decodeSettingsMap =
+      ((initialData['decodeSettings'] as Map?) ?? const <String, dynamic>{})
+          .cast<String, dynamic>();
+  final MqttDecodeSettings decodeSettings = MqttDecodeSettings.fromMap(decodeSettingsMap);
+
   final receivePort = ReceivePort();
   mainSendPort.send(receivePort.sendPort);
 
   final asnService = ASNService();
+
+  print("Decode Settings: ${decodeSettings.enableBSM} ${decodeSettings.enableTIM} ${decodeSettings.enableTAM}");
 
   receivePort.listen((dynamic message) {
     if (message is! Map<String, dynamic>) {
@@ -117,8 +127,6 @@ void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
     final int recTimeMs = message['recTimeMs'] as int;
     final int? sendTimeMs = message['sendTimeMs'] as int?;
     final String source = message['source'] as String;
-    final bool decodeTim = message['decodeTim'] as bool? ?? true;
-    final bool decodeTam = message['decodeTam'] as bool? ?? true;
 
     final String hex = ASNService.bytesToHex(bytes);
     final MsgType msgType = asnService.determineHexMessageType(hex);
@@ -129,31 +137,39 @@ void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
     try {
       switch (msgType) {
         case MsgType.BSM:
-          trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG);
-          if (trimmedHex != null) {
-            decoded = asnService.decodeBsm(trimmedHex);
+          if (decodeSettings.enableBSM) {
+            trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG);
+            if (trimmedHex != null) {
+              decoded = asnService.decodeBsm(trimmedHex);
+            }
           }
           break;
         case MsgType.PSM:
-          trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG);
-          if (trimmedHex != null) {
-            decoded = asnService.decodePsm(trimmedHex);
+          if (decodeSettings.enablePSM) {
+            trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG);
+            if (trimmedHex != null) {
+              decoded = asnService.decodePsm(trimmedHex);
+            }
           }
           break;
         case MsgType.SPAT:
-          trimmedHex = asnService.trimMessageHeaders(hex, asnService.SPAT_START_FLAG);
-          if (trimmedHex != null) {
-            decoded = asnService.decodeSpat(trimmedHex);
+          if (decodeSettings.enableSPAT) {
+            trimmedHex = asnService.trimMessageHeaders(hex, asnService.SPAT_START_FLAG);
+            if (trimmedHex != null) {
+              decoded = asnService.decodeSpat(trimmedHex);
+            }
           }
           break;
         case MsgType.MAP:
-          trimmedHex = asnService.trimMessageHeaders(hex, asnService.MAP_START_FLAG);
-          if (trimmedHex != null) {
-            decoded = asnService.decodeMap(trimmedHex);
+          if (decodeSettings.enableMAP) {
+            trimmedHex = asnService.trimMessageHeaders(hex, asnService.MAP_START_FLAG);
+            if (trimmedHex != null) {
+              decoded = asnService.decodeMap(trimmedHex);
+            }
           }
           break;
         case MsgType.TIM:
-          if (decodeTim) {
+          if (decodeSettings.enableTIM) {
             trimmedHex = asnService.trimMessageHeaders(hex, asnService.TIM_START_FLAG);
             if (trimmedHex != null) {
               decoded = asnService.decodeTim(trimmedHex);
@@ -161,13 +177,15 @@ void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
           }
           break;
         case MsgType.SDSM:
-          trimmedHex = asnService.trimMessageHeaders(hex, asnService.SDSM_START_FLAG);
-          if (trimmedHex != null) {
-            decoded = asnService.decodeSdsm(trimmedHex);
+          if (decodeSettings.enableSDSM) {
+            trimmedHex = asnService.trimMessageHeaders(hex, asnService.SDSM_START_FLAG);
+            if (trimmedHex != null) {
+              decoded = asnService.decodeSdsm(trimmedHex);
+            }
           }
           break;
         case MsgType.TAM:
-          if (decodeTam) {
+          if (decodeSettings.enableTAM) {
             trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG);
             if (trimmedHex != null) {
               decoded = asnService.decodeTam(trimmedHex);
@@ -175,19 +193,34 @@ void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
           }
           break;
         case MsgType.TUMACK:
-          trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG);
-          if (trimmedHex != null) {
-            decoded = asnService.decodeTumAck(trimmedHex);
+          if (decodeSettings.enableTUMACK) {
+            trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG);
+            if (trimmedHex != null) {
+              decoded = asnService.decodeTumAck(trimmedHex);
+            }
           }
           break;
         default:
+          mainSendPort.send({
+            'id': id,
+            'msgType': msgType,
+            'broker': broker,
+            'topic': topic,
+            'source': source,
+            'recTimeMs': recTimeMs,
+            'sendTimeMs': sendTimeMs,
+            'hex': hex,
+            'trimmedHex': null,
+            'decoded': null,
+            'decodedType': null,
+          });
           break;
       }
     } catch (e) {
       mainSendPort.send({
         'id': id,
         'error': e.toString(),
-        'msgType': msgType.name,
+        'msgType': msgType,
         'broker': broker,
         'topic': topic,
         'hex': hex,
@@ -200,7 +233,7 @@ void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
 
     mainSendPort.send({
       'id': id,
-      'msgType': msgType.name,
+      'msgType': msgType,
       'broker': broker,
       'topic': topic,
       'source': source,
@@ -208,8 +241,7 @@ void _mqttDecodeWorkerEntrypoint(SendPort mainSendPort) {
       'sendTimeMs': sendTimeMs,
       'hex': hex,
       'trimmedHex': trimmedHex,
-      'decoded': decoded,
-      'decodedType': _decodedTypeName(decoded),
+      'decoded': decoded, 
     });
   });
 }

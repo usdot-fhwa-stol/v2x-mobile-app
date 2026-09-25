@@ -67,6 +67,7 @@ import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
 import 'package:cv_mec/models/mqtt/pc5_mqtt_agent.dart';
+import 'package:cv_mec/models/mqtt_decode_settings.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/received_messages/receieved_msg.dart';
 import 'package:cv_mec/models/received_messages/received_bsm.dart';
@@ -86,7 +87,6 @@ import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
-import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
 import 'package:cv_mec/services/mqtt_decode_isolate.dart';
@@ -200,6 +200,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   final MqttAgentManager mqttAgents = MqttAgentManager();
   final MqttDecodeIsolate mqttDecodeIsolate = MqttDecodeIsolate();
+  late MqttDecodeSettings _mqttDecodeSettings;
   bool decodeIsolateReady = false;
 
   final Map<MovementPhaseState, Image> lightStateMap = {
@@ -245,6 +246,8 @@ class MapState extends State<MapPage> with RouteAware {
   @override
   void initState() {
     super.initState();
+
+    _mqttDecodeSettings = MqttDecodeSettings.fromSettingsController(settingsController);
 
     deviceID = uuid.v4();
 
@@ -296,7 +299,7 @@ class MapState extends State<MapPage> with RouteAware {
 
     Future.delayed(Duration.zero, () async {
       try {
-        await mqttDecodeIsolate.start();
+        await mqttDecodeIsolate.start(decodeSettings: _mqttDecodeSettings);
         decodeIsolateReady = mqttDecodeIsolate.isReady;
       } catch (e) {
         decodeIsolateReady = false;
@@ -852,8 +855,6 @@ class MapState extends State<MapPage> with RouteAware {
         recTime: recTime,
         sendTime: sendTime,
         source: source,
-        decodeTim: settingsController.showTims.value,
-        decodeTam: settingsController.tollingEnabled.value,
         onResult: _processDecodedMessage,
       );
       return;
@@ -923,12 +924,8 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
 
-    final String msgTypeName = result['msgType'] as String? ?? MsgType.UNKNOWN.name;
-    final MsgType msgType = MsgType.values.firstWhere(
-      (MsgType value) => value.name == msgTypeName,
-      orElse: () => MsgType.UNKNOWN,
-    );
 
+    final MsgType msgType = result["msgType"];
     final String? broker = result['broker'] as String?;
     final String topic = result['topic'] as String? ?? "";
     final String source = result['source'] as String? ?? "";
