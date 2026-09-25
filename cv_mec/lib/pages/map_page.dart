@@ -934,7 +934,7 @@ class MapState extends State<MapPage> with RouteAware {
     final String source = result['source'] as String? ?? "";
     final String hex = result['hex'] as String? ?? "";
     final String? trimmedHex = result['trimmedHex'] as String?;
-    final DateTime recTime = DateTime.fromMillisecondsSinceEpoch(result['recTimeMs'] as int);
+    final DateTime recTime = DateTime.fromMillisecondsSinceEpoch(result['recTimeMs'] as int, isUtc: true);
     final int? sendTimeMs = result['sendTimeMs'] as int?;
     final DateTime? sendTime = sendTimeMs == null ? null : DateTime.fromMillisecondsSinceEpoch(sendTimeMs);
     final ValidateStatus validity = ValidateStatus.FAILURE;
