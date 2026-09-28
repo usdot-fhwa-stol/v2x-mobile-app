@@ -2113,20 +2113,24 @@ class MapState extends State<MapPage> with RouteAware {
         "Log Rotation Complete. Current Time ${timingService.getTime()}");
 
     if (settingsController.deviceID.value.isNotEmpty) {
-      final recSuccess = await awsService.uploadFile(
-          recDataPath, "subscribe/${settingsController.deviceID.value}");
-      final pubSuccess = await awsService.uploadFile(
-          pubDataPath, "publish/${settingsController.deviceID.value}");
-      final timSuccess = await awsService.uploadFile(
-          timDataPath, "tim/${settingsController.deviceID.value}");
+      final results = await Future.wait<bool>([
+        awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}"),
+        awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}"),
+        awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}"),
+      ]);
+      final recSuccess = results[0];
+      final pubSuccess = results[1];
+      final timSuccess = results[2];
       return recSuccess && pubSuccess && timSuccess;
     } else {
-      final recSuccess =
-          await awsService.uploadFile(recDataPath, "subscribe/$deviceID");
-      final pubSuccess =
-          await awsService.uploadFile(pubDataPath, "publish/$deviceID");
-      final timSuccess =
-          await awsService.uploadFile(timDataPath, "tim/$deviceID");
+      final results = await Future.wait<bool>([
+        awsService.uploadFile(recDataPath, "subscribe/$deviceID"),
+        awsService.uploadFile(pubDataPath, "publish/$deviceID"),
+        awsService.uploadFile(timDataPath, "tim/$deviceID"),
+      ]);
+      final recSuccess = results[0];
+      final pubSuccess = results[1];
+      final timSuccess = results[2];
       return recSuccess && pubSuccess && timSuccess;
     }
   }
