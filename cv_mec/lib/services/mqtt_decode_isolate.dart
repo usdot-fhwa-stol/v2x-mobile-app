@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:isolate';
+import 'dart:ui';
 
 import 'package:cv_mec/models/mqtt_decode_settings.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/services/asn_service.dart';
+import 'package:flutter/services.dart';
+import 'package:iss_scms/iss_scms.dart';
+import 'package:iss_scms/models/validate_status.dart';
 
 
 class MqttDecodeIsolate {
@@ -14,7 +18,13 @@ class MqttDecodeIsolate {
   int _requestId = 0;
   final Map<int, void Function(Map<String, dynamic>)> _pending = {};
 
-  Future<void> start({required MqttDecodeSettings decodeSettings}) async {
+  Future<void> start({
+    required MqttDecodeSettings decodeSettings,
+    RootIsolateToken? rootIsolateToken,
+    bool enableScmsValidation = false,
+    String? scmsToken,
+    String scmsDeviceId = 'obu',
+  }) async {
     if (_isolate != null) {
       return;
     }
@@ -23,6 +33,10 @@ class MqttDecodeIsolate {
     _isolate = await Isolate.spawn(_mqttDecodeWorkerEntrypoint, {
       'mainSendPort': _receivePort!.sendPort,
       'decodeSettings': decodeSettings.toMap(),
+      'rootIsolateToken': rootIsolateToken,
+      'enableScmsValidation': enableScmsValidation,
+      'scmsToken': scmsToken,
+      'scmsDeviceId': scmsDeviceId,
     });
 
     final completer = Completer<void>();
@@ -93,19 +107,40 @@ class MqttDecodeIsolate {
   }
 }
 
-void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
+void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) async {
   final SendPort mainSendPort = initialData['mainSendPort'] as SendPort;
+  final RootIsolateToken? rootIsolateToken = initialData['rootIsolateToken'] as RootIsolateToken?;
+  final bool enableScmsValidation = initialData['enableScmsValidation'] as bool? ?? false;
+  final String scmsToken = (initialData['scmsToken'] as String?) ?? '';
+  final String scmsDeviceId = (initialData['scmsDeviceId'] as String?) ?? 'obu';
   final Map<String, dynamic> decodeSettingsMap =
       ((initialData['decodeSettings'] as Map?) ?? const <String, dynamic>{})
           .cast<String, dynamic>();
   final MqttDecodeSettings decodeSettings = MqttDecodeSettings.fromMap(decodeSettingsMap);
 
+  if (rootIsolateToken != null) {
+    BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+  }
+
   final receivePort = ReceivePort();
   mainSendPort.send(receivePort.sendPort);
 
   final asnService = ASNService();
+  final scms = IssScms();
+  bool scmsReady = false;
 
-  receivePort.listen((dynamic message) {
+  if (enableScmsValidation && scmsToken.isNotEmpty) {
+    print("Frog: Attempting to Enable SCMS Validation");
+    try {
+      scmsReady = await scms.activateScms(scmsToken, scmsDeviceId);
+      print("Frog: SCMS Validation Enabled: $scmsReady");
+    } catch (_) {
+      scmsReady = false;
+      print("Frog: Failed to Enable SCMS Validation");
+    }
+  }
+
+  receivePort.listen((dynamic message) async {
     if (message is! Map<String, dynamic>) {
       return;
     }
@@ -117,9 +152,20 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
     final int recTimeMs = message['recTimeMs'] as int;
     final int? sendTimeMs = message['sendTimeMs'] as int?;
     final String source = message['source'] as String;
+    ValidateStatus validity = ValidateStatus.FAILURE;
+    String? validationError;
 
     final String hex = ASNService.bytesToHex(bytes);
     final MsgType msgType = asnService.determineHexMessageType(hex);
+
+    if (scmsReady) {
+      try {
+        validity = await scms.validate(bytes);
+      } catch (e) {
+        validity = ValidateStatus.FAILURE;
+        validationError = e.toString();
+      }
+    }
 
     String? trimmedHex;
     dynamic decoded;
@@ -200,6 +246,8 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
             'recTimeMs': recTimeMs,
             'sendTimeMs': sendTimeMs,
             'hex': hex,
+            'validity': validity.name,
+            'validationError': validationError,
             'decoded': null,
             'decodedType': null,
           });
@@ -216,6 +264,8 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
         'source': source,
         'recTimeMs': recTimeMs,
         'sendTimeMs': sendTimeMs,
+        'validity': validity.name,
+        'validationError': validationError,
       });
       return;
     }
@@ -229,6 +279,8 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
       'recTimeMs': recTimeMs,
       'sendTimeMs': sendTimeMs,
       'hex': trimmedHex,
+      'validity': validity.name,
+      'validationError': validationError,
       'decoded': decoded, 
     });
   });

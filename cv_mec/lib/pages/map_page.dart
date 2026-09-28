@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:core';
+import 'dart:ui' show RootIsolateToken;
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
@@ -299,7 +300,13 @@ class MapState extends State<MapPage> with RouteAware {
 
     Future.delayed(Duration.zero, () async {
       try {
-        await mqttDecodeIsolate.start(decodeSettings: _mqttDecodeSettings);
+        await mqttDecodeIsolate.start(
+          decodeSettings: _mqttDecodeSettings,
+          rootIsolateToken: RootIsolateToken.instance,
+          enableScmsValidation: settingsController.enableIssScmsSigning.value,
+          scmsToken: settingsController.issScmsToken.value,
+          scmsDeviceId: "obu",
+        );
         decodeIsolateReady = mqttDecodeIsolate.isReady;
       } catch (e) {
         decodeIsolateReady = false;
@@ -329,7 +336,10 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       if(settingsController.enableIssScmsSigning.value){
+        print("Frog SCMS Activation Started: ${settingsController.issScmsToken.value}");
         scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
+
+          print("SCMS activation result: $result");
           scmsActive = result;
           if(!scmsActive){
             loggingService.showError("Unable to Activate SCMS Signing");
@@ -870,6 +880,13 @@ class MapState extends State<MapPage> with RouteAware {
     String? trimmedHex = asnService.trimMessageHeaders(hex, startFlag);
     ValidateStatus validity = ValidateStatus.FAILURE;
 
+    try {
+      validity = await scms.validate(bytes);
+    } catch (e) {
+      loggingService.showError("SCMS validation failed: $e");
+    }
+
+
     switch (msgType) {
       case MsgType.BSM:
         BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex ?? hex);
@@ -944,10 +961,18 @@ class MapState extends State<MapPage> with RouteAware {
     final String topic = result['topic'] as String? ?? "";
     final String source = result['source'] as String? ?? "";
     final String hex = result['hex'] as String? ?? "";
+    final String? validationError = result['validationError'] as String?;
     final DateTime recTime = DateTime.fromMillisecondsSinceEpoch(result['recTimeMs'] as int, isUtc: true);
     final int? sendTimeMs = result['sendTimeMs'] as int?;
     final DateTime? sendTime = sendTimeMs == null ? null : DateTime.fromMillisecondsSinceEpoch(sendTimeMs);
-    final ValidateStatus validity = ValidateStatus.FAILURE;    
+    final String validityName = result['validity'] as String? ?? ValidateStatus.FAILURE.name;
+    final ValidateStatus validity = ValidateStatus.values.firstWhere(
+      (status) => status.name == validityName,
+      orElse: () => ValidateStatus.FAILURE,
+    );
+    if (validationError != null && validationError.isNotEmpty) {
+      loggingService.showWarning("SCMS validation failed in decode isolate: $validationError");
+    }
 
     switch (msgType) {
       case MsgType.BSM:
