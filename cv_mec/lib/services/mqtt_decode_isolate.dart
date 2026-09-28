@@ -155,14 +155,14 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) async {
     final String hex = ASNService.bytesToHex(bytes);
     final MsgType msgType = asnService.determineHexMessageType(hex);
 
-    if (scmsReady) {
-      try {
-        validity = await scms.validate(bytes);
-      } catch (e) {
-        validity = ValidateStatus.FAILURE;
-        validationError = e.toString();
-      }
-    }
+    // if (scmsReady) {
+    //   try {
+    //     validity = await scms.validate(bytes);
+    //   } catch (e) {
+    //     validity = ValidateStatus.FAILURE;
+    //     validationError = e.toString();
+    //   }
+    // }
 
     String? trimmedHex;
     dynamic decoded;
