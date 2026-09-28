@@ -130,13 +130,10 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) async {
   bool scmsReady = false;
 
   if (enableScmsValidation && scmsToken.isNotEmpty) {
-    print("Frog: Attempting to Enable SCMS Validation");
     try {
       scmsReady = await scms.activateScms(scmsToken, scmsDeviceId);
-      print("Frog: SCMS Validation Enabled: $scmsReady");
     } catch (_) {
       scmsReady = false;
-      print("Frog: Failed to Enable SCMS Validation");
     }
   }
 

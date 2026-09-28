@@ -336,10 +336,7 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       if(settingsController.enableIssScmsSigning.value){
-        print("Frog SCMS Activation Started: ${settingsController.issScmsToken.value}");
         scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
-
-          print("SCMS activation result: $result");
           scmsActive = result;
           if(!scmsActive){
             loggingService.showError("Unable to Activate SCMS Signing");
