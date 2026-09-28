@@ -41,8 +41,10 @@ class MqttAgent{
   }
 
   Future<void> reconnect() async {
+    
     if(!isReconnecting){
       isReconnecting = true;
+      loggingService.addToAppLog("MQTT Agent $agentName disconnected. Attempting to reconnect...");
       while(!isConnected()){
         loggingService.addToAppLog("Attempting to Reconnect MQTT Agent $agentName. Attempt number ${reconnectAttempts + 1}");
         await connect();
@@ -59,8 +61,9 @@ class MqttAgent{
         loggingService.addToAppLog("Successfully reconnected MQTT Agent $agentName after $reconnectAttempts attempts");
         reconnectAttempts = 0;
         isReconnecting = false;
+        setupSubscribers(); // Re-setup subscribers after successful reconnection
       } else {
-        loggingService.showWarning("Failed to reconnect MQTT Agent $agentName after 5 attempts");
+        loggingService.showWarning("Failed to reconnect MQTT Agent $agentName");
         isReconnecting = false;
       }
     }

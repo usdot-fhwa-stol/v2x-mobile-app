@@ -3,6 +3,7 @@ enum ValidateStatus {
   UNRECOGNIZED_ISSUER,
   NOT_SIGNED,
   FAILURE,
-  VALID
+  VALID,
+  NOT_CHECKED,
 }
 

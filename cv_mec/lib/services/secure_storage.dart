@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 

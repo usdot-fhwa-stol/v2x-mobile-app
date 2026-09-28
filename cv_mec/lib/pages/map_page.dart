@@ -47,8 +47,11 @@ import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/main.dart';
 import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
+import 'package:cv_mec/models/augmented_position.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/models/icon_manager.dart';
 import 'package:cv_mec/models/itis/itis_converter.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
@@ -138,7 +141,7 @@ class MapState extends State<MapPage> with RouteAware {
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   PathService pathService = Get.find<PathService>();
-  StreamSubscription<Position>? positionSubscription;
+  StreamSubscription<AugmentedPosition>? positionSubscription;
 
   Timing timingService = Get.find<Timing>();
 
@@ -161,7 +164,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   Uuid uuid = const Uuid();
 
-  Position? currentPosition;
+  AugmentedPosition? currentPosition;
   late String deviceID;
 
   Timer? sendMessageTimer;
@@ -457,7 +460,7 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   Future<void> createGPSStream() async{
-    Stream<Position> stream;
+    Stream<AugmentedPosition> stream;
     if (debugMode) {
       stream = fakePosition(TestData.mdotTestTimPosition);
     } else if (settingsController.gpsType.value == GPSType.static) {
@@ -473,8 +476,12 @@ class MapState extends State<MapPage> with RouteAware {
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {
-      gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
+      loggingService.addToAppLog("Using OBU GPSD Service for GPS Data");
+      Map<String, dynamic> hostAndPort = gpsdService.parseHostAndPort(settingsController.obuIP.value);
+      loggingService.addToAppLog("Connecting to GPSD at ${hostAndPort["host"]}:${hostAndPort["port"]}");
+      gpsdService.connectToGPSD(hostAndPort["host"], hostAndPort["port"]);
       stream = gpsdService.locationStream.stream;
+      loggingService.addToAppLog("Using GPSD location stream");
     } else {
       loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}"); 
       stream = locationService.locationStream;
@@ -787,8 +794,8 @@ class MapState extends State<MapPage> with RouteAware {
 
   
 
-  Stream<Position> fakePosition(List<List<double>> fakePosition) {
-    return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
+  Stream<AugmentedPosition> fakePosition(List<List<double>> fakePosition) {
+    return Stream<AugmentedPosition>.periodic(const Duration(milliseconds: 500), (count) {
       List<List<double>> route = fakePosition.reversed.toList();
       int index = count % route.length;
       int prevIndex = (count - 1) % route.length;
@@ -812,7 +819,7 @@ class MapState extends State<MapPage> with RouteAware {
       double roundedLongitude = double.parse(route[index][0].toStringAsFixed(6));
       double roundedLatitude = double.parse(route[index][1].toStringAsFixed(6));
 
-      return Position(
+      return AugmentedPosition(
           longitude: roundedLongitude,
           latitude: roundedLatitude,
           timestamp: DateTime.now(),
@@ -822,7 +829,10 @@ class MapState extends State<MapPage> with RouteAware {
           heading: heading,
           headingAccuracy: 0,
           speed: speed,
-          speedAccuracy: 0);
+          speedAccuracy: 0,
+          gpsType: GPSType.static,
+          gpsStatus: GPSStatus.simulated,
+        );
     });
   }
 
@@ -834,7 +844,7 @@ class MapState extends State<MapPage> with RouteAware {
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
         "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
-    String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes,signed\n";
+    String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes,signed,gps_source,gps_status\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
 
     recDataQueue.addItem(subHeader);
@@ -877,11 +887,11 @@ class MapState extends State<MapPage> with RouteAware {
     String? trimmedHex = asnService.trimMessageHeaders(hex, startFlag);
     ValidateStatus validity = ValidateStatus.FAILURE;
 
-    try {
-      validity = await scms.validate(bytes);
-    } catch (e) {
-      loggingService.showError("SCMS validation failed: $e");
-    }
+    // try {
+    //   validity = await scms.validate(bytes);
+    // } catch (e) {
+    //   loggingService.showError("SCMS validation failed: $e");
+    // }
 
 
     switch (msgType) {
@@ -1396,7 +1406,7 @@ class MapState extends State<MapPage> with RouteAware {
         }
       }
 
-      mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
+      mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed, currentPosition!.gpsType, currentPosition!.gpsStatus);
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
         updateConnectedStatus(ConnectedStatus.CONNECTED);
@@ -1432,12 +1442,11 @@ class MapState extends State<MapPage> with RouteAware {
       return false;
     }
     loggingService.addToAppLog("Generated TUM Hex $tumHex");
-
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       int numOfRetries = tam.tollAdvInfo!.ackPolicy.numOfRetries.numOfRetriesInteger;
       int timeout = tam.tollAdvInfo!.ackPolicy.timeout.timeoutInteger;
-      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false, currentPosition!.gpsType, currentPosition!.gpsStatus); 
       VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
       if (!settingsController.disableTUMRetry.value) {
         Timer sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
@@ -1446,7 +1455,7 @@ class MapState extends State<MapPage> with RouteAware {
             tum.incrementTumSequenceNumber();
             String tumHex = tumBuilder.convertTumToHex(tum);
             List<int> tumBytes = ASNService.hexToBytes(tumHex);
-            mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
+            mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false, currentPosition!.gpsType, currentPosition!.gpsStatus); 
             VehicleNotificationManager.sendPaymentMessage("Resending Toll Message");
           } else {
             tumManager.cancelTimer(tum.tempID);
@@ -1468,7 +1477,7 @@ class MapState extends State<MapPage> with RouteAware {
   DateTime prevLocal = DateTime.now();
   DateTime prevSystemTime = DateTime.now();
 
-  Future<void> updatePosition(Position position) async {
+  Future<void> updatePosition(AugmentedPosition position) async {
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
     invalidateMarkerLayer();

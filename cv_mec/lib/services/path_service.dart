@@ -2,6 +2,9 @@ import 'dart:math';
 
 import 'package:cv_mec/models/api_responses/path_response/path_response.dart';
 import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
+import 'package:cv_mec/models/augmented_position.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -41,7 +44,7 @@ class PathService{
     return null;
   }
 
-  Stream<Position> followPath(VehiclePath vehiclePath) async* {
+  Stream<AugmentedPosition> followPath(VehiclePath vehiclePath) async* {
     List<List<double>> route = vehiclePath.geometry.coordinates;
     int count = 0;
 
@@ -79,7 +82,7 @@ class PathService{
         heading += 360;
       }
 
-      yield Position(
+      yield AugmentedPosition(
           longitude: route[index][0],
           latitude: route[index][1],
           timestamp: DateTime.now(),
@@ -89,7 +92,10 @@ class PathService{
           heading: heading,
           headingAccuracy: 0,
           speed: speed,
-          speedAccuracy: 0);
+          speedAccuracy: 0,
+          gpsType: GPSType.path,
+          gpsStatus: GPSStatus.simulated,
+          );
       await Future.delayed(delay);
       count++;
     }

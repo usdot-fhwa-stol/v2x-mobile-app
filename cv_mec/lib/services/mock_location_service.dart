@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:cv_mec/models/augmented_position.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/models/position_copy_with.dart';
-import 'package:geolocator/geolocator.dart';
-// import 'package:amp/models/position_copy_with.dart';
 
 // This class is a Mock Location Service. It is used by the LocationService to mock location updates.
 class MockLocationService {
   // Variables
-  Position _mockedLocation = Position(
+  AugmentedPosition _mockedLocation = AugmentedPosition(
       latitude: 0,
       longitude: 0,
       timestamp: DateTime.now(),
@@ -20,16 +21,19 @@ class MockLocationService {
       floor: 0,
       altitudeAccuracy: 0,
       headingAccuracy: 0,
-      isMocked: true);
+      isMocked: true,
+      gpsType: GPSType.mobile,
+      gpsStatus: GPSStatus.simulated
+      );
   Timer? _mockLocationTimer;
   final Random _random = Random();
 
   // Location Stream
-  final StreamController<Position> _locationController =
-      StreamController<Position>.broadcast();
-  Stream<Position> get locationStream => _locationController.stream;
+  final StreamController<AugmentedPosition> _locationController =
+      StreamController<AugmentedPosition>.broadcast();
+  Stream<AugmentedPosition> get locationStream => _locationController.stream;
 
-  void start(latitude, longitude, {Position? mockedLocation}) async {
+  void start(latitude, longitude, {AugmentedPosition? mockedLocation}) async {
     if (mockedLocation != null) {
       _mockedLocation = mockedLocation;
     } else {
@@ -39,7 +43,7 @@ class MockLocationService {
     startMockLocationUpdates();
   }
 
-  Future<Position?> getCurrentLocation() async {
+  Future<AugmentedPosition> getCurrentLocation() async {
     return locationStream.last;
   }
 
@@ -48,7 +52,7 @@ class MockLocationService {
   }
 
   void _handleLocationUpdate(Timer _) {
-    Position newPosition = _mockedLocation.copyWith(
+    AugmentedPosition newPosition = _mockedLocation.copyWith(
         timestamp:
             DateTime.now().add(Duration(milliseconds: _random.nextInt(100))));
     _locationController.add(newPosition);

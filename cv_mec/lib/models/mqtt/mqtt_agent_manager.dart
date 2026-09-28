@@ -1,4 +1,6 @@
 import 'package:cv_mec/models/data_queue.dart';
+import 'package:cv_mec/models/gps_status.dart';
+import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/services/asn_service.dart';
@@ -47,7 +49,7 @@ class MqttAgentManager{
     }
   }
 
-  void sendMessage(List<int> message, MsgType messageType, DateTime sendTime, DataQueue sendQueue, bool signed){
+  void sendMessage(List<int> message, MsgType messageType, DateTime sendTime, DataQueue sendQueue, bool signed, GPSType gpsType, GPSStatus gpsStatus){
     String hex = ASNService.bytesToHex(message);
     for(MqttAgent agent in agents){
       if(agent.isConnected()){
