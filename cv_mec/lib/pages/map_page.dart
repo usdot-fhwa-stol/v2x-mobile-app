@@ -847,6 +847,8 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
+    
+    // if the decode isolate is ready, use it to decode the message asynchronously
     if (decodeIsolateReady) {
       mqttDecodeIsolate.decodeMessage(
         broker: broker,
@@ -860,58 +862,71 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
 
-    _processIncomingMessageOnMainIsolate(broker, topic, bytes, recTime, sendTime, source);
-  }
+    // if the decode isolate is not ready, decode the message on the main isolate. This is uncommon, but may be used for a few messages during system initialization
 
-  void _processIncomingMessageOnMainIsolate(
-      String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
+    String startFlag = asnService.getStartFlagForMessageType(msgType) ?? "";
+    String? trimmedHex = asnService.trimMessageHeaders(hex, startFlag);
     ValidateStatus validity = ValidateStatus.FAILURE;
-    // Temporarily disabling SCMS validation due to performance issues. Will re-enable once performance is improved.
-    // try {
-    //   validity = await scms.validate(bytes);
-    // } catch (e) {
-    //   loggingService.showError("SCMS validation failed: $e");
-    // }
-
-    if(debugMode){
-      loggingService.addToAppLog("Identified Message as $msgType");
-    }
 
     switch (msgType) {
       case MsgType.BSM:
-        processNewBsm(broker, topic, hex, recTime, sendTime, source, validity);
+        BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex ?? hex);
+        processNewBsm(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, bsm);
         break;
       case MsgType.PSM:
-        processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
+        PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex ?? hex);
+        processNewPsm(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, psm);
         break;
       case MsgType.SPAT:
-        processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
+        Spat spat = asnService.decodeSpat(trimmedHex ?? hex);
+        processNewSpat(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, spat);
         break;
       case MsgType.MAP:
-        processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
+        MapData map = asnService.decodeMap(trimmedHex ?? hex);
+        processNewMap(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, map);
         break;
       case MsgType.TIM:
         if (settingsController.showTims.value) {
-          processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
+          TravelerInformation tim = asnService.decodeTim(trimmedHex ?? hex);
+          processNewTim(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, tim);
         }
         break;
       case MsgType.SDSM:
-        processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
+        SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex ?? hex);
+        processNewSdsm(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, sdsm);
         break;
       case MsgType.TAM:
         if (settingsController.tollingEnabled.value) {
-          processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
+          TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex ?? hex);
+          processNewTam(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, tam);
         }
         break;
       case MsgType.TUMACK:
-        processNewTumAck(broker, topic, hex, recTime, sendTime, source, validity);
+        TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex ?? hex);
+        processNewTumAck(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, tumAck);
         break;
       default:
-        loggingService.addToAppLog("Unable to Identify Message Type: $msgType $hex");
+        loggingService.showError("Unknown message type: $msgType");
+        break;
     }
   }
+
+  T? getDecodedPayload<T>(Map<String, dynamic> result) {
+      final dynamic decoded = result['decoded'];
+      if (decoded == null) {
+        loggingService.showWarning(
+            "Decode isolate returned null decoded payload for ${T.toString()}. Skipping local re-decode.");
+        return null;
+      }
+      if (decoded is! T) {
+        loggingService.showWarning(
+            "Decode isolate returned unexpected payload type for ${T.toString()}: ${decoded.runtimeType}. Skipping local re-decode.");
+        return null;
+      }
+      return decoded;
+    }
 
   void _processDecodedMessage(Map<String, dynamic> result) {
     if (!mounted) {
@@ -924,20 +939,22 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
 
-
     final MsgType msgType = result["msgType"];
     final String? broker = result['broker'] as String?;
     final String topic = result['topic'] as String? ?? "";
     final String source = result['source'] as String? ?? "";
     final String hex = result['hex'] as String? ?? "";
-    final String? trimmedHex = result['trimmedHex'] as String?;
     final DateTime recTime = DateTime.fromMillisecondsSinceEpoch(result['recTimeMs'] as int, isUtc: true);
     final int? sendTimeMs = result['sendTimeMs'] as int?;
     final DateTime? sendTime = sendTimeMs == null ? null : DateTime.fromMillisecondsSinceEpoch(sendTimeMs);
-    final ValidateStatus validity = ValidateStatus.FAILURE;
+    final ValidateStatus validity = ValidateStatus.FAILURE;    
 
     switch (msgType) {
       case MsgType.BSM:
+        final BasicSafetyMessage? decodedBsm = getDecodedPayload<BasicSafetyMessage>(result);
+        if (decodedBsm == null) {
+          return;
+        }
         processNewBsm(
           broker,
           topic,
@@ -946,11 +963,14 @@ class MapState extends State<MapPage> with RouteAware {
           sendTime,
           source,
           validity,
-          trimmedHexOverride: trimmedHex,
-          decodedBsm: result['decoded'] as BasicSafetyMessage?,
+          decodedBsm,
         );
         break;
       case MsgType.PSM:
+        final PersonalSafetyMessage? decodedPsm = getDecodedPayload<PersonalSafetyMessage>(result);
+        if (decodedPsm == null) {
+          return;
+        }
         processNewPsm(
           broker,
           topic,
@@ -959,11 +979,14 @@ class MapState extends State<MapPage> with RouteAware {
           sendTime,
           source,
           validity,
-          trimmedHexOverride: trimmedHex,
-          decodedPsm: result['decoded'] as PersonalSafetyMessage?,
+          decodedPsm,
         );
         break;
       case MsgType.SPAT:
+        final Spat? decodedSpat = getDecodedPayload<Spat>(result);
+        if (decodedSpat == null) {
+          return;
+        }
         processNewSpat(
           broker,
           topic,
@@ -972,11 +995,14 @@ class MapState extends State<MapPage> with RouteAware {
           sendTime,
           source,
           validity,
-          trimmedHexOverride: trimmedHex,
-          decodedSpat: result['decoded'] as Spat?,
+          decodedSpat,
         );
         break;
       case MsgType.MAP:
+        final MapData? decodedMap = getDecodedPayload<MapData>(result);
+        if (decodedMap == null) {
+          return;
+        }
         processNewMap(
           broker,
           topic,
@@ -985,12 +1011,15 @@ class MapState extends State<MapPage> with RouteAware {
           sendTime,
           source,
           validity,
-          trimmedHexOverride: trimmedHex,
-          decodedMap: result['decoded'] as MapData?,
+          decodedMap,
         );
         break;
       case MsgType.TIM:
         if (settingsController.showTims.value) {
+          final TravelerInformation? decodedTim = getDecodedPayload<TravelerInformation>(result);
+          if (decodedTim == null) {
+            return;
+          }
           processNewTim(
             broker,
             topic,
@@ -999,12 +1028,15 @@ class MapState extends State<MapPage> with RouteAware {
             sendTime,
             source,
             validity,
-            trimmedHexOverride: trimmedHex,
-            decodedTim: result['decoded'] as TravelerInformation?,
+            decodedTim,
           );
         }
         break;
       case MsgType.SDSM:
+        final SensorDataSharingMessage? decodedSdsm = getDecodedPayload<SensorDataSharingMessage>(result);
+        if (decodedSdsm == null) {
+          return;
+        }
         processNewSdsm(
           broker,
           topic,
@@ -1013,12 +1045,16 @@ class MapState extends State<MapPage> with RouteAware {
           sendTime,
           source,
           validity,
-          trimmedHexOverride: trimmedHex,
-          decodedSdsm: result['decoded'] as SensorDataSharingMessage?,
+          decodedSdsm,
         );
         break;
       case MsgType.TAM:
         if (settingsController.tollingEnabled.value) {
+          final TollAdvertisementMessage? decodedTam =
+              getDecodedPayload<TollAdvertisementMessage>(result);
+          if (decodedTam == null) {
+            return;
+          }
           processNewTam(
             broker,
             topic,
@@ -1027,12 +1063,15 @@ class MapState extends State<MapPage> with RouteAware {
             sendTime,
             source,
             validity,
-            trimmedHexOverride: trimmedHex,
-            decodedTam: result['decoded'] as TollAdvertisementMessage?,
+            decodedTam,
           );
         }
         break;
       case MsgType.TUMACK:
+        final TollUsageAckMessage? decodedTumAck = getDecodedPayload<TollUsageAckMessage>(result);
+        if (decodedTumAck == null) {
+          return;
+        }
         processNewTumAck(
           broker,
           topic,
@@ -1041,8 +1080,7 @@ class MapState extends State<MapPage> with RouteAware {
           sendTime,
           source,
           validity,
-          trimmedHexOverride: trimmedHex,
-          decodedTumAck: result['decoded'] as TollUsageAckMessage?,
+          decodedTumAck,
         );
         break;
       default:
@@ -1051,10 +1089,8 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, BasicSafetyMessage? decodedBsm}) {
+      ValidateStatus validity, BasicSafetyMessage bsm) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
-    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
-    BasicSafetyMessage bsm = decodedBsm ?? asnService.decodeBsm(trimmedHex);
     String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
 
     if (vehicleID == bsmBuilder.vehicleId) {
@@ -1084,14 +1120,12 @@ class MapState extends State<MapPage> with RouteAware {
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
     messageManager.addOrUpdate(msg);
     invalidateMarkerLayer();
-    addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, hex, source, validity);
 
   }
 
   void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, PersonalSafetyMessage? decodedPsm}) {
-    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
-    PersonalSafetyMessage psm = decodedPsm ?? asnService.decodePsm(trimmedHex);
+      ValidateStatus validity, PersonalSafetyMessage psm) {
 
     String remoteDeviceId = ASNService.bytesToHex(psm.id.temporaryID);
 
@@ -1107,14 +1141,11 @@ class MapState extends State<MapPage> with RouteAware {
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
     messageManager.addOrUpdate(msg);;
     invalidateMarkerLayer();
-    addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, hex, source, validity);
   }
 
   void processNewSpat(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, Spat? decodedSpat}) {
-    String trimmedHex =
-        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    Spat spat = decodedSpat ?? asnService.decodeSpat(trimmedHex);
+      ValidateStatus validity, Spat spat) {
 
     spatManager.addOrUpdate(spat);
     invalidateMarkerLayer();
@@ -1125,27 +1156,21 @@ class MapState extends State<MapPage> with RouteAware {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
     }
 
-    addToReceiveLog(broker, topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "SPAT", recTime, sendTime, spatGenTime, hex, source, validity);
   }
 
   void processNewMap(String? broker,String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, MapData? decodedMap}) {
-    String trimmedHex =
-        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    MapData map = decodedMap ?? asnService.decodeMap(trimmedHex);
+      ValidateStatus validity, MapData map) {
 
     mapManager.addOrUpdate(map);
     invalidateAllLayers();
 
 
-    addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), hex, source, validity);
   }
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, TravelerInformation? decodedTim}) {
-    String trimmedHex =
-        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    TravelerInformation tim = decodedTim ?? asnService.decodeTim(trimmedHex);
+      ValidateStatus validity, TravelerInformation tim) {
     timManager.addOrUpdate(tim, hex);
     invalidatePolygonLayer();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
@@ -1155,15 +1180,13 @@ class MapState extends State<MapPage> with RouteAware {
         ItisSequence sequence = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
         messageType = "TIM ${sequence.description}";
       }
-      addToReceiveLog(broker, topic, messageType, recTime, sendTime, generationTime, trimmedHex, source, validity);
+      addToReceiveLog(broker, topic, messageType, recTime, sendTime, generationTime, hex, source, validity);
     });
   }
 
   void processNewSdsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, SensorDataSharingMessage? decodedSdsm}) {
-    String trimmedHex =
-        trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-    SensorDataSharingMessage sdsm = decodedSdsm ?? asnService.decodeSdsm(trimmedHex);
+      ValidateStatus validity, SensorDataSharingMessage sdsm) {
+
     sdsm.sDSMTimeStamp.year ??= DYear(recTime.year);
     sdsm.sDSMTimeStamp.month ??= DMonth(recTime.month);
     sdsm.sDSMTimeStamp.day ??= DDay(recTime.day);
@@ -1186,22 +1209,18 @@ class MapState extends State<MapPage> with RouteAware {
 
     invalidateMarkerLayer();
 
-    addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), hex, source, validity);
   }
 
   void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, TollAdvertisementMessage? decodedTam}) {
-    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!;
-    TollAdvertisementMessage tam = decodedTam ?? asnService.decodeTam(trimmedHex);
+      ValidateStatus validity, TollAdvertisementMessage tam) {
     tamManager.addOrUpdate(tam);
     invalidateAllLayers();
-    addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), hex, source, validity);
   }
 
   void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
-      ValidateStatus validity, {String? trimmedHexOverride, TollUsageAckMessage? decodedTumAck}) {
-    String trimmedHex = trimmedHexOverride ?? asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!;
-    TollUsageAckMessage tumAck = decodedTumAck ?? asnService.decodeTumAck(trimmedHex);
+      ValidateStatus validity, TollUsageAckMessage tumAck) {
 
     if(tumAckManager.isNewTumAck(tumAck)){
       tumManager.cancelTimer(tumAck.tumAck.tumAck.first.tempId);
@@ -1210,7 +1229,7 @@ class MapState extends State<MapPage> with RouteAware {
     }else{
       loggingService.addToAppLog("Duplicate TUMAck Received. Ignoring.");
     }
-    addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, hex, source, validity);
   }
 
   void checkAndSendTum() {

@@ -85,6 +85,12 @@ class ASNService extends GetxController {
     };
   }
 
+  String? getStartFlagForMessageType(MsgType messageType) {
+    return messageTypeMap.entries
+        .firstWhere((entry) => entry.value == messageType, orElse: () => MapEntry("", MsgType.UNKNOWN))
+        .key;
+  }
+
   Pointer<Pointer<Void>> getTemplateTIM() {
     return decode(timTemplate);
   }

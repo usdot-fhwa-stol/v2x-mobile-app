@@ -1,14 +1,6 @@
 import 'dart:async';
 import 'dart:isolate';
 
-import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
-import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
-import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
-import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/sensor_data_sharing_message.dart';
-import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
-import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
-import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
-import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_message.dart';
 import 'package:cv_mec/models/mqtt_decode_settings.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/services/asn_service.dart';
@@ -113,8 +105,6 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
 
   final asnService = ASNService();
 
-  print("Decode Settings: ${decodeSettings.enableBSM} ${decodeSettings.enableTIM} ${decodeSettings.enableTAM}");
-
   receivePort.listen((dynamic message) {
     if (message is! Map<String, dynamic>) {
       return;
@@ -210,7 +200,6 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
             'recTimeMs': recTimeMs,
             'sendTimeMs': sendTimeMs,
             'hex': hex,
-            'trimmedHex': null,
             'decoded': null,
             'decodedType': null,
           });
@@ -239,37 +228,8 @@ void _mqttDecodeWorkerEntrypoint(Map<String, dynamic> initialData) {
       'source': source,
       'recTimeMs': recTimeMs,
       'sendTimeMs': sendTimeMs,
-      'hex': hex,
-      'trimmedHex': trimmedHex,
+      'hex': trimmedHex,
       'decoded': decoded, 
     });
   });
-}
-
-String? _decodedTypeName(dynamic decoded) {
-  if (decoded is BasicSafetyMessage) {
-    return 'BasicSafetyMessage';
-  }
-  if (decoded is PersonalSafetyMessage) {
-    return 'PersonalSafetyMessage';
-  }
-  if (decoded is Spat) {
-    return 'Spat';
-  }
-  if (decoded is MapData) {
-    return 'MapData';
-  }
-  if (decoded is TravelerInformation) {
-    return 'TravelerInformation';
-  }
-  if (decoded is SensorDataSharingMessage) {
-    return 'SensorDataSharingMessage';
-  }
-  if (decoded is TollAdvertisementMessage) {
-    return 'TollAdvertisementMessage';
-  }
-  if (decoded is TollUsageAckMessage) {
-    return 'TollUsageAckMessage';
-  }
-  return null;
 }
