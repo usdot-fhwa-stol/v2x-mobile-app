@@ -58,6 +58,17 @@ def get_bsm_asn1_hex(bsm: J2735_BSM) -> str:
     return response.text
 
 
+def get_messageframe_asn1_hex(message_frame: dict) -> str:
+    response = _get_serializer_session().post(
+        url="http://localhost:4000/jer/uper/hex",
+        data=json.dumps(message_frame),
+        headers={"Content-Type": "application/json"},
+        timeout=3,
+    )
+    response.raise_for_status()
+    return response.text
+
+
 def decode_asn1_hex(hex: str) -> dict:
     if not check_j2735_serializer():
         raise ValueError(
@@ -75,5 +86,6 @@ def decode_asn1_hex(hex: str) -> dict:
         json_response = json.loads(response.text)
         return json_response
     else:
+        print(response.status_code, response.text)
         return {}
  
