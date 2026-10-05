@@ -1,8 +1,14 @@
 class MessageLatencyTracker {
+  final bool enabled;
   Map<Object, DateTime> recTimes = <Object, DateTime>{};
   Map<Object, DateTime> drawnTimes = <Object, DateTime>{};
 
+  MessageLatencyTracker({this.enabled = true});
+
   void recordReceived(Object key, DateTime recTime) {
+    if (!enabled) {
+      return;
+    }
     recTimes[key] = recTime;
     drawnTimes.remove(key);
   }

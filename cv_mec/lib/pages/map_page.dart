@@ -159,7 +159,7 @@ class MapState extends State<MapPage> with RouteAware {
   TamManager tamManager = TamManager();
   TumManager tumManager = TumManager();
   TumAckManager tumAckManager = TumAckManager();
-  MessageLatencyTracker latencyTracker = MessageLatencyTracker();
+  late MessageLatencyTracker latencyTracker = MessageLatencyTracker(enabled: settingsController.latencyLoggingEnabled);
 
   SecureStorage secureStorage = SecureStorage();
 
@@ -188,7 +188,7 @@ class MapState extends State<MapPage> with RouteAware {
   late DataQueue recDataQueue;
   late DataQueue pubDataQueue;
   late DataQueue timDataQueue;
-  late DataQueue latencyDataQueue;
+  DataQueue? latencyDataQueue;
 
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
   final LayerHitNotifier<PolyLineHitValue> _polyLineHitNotifier = ValueNotifier(null);
@@ -620,17 +620,19 @@ class MapState extends State<MapPage> with RouteAware {
     recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
-    latencyDataQueue = DataQueue("LATENCY_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
         "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
     String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes,signed,gps_source,gps_status\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
-    String latencyHeader = "message_type,key,rec_time_ms,drawn_time_ms,latency_ms\n";
 
     recDataQueue.addItem(subHeader);
     pubDataQueue.addItem(pubHeader);
     timDataQueue.addItem(timHeader);
-    latencyDataQueue.addItem(latencyHeader);
+
+    if (settingsController.latencyLoggingEnabled) {
+      latencyDataQueue = DataQueue("LATENCY_LOG_${logTime.millisecondsSinceEpoch}.csv");
+      latencyDataQueue!.addItem("message_type,key,rec_time_ms,drawn_time_ms,latency_ms\n");
+    }
   }
 
   Future<int> enableLogging() async {
@@ -944,10 +946,13 @@ class MapState extends State<MapPage> with RouteAware {
   // Records the first draw of a message since its last reception, and logs the resulting
   // reception-to-render latency. Subsequent draws of the same key before the next reception are ignored.
   void recordAndLogDraw(String msgType, Object key, DateTime drawTime) {
+    if (latencyDataQueue == null) {
+      return;
+    }
     DateTime? recTime = latencyTracker.recordDrawn(key, drawTime);
     if (recTime != null) {
       int latencyMs = drawTime.difference(recTime).inMilliseconds;
-      latencyDataQueue.addItem(
+      latencyDataQueue!.addItem(
           "$msgType,$key,${recTime.millisecondsSinceEpoch},${drawTime.millisecondsSinceEpoch},$latencyMs\n");
     }
   }
@@ -1751,7 +1756,7 @@ class MapState extends State<MapPage> with RouteAware {
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
     String timDataPath = timDataQueue.filePath;
-    String latencyDataPath = latencyDataQueue.filePath;
+    String? latencyDataPath = latencyDataQueue?.filePath;
 
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
     createMessageDataQueues();
@@ -1766,8 +1771,8 @@ class MapState extends State<MapPage> with RouteAware {
           pubDataPath, "publish/${settingsController.deviceID.value}");
       final timSuccess = await awsService.uploadFile(
           timDataPath, "tim/${settingsController.deviceID.value}");
-      final latencySuccess = await awsService.uploadFile(
-          latencyDataPath, "latency/${settingsController.deviceID.value}");
+      final latencySuccess = latencyDataPath == null ||
+          await awsService.uploadFile(latencyDataPath, "latency/${settingsController.deviceID.value}");
       return recSuccess && pubSuccess && timSuccess && latencySuccess;
     } else {
       final recSuccess =
@@ -1776,7 +1781,7 @@ class MapState extends State<MapPage> with RouteAware {
           await awsService.uploadFile(pubDataPath, "publish/$deviceID");
       final timSuccess =
           await awsService.uploadFile(timDataPath, "tim/$deviceID");
-      final latencySuccess =
+      final latencySuccess = latencyDataPath == null ||
           await awsService.uploadFile(latencyDataPath, "latency/$deviceID");
       return recSuccess && pubSuccess && timSuccess && latencySuccess;
     }
