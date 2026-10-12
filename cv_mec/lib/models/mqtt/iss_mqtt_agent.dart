@@ -31,10 +31,10 @@ class IssMqttAgent extends MqttAgent{
 
   @override
   Future<int> connect() async{
-    String connectionUrl = settingsController.issMqttBrokerUrl.value;
+    connectionUrl = settingsController.issMqttBrokerUrl.value;
     loggingService.addToAppLog("Connecting MQTT Agent $agentName to $connectionUrl");
 
-    int result = await mqttService.connect(connectionUrl, null);
+    int result = await mqttService.connect(connectionUrl ?? "mqtt://localhost:1883", null);
     if (result != 0) {
       loggingService.showError("${agentName} unable to connect to MQTT Broker $connectionUrl");
       return 1;
