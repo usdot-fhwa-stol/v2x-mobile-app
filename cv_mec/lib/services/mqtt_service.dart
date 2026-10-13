@@ -70,7 +70,7 @@ class MqttService extends GetxService {
     }
 
     try {
-      var status = await client!.connect();
+      await client!.connect();
     } on NoConnectionException catch (e) {
       // Raised by the client when connection fails.
       loggingService.showError('CV_MEC::client exception - $e');
@@ -163,7 +163,6 @@ class MqttService extends GetxService {
   }
 
   void pong() {
-    
     pongCount++;
     loggingService.addToAppLog('CV_MEC::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()} Current number of Subscriptions: ${subscriberList.keys.length}');
   }

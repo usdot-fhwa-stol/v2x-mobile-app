@@ -54,7 +54,7 @@ class MqttAgentManager{
     for(MqttAgent agent in agents){
       if(agent.isConnected()){
         var topic = agent.sendMessage(message, messageType, sendTime);
-        sendQueue.addItem("$topic,${sendTime.millisecondsSinceEpoch},${agent.currentPosition?.longitude},${agent.currentPosition?.latitude},Unavailable,${agent.connectionUrl},$hex,$signed,${gpsType.toString()},${gpsStatus.toString()}\n");
+        sendQueue.addItem("$topic,${sendTime.millisecondsSinceEpoch},${agent.currentPosition?.longitude},${agent.currentPosition?.latitude},${agent.connectionUrl},$hex,$signed,${gpsType.toString()},${gpsStatus.toString()}\n");
       }
     }
   }
