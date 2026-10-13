@@ -52,6 +52,7 @@ class SettingsController extends GetxController {
   bool showTollingSettings = (dotenv.env['SHOW_TOLLING_SETTINGS'] ?? 'false').toLowerCase() == 'true';
   bool showTimsSettings = (dotenv.env['SHOW_TIMS_SETTINGS'] ?? 'false').toLowerCase() == 'true';
 
+  bool latencyLoggingEnabled = (dotenv.env['ENABLE_LATENCY_LOGGING'] ?? 'false').toLowerCase() == 'true';
 
   Rx<bool> darkModeState = Get.isDarkMode.obs;
   Rx<bool> developerMode = false.obs;
