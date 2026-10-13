@@ -16,6 +16,7 @@ import 'package:asn1_plugin/j2735/2024/common/d_minute.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_month.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_second.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
+import 'package:asn1_plugin/j2735/2024/common/intersection_reference_id.dart';
 import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/intersection_geometry.dart';
@@ -857,7 +858,7 @@ class MapState extends State<MapPage> with RouteAware {
 
     if (settingsController.latencyLoggingEnabled) {
       latencyDataQueue = DataQueue("LATENCY_LOG_${logTime.millisecondsSinceEpoch}.csv");
-      latencyDataQueue!.addItem("message_type,key,rec_time_ms,drawn_time_ms,latency_ms\n");
+      latencyDataQueue!.addItem("message_type,key,status,rec_time_ms,drawn_time_ms,latency_ms\n");
     }
   }
 
@@ -1162,9 +1163,7 @@ class MapState extends State<MapPage> with RouteAware {
     bool isNewBsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
     invalidateMarkerLayer();
-    if (isNewBsm) {
-      latencyTracker.recordReceived(msg.getKey(), recTime);
-    }
+    recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewBsm);
     addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, hex, source, validity);
 
   }
@@ -1187,22 +1186,28 @@ class MapState extends State<MapPage> with RouteAware {
     bool isNewPsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
     invalidateMarkerLayer();
-    if (isNewPsm) {
-      latencyTracker.recordReceived(msg.getKey(), recTime);
-    }
+    recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewPsm);
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, hex, source, validity);
   }
 
   void processNewSpat(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, Spat spat) {
 
+    List<int> newSpatIds = [];
     for (IntersectionState state in spat.intersections.intersectionStateList) {
       if (!spatManager.storedIntersections.containsKey(state.id.id.intersectionID)) {
-        latencyTracker.recordReceived("SPAT:${state.id.id.intersectionID}", recTime);
+        newSpatIds.add(state.id.id.intersectionID);
       }
     }
 
     spatManager.addOrUpdate(spat);
+
+    for (IntersectionState state in spat.intersections.intersectionStateList) {
+      int intersectionID = state.id.id.intersectionID;
+      if (spatManager.storedIntersections[intersectionID] == state && isSpatDrawable(intersectionID)) {
+        recordAndLogReceived("SPAT", "SPAT:$intersectionID", recTime, newSpatIds.contains(intersectionID));
+      }
+    }
     invalidateMarkerLayer();
     invalidatePolylineLayer();
 
@@ -1217,15 +1222,24 @@ class MapState extends State<MapPage> with RouteAware {
   void processNewMap(String? broker,String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, MapData map) {
 
+    List<IntersectionReferenceID> newMapIds = [];
     if (map.intersections != null) {
       for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
         if (!mapManager.storedMaps.containsKey(geo.id)) {
-          latencyTracker.recordReceived("MAP:${geo.id.id.intersectionID}", recTime);
+          newMapIds.add(geo.id);
         }
       }
     }
 
     mapManager.addOrUpdate(map);
+
+    if (map.intersections != null && currentPosition != null) {
+      for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
+        if (mapManager.storedMaps[geo.id]?.map == map) {
+          recordAndLogReceived("MAP", "MAP:${geo.id.id.intersectionID}", recTime, newMapIds.contains(geo.id));
+        }
+      }
+    }
     invalidateAllLayers();
 
 
@@ -1234,13 +1248,20 @@ class MapState extends State<MapPage> with RouteAware {
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, TravelerInformation tim) {
-    bool isNewTim = tim.packetID == null ||
-        !timManager.storedTims.containsKey(ASNService.bytesToHex(tim.packetID!.uniqueMSGID));
+    TravelerInformation? storedTim =
+        tim.packetID == null ? null : timManager.storedTims[ASNService.bytesToHex(tim.packetID!.uniqueMSGID)];
     timManager.addOrUpdate(tim, hex);
     invalidatePolygonLayer();
-    if (isNewTim) {
-      for (TravelerDataFrame frame in tim.dataFrames.travelerDataFrameList) {
-        latencyTracker.recordReceived(frame, recTime);
+    if (storedTim != null) {
+      for (TravelerDataFrame frame in storedTim.dataFrames.travelerDataFrameList) {
+        if (!timManager.geometryMap.containsKey(frame)) {
+          clearAndLog("TIM", frame);
+        }
+      }
+    }
+    for (TravelerDataFrame frame in tim.dataFrames.travelerDataFrameList) {
+      if (timManager.geometryMap.containsKey(frame) && timManager.isDataFrameTimeActive(frame)) {
+        recordAndLogReceived("TIM", frame, recTime, true);
       }
     }
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
@@ -1277,9 +1298,7 @@ class MapState extends State<MapPage> with RouteAware {
       ReceivedSdsm receivedSdsm = ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType);
       bool isNewSdsm = !messageManager.receivedMsgs.containsKey(receivedSdsm.getKey());
       messageManager.addOrUpdate(receivedSdsm);
-      if (isNewSdsm) {
-        latencyTracker.recordReceived(receivedSdsm.getKey(), recTime);
-      }
+      recordAndLogReceived(receivedSdsm.type.name, receivedSdsm.getKey(), recTime, isNewSdsm);
     }
 
     invalidateMarkerLayer();
@@ -1289,15 +1308,12 @@ class MapState extends State<MapPage> with RouteAware {
 
   void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, TollAdvertisementMessage tam) {
-    if (tam.tollAdvInfo != null) {
-      int tollPointId = tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID;
-      if (!tamManager.storedTams.containsKey(tollPointId)) {
-        // Only record the first reception of a given TAM; RSUs rebroadcast the same TAM
-        // repeatedly, and re-recording every rebroadcast would keep re-triggering latency logging.
-        latencyTracker.recordReceived("TAM:$tollPointId", recTime);
-      }
-    }
+    int? tollPointId = tam.tollAdvInfo?.tollChargerInfo.tollPointId.tollPointID;
+    bool isNewTam = tollPointId != null && !tamManager.storedTams.containsKey(tollPointId);
     tamManager.addOrUpdate(tam);
+    if (tollPointId != null) {
+      recordAndLogReceived("TAM", "TAM:$tollPointId", recTime, isNewTam);
+    }
     invalidateAllLayers();
     addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), hex, source, validity);
   }
@@ -1366,19 +1382,54 @@ class MapState extends State<MapPage> with RouteAware {
         "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$broker,$hex,$source,${validity.name}\n";
     recDataQueue.addItem(record);
   }
+  
+  void recordAndLogReceived(String msgType, Object key, DateTime recTime, bool isNew) {
+    if (isNew) {
+      clearAndLog(msgType, key);
+    }
+    DateTime? supersededRecTime = latencyTracker.recordReceived(key, recTime);
+    if (supersededRecTime != null) {
+      addToLatencyLog(msgType, key, LatencyStatus.SUPERSEDED, supersededRecTime, null);
+    }
+  }
 
   // Records the first draw of a message since its last reception, and logs the resulting
   // reception-to-render latency. Subsequent draws of the same key before the next reception are ignored.
   void recordAndLogDraw(String msgType, Object key, DateTime drawTime) {
+    DateTime? recTime = latencyTracker.recordDrawn(key, drawTime);
+    if (recTime != null) {
+      addToLatencyLog(msgType, key, LatencyStatus.RENDERED, recTime, drawTime);
+    }
+  }
+
+  void clearAndLog(String msgType, Object key) {
+    DateTime? recTime = latencyTracker.clear(key);
+    if (recTime != null) {
+      addToLatencyLog(msgType, key, LatencyStatus.EXPIRED, recTime, null);
+    }
+  }
+
+  void addToLatencyLog(String msgType, Object key, LatencyStatus status, DateTime recTime, DateTime? drawTime) {
     if (latencyDataQueue == null) {
       return;
     }
-    DateTime? recTime = latencyTracker.recordDrawn(key, drawTime);
-    if (recTime != null) {
-      int latencyMs = drawTime.difference(recTime).inMilliseconds;
-      latencyDataQueue!.addItem(
-          "$msgType,$key,${recTime.millisecondsSinceEpoch},${drawTime.millisecondsSinceEpoch},$latencyMs\n");
+    String drawTimeMs = drawTime == null ? "" : "${drawTime.millisecondsSinceEpoch}";
+    String latencyMs = drawTime == null ? "" : "${drawTime.difference(recTime).inMilliseconds}";
+    latencyDataQueue!.addItem(
+        "$msgType,$key,${status.name},${recTime.millisecondsSinceEpoch},$drawTimeMs,$latencyMs\n");
+  }
+
+  bool isSpatDrawable(int intersectionID) {
+    Position? pos = currentPosition;
+    if (pos == null || spatManager.getActiveSpats(intersectionID, timingService.getTime()).isEmpty) {
+      return false;
     }
+    for (GeoMap map in mapManager.getActiveMaps(pos.longitude, pos.latitude)) {
+      if (map.intersectionGeometry.id.id.intersectionID == intersectionID) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void startSendingBSM() {
@@ -1811,11 +1862,11 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     for (String key in removeKeys) {
-      messageManager.receivedMsgs.remove(key);
+      ReceivedMsg msg = messageManager.receivedMsgs.remove(key)!;
       if (messageManager.shown.containsKey(key)) {
         messageManager.shown.remove(key);
       }
-      latencyTracker.clear(key);
+      clearAndLog(msg.type.name, key);
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
