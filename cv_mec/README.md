@@ -61,6 +61,7 @@ cp sample.env .env
 | OBU_IP | If using an OBU GPS (Ettifos), the IP address of the OBU | | No |  Yes |
 | ISS_SCMS_TOKEN | Token for SCMS if signing is enabled. Will automatically enable signing if set | | No | Yes |
 | BROADCAST_RATE | Number of messages to broadcast each second. Value must be between 1 and 10 (inclusive) | 10 | No | Yes |
+| ENABLE_LATENCY_LOGGING | Logs the latency between receiving a message and rendering it on the map to a LATENCY_LOG csv file. Each row has a status: RENDERED (received and drawn), SUPERSEDED (replaced by a newer message for the same source before being drawn), or EXPIRED (removed before being drawn). | false | No | No |
 
 The following variables can be set to true or false. Setting them to true will make that setting appear on the settings menu in the application. 
 SHOW_BASE_URI, SHOW_DEVICE-ID, MOBILE_GPS_ALLOWED, CRADLE_GPS_ALLOWED, OBU_GPS_ALLOWED, PATH_GPS_ALLOWED, SHOW_BROADCAST_RATE, SHOW_PC5_BROKER, SHOW_ISS_BROKER, SHOW_ETX_BROKER, SHOW_MANUAL_REGISTRATION, SHOW_VZ_MODE, SHOW_DEMO_MODE, SHOW_SIGNING, SHOW_DISABLE_TUM_RETRY, SHOW_TOLLING_SETTINGS, SHOW_TIMS_SETTINGS
