@@ -1160,10 +1160,12 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
-    bool isNewBsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
+    bool isNewBsm = settingsController.latencyLoggingEnabled && !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
     invalidateMarkerLayer();
-    recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewBsm);
+    if (settingsController.latencyLoggingEnabled) {
+      recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewBsm);
+    }
     addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, hex, source, validity);
 
   }
@@ -1183,29 +1185,37 @@ class MapState extends State<MapPage> with RouteAware {
     DateTime psmTime = psm.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
-    bool isNewPsm = !messageManager.receivedMsgs.containsKey(msg.getKey());
+    bool isNewPsm = settingsController.latencyLoggingEnabled && !messageManager.receivedMsgs.containsKey(msg.getKey());
     messageManager.addOrUpdate(msg);
     invalidateMarkerLayer();
-    recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewPsm);
+    if (settingsController.latencyLoggingEnabled) {
+      recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewPsm);
+    }
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, hex, source, validity);
   }
 
   void processNewSpat(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, Spat spat) {
 
+    bool latencyLoggingEnabled = settingsController.latencyLoggingEnabled;
+
     List<int> newSpatIds = [];
-    for (IntersectionState state in spat.intersections.intersectionStateList) {
-      if (!spatManager.storedIntersections.containsKey(state.id.id.intersectionID)) {
-        newSpatIds.add(state.id.id.intersectionID);
+    if (latencyLoggingEnabled) {
+      for (IntersectionState state in spat.intersections.intersectionStateList) {
+        if (!spatManager.storedIntersections.containsKey(state.id.id.intersectionID)) {
+          newSpatIds.add(state.id.id.intersectionID);
+        }
       }
     }
 
     spatManager.addOrUpdate(spat);
 
-    for (IntersectionState state in spat.intersections.intersectionStateList) {
-      int intersectionID = state.id.id.intersectionID;
-      if (spatManager.storedIntersections[intersectionID] == state && isSpatDrawable(intersectionID)) {
-        recordAndLogReceived("SPAT", "SPAT:$intersectionID", recTime, newSpatIds.contains(intersectionID));
+    if (latencyLoggingEnabled) {
+      for (IntersectionState state in spat.intersections.intersectionStateList) {
+        int intersectionID = state.id.id.intersectionID;
+        if (spatManager.storedIntersections[intersectionID] == state && isSpatDrawable(intersectionID)) {
+          recordAndLogReceived("SPAT", "SPAT:$intersectionID", recTime, newSpatIds.contains(intersectionID));
+        }
       }
     }
     invalidateMarkerLayer();
@@ -1222,8 +1232,10 @@ class MapState extends State<MapPage> with RouteAware {
   void processNewMap(String? broker,String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, MapData map) {
 
+    bool latencyLoggingEnabled = settingsController.latencyLoggingEnabled;
+
     List<IntersectionReferenceID> newMapIds = [];
-    if (map.intersections != null) {
+    if (latencyLoggingEnabled && map.intersections != null) {
       for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
         if (!mapManager.storedMaps.containsKey(geo.id)) {
           newMapIds.add(geo.id);
@@ -1233,7 +1245,7 @@ class MapState extends State<MapPage> with RouteAware {
 
     mapManager.addOrUpdate(map);
 
-    if (map.intersections != null && currentPosition != null) {
+    if (latencyLoggingEnabled && map.intersections != null && currentPosition != null) {
       for (IntersectionGeometry geo in map.intersections!.intersectionGeometryList) {
         if (mapManager.storedMaps[geo.id]?.map == map) {
           recordAndLogReceived("MAP", "MAP:${geo.id.id.intersectionID}", recTime, newMapIds.contains(geo.id));
@@ -1248,20 +1260,24 @@ class MapState extends State<MapPage> with RouteAware {
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, TravelerInformation tim) {
-    TravelerInformation? storedTim =
-        tim.packetID == null ? null : timManager.storedTims[ASNService.bytesToHex(tim.packetID!.uniqueMSGID)];
+    bool latencyLoggingEnabled = settingsController.latencyLoggingEnabled;
+    TravelerInformation? storedTim = !latencyLoggingEnabled || tim.packetID == null
+        ? null
+        : timManager.storedTims[ASNService.bytesToHex(tim.packetID!.uniqueMSGID)];
     timManager.addOrUpdate(tim, hex);
     invalidatePolygonLayer();
-    if (storedTim != null) {
-      for (TravelerDataFrame frame in storedTim.dataFrames.travelerDataFrameList) {
-        if (!timManager.geometryMap.containsKey(frame)) {
-          clearAndLog("TIM", frame);
+    if (latencyLoggingEnabled) {
+      if (storedTim != null) {
+        for (TravelerDataFrame frame in storedTim.dataFrames.travelerDataFrameList) {
+          if (!timManager.geometryMap.containsKey(frame)) {
+            clearAndLog("TIM", frame);
+          }
         }
       }
-    }
-    for (TravelerDataFrame frame in tim.dataFrames.travelerDataFrameList) {
-      if (timManager.geometryMap.containsKey(frame) && timManager.isDataFrameTimeActive(frame)) {
-        recordAndLogReceived("TIM", frame, recTime, true);
+      for (TravelerDataFrame frame in tim.dataFrames.travelerDataFrameList) {
+        if (timManager.geometryMap.containsKey(frame) && timManager.isDataFrameTimeActive(frame)) {
+          recordAndLogReceived("TIM", frame, recTime, true);
+        }
       }
     }
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
@@ -1296,9 +1312,11 @@ class MapState extends State<MapPage> with RouteAware {
       LatLng shiftedPosition = geometryService.shiftLatLngByMeters(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
       ReceivedSdsm receivedSdsm = ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType);
-      bool isNewSdsm = !messageManager.receivedMsgs.containsKey(receivedSdsm.getKey());
+      bool isNewSdsm = settingsController.latencyLoggingEnabled && !messageManager.receivedMsgs.containsKey(receivedSdsm.getKey());
       messageManager.addOrUpdate(receivedSdsm);
-      recordAndLogReceived(receivedSdsm.type.name, receivedSdsm.getKey(), recTime, isNewSdsm);
+      if (settingsController.latencyLoggingEnabled) {
+        recordAndLogReceived(receivedSdsm.type.name, receivedSdsm.getKey(), recTime, isNewSdsm);
+      }
     }
 
     invalidateMarkerLayer();
@@ -1309,9 +1327,10 @@ class MapState extends State<MapPage> with RouteAware {
   void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source,
       ValidateStatus validity, TollAdvertisementMessage tam) {
     int? tollPointId = tam.tollAdvInfo?.tollChargerInfo.tollPointId.tollPointID;
-    bool isNewTam = tollPointId != null && !tamManager.storedTams.containsKey(tollPointId);
+    bool latencyLoggingEnabled = settingsController.latencyLoggingEnabled;
+    bool isNewTam = latencyLoggingEnabled && tollPointId != null && !tamManager.storedTams.containsKey(tollPointId);
     tamManager.addOrUpdate(tam);
-    if (tollPointId != null) {
+    if (latencyLoggingEnabled && tollPointId != null) {
       recordAndLogReceived("TAM", "TAM:$tollPointId", recTime, isNewTam);
     }
     invalidateAllLayers();
@@ -1837,7 +1856,9 @@ class MapState extends State<MapPage> with RouteAware {
       ReceivedMsg msg = messageManager.receivedMsgs[key]!;
 
       if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
-        recordAndLogDraw(msg.type.name, msg.getKey(), compTime);
+        if (settingsController.latencyLoggingEnabled) {
+          recordAndLogDraw(msg.type.name, msg.getKey(), compTime);
+        }
         if (msg is ReceivedBsm) {
           Marker remoteMarker = Marker(
             point: msg.position,
@@ -1866,11 +1887,15 @@ class MapState extends State<MapPage> with RouteAware {
       if (messageManager.shown.containsKey(key)) {
         messageManager.shown.remove(key);
       }
-      clearAndLog(msg.type.name, key);
+      if (settingsController.latencyLoggingEnabled) {
+        clearAndLog(msg.type.name, key);
+      }
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
-      recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", compTime);
+      if (settingsController.latencyLoggingEnabled) {
+        recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", compTime);
+      }
       for (LatLng coord in mappableTam.markerPoints) {
         markerList.add(Marker(
           width: markerSize * 0.8,
@@ -1932,13 +1957,17 @@ class MapState extends State<MapPage> with RouteAware {
         List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
 
         for (GeoMap map in geoMaps) {
-          recordAndLogDraw("MAP", "MAP:${map.intersectionGeometry.id.id.intersectionID}", compTime);
+          if (settingsController.latencyLoggingEnabled) {
+            recordAndLogDraw("MAP", "MAP:${map.intersectionGeometry.id.id.intersectionID}", compTime);
+          }
           // Get SPaT messages associated with the relavent MAP messages
           List<IntersectionState> states =
               spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
 
           for (IntersectionState state in states) {
-            recordAndLogDraw("SPAT", "SPAT:${state.id.id.intersectionID}", compTime);
+            if (settingsController.latencyLoggingEnabled) {
+              recordAndLogDraw("SPAT", "SPAT:${state.id.id.intersectionID}", compTime);
+            }
             // This code indexes light colors by signal group to allow easy lookup down the line
             Map<int, MovementEvent> stateMap = {};
             for (MovementState movement in state.states.movementList) {
@@ -2068,11 +2097,15 @@ class MapState extends State<MapPage> with RouteAware {
       // Get Maps that the user is near or in
       List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
       for (GeoMap map in geoMaps) {
-        recordAndLogDraw("MAP", "MAP:${map.intersectionGeometry.id.id.intersectionID}", start);
+        if (settingsController.latencyLoggingEnabled) {
+          recordAndLogDraw("MAP", "MAP:${map.intersectionGeometry.id.id.intersectionID}", start);
+        }
         List<IntersectionState> states =
             spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
         for (IntersectionState state in states) {
-          recordAndLogDraw("SPAT", "SPAT:${state.id.id.intersectionID}", start);
+          if (settingsController.latencyLoggingEnabled) {
+            recordAndLogDraw("SPAT", "SPAT:${state.id.id.intersectionID}", start);
+          }
           // This code indexes light colors by signal group to allow easy lookup down the line
           Map<int, MovementEvent> stateMap = {};
           for (MovementState movement in state.states.movementList) {
@@ -2156,7 +2189,9 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       for (MappableTam mappableTam in tamManager.storedTams.values) {
-        recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", start);
+        if (settingsController.latencyLoggingEnabled) {
+          recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", start);
+        }
         for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(
             points: lanePoints,
@@ -2191,7 +2226,9 @@ class MapState extends State<MapPage> with RouteAware {
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(false);
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
-      recordAndLogDraw("TIM", tdFrame, drawTime);
+      if (settingsController.latencyLoggingEnabled) {
+        recordAndLogDraw("TIM", tdFrame, drawTime);
+      }
 
       for (GeometryDirection geoDir in frame.geometry) {
         List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
@@ -2209,7 +2246,9 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
-      recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", drawTime);
+      if (settingsController.latencyLoggingEnabled) {
+        recordAndLogDraw("TAM", "TAM:${mappableTam.tam!.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID}", drawTime);
+      }
       if (mappableTam.entireTollZoneBorder.isEmpty) {
         continue;
       }
