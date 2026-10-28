@@ -941,6 +941,8 @@ class MapState extends State<MapPage> with RouteAware {
         TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex ?? hex);
         processNewTumAck(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, tumAck);
         break;
+      case MsgType.RTCM:
+        break;
       default:
         loggingService.showError("Unknown message type: $msgType");
         break;
@@ -1124,6 +1126,9 @@ class MapState extends State<MapPage> with RouteAware {
           validity,
           decodedTumAck,
         );
+        break;
+      case MsgType.RTCM:
+        print("RTCM Message Received: $hex");
         break;
       default:
         loggingService.addToAppLog("Unable to Identify Message Type: $msgType $hex");

@@ -1,4 +1,4 @@
-enum MsgType { UNKNOWN, MAP, SPAT, TIM, BSM, SSM, PSM, SRM, SDSM, TAM, TUM, TUMACK}
+enum MsgType { UNKNOWN, MAP, SPAT, TIM, BSM, SSM, PSM, SRM, SDSM, TAM, TUM, TUMACK, RTCM}
 
 MsgType? msgTypeFromName(String name) {
   for (final MsgType type in MsgType.values) {
