@@ -488,7 +488,7 @@ class MapState extends State<MapPage> with RouteAware {
       stream = gpsdService.locationStream.stream;
       loggingService.addToAppLog("Using GPSD location stream");
     } else {
-      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
+      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${await locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
     }
 
