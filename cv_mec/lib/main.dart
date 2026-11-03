@@ -24,7 +24,6 @@ import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
-import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:iss_scms/iss_scms.dart';

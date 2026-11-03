@@ -4,6 +4,7 @@ import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/gps_type.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:uuid/uuid.dart';
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
@@ -57,7 +58,7 @@ class SecureStorage {
   static final _startPassword = dotenv.env['PASSWORD'] ?? "";
 
   static final _startISSMqttBrokerUrl = dotenv.env['ISS_MQTT_BROKER'] ?? "";
-  static final _startDeviceID = "";
+  static final _startDeviceID = Uuid().v4().substring(0, 16);
 
   static final _startVzMode = false;
   static final _startNotificationsEnabled = false;

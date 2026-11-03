@@ -257,7 +257,7 @@ class EtxMqttAgent extends MqttAgent{
 
   void onClientInfo(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
     final recMess = message.payload as MqttPublishMessage;
-    loggingService.addToAppLog("On Client Info Decoded ${ascii.decode(recMess.payload.message)}");
+    loggingService.addToAppLog("ETX Session ID reported by ETX:  ${ascii.decode(recMess.payload.message)} - Note this may be different than the V2X-Mobile-Apps internal Session ID");
   }
 
 
