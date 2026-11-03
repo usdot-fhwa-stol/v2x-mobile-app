@@ -61,6 +61,7 @@ cp sample.env .env
 | OBU_IP | If using an OBU GPS (Ettifos), the IP address of the OBU | | No |  Yes |
 | ISS_SCMS_TOKEN | Token for SCMS if signing is enabled. Will automatically enable signing if set | | No | Yes |
 | BROADCAST_RATE | Number of messages to broadcast each second. Value must be between 1 and 10 (inclusive) | 10 | No | Yes |
+| USE_GPS_TIMESTAMP_FOR_SEND_TIME | If true, outbound message send time uses the latest GPS timestamp instead of timing service time | false | No | Yes |
 | ENABLE_LATENCY_LOGGING | Logs the latency between receiving a message and rendering it on the map to a LATENCY_LOG csv file. Each row has a status: RENDERED (received and drawn), SUPERSEDED (replaced by a newer message for the same source before being drawn), or EXPIRED (removed before being drawn). | false | No | No |
 
 The following variables can be set to true or false. Setting them to true will make that setting appear on the settings menu in the application. 

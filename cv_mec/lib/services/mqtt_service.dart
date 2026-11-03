@@ -207,7 +207,7 @@ class MqttService extends GetxService {
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-    loggingService.addToAppLog("MQTT Service::Subscribing to Topic: $topicName");
+    loggingService.addToAppLog("MQTT Service::Subscribing to Topic: $topicName, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
     int retryCount = 0;
 
     if (client != null) {

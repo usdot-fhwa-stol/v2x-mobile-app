@@ -1475,6 +1475,13 @@ class MapState extends State<MapPage> with RouteAware {
 
   List<int>? lastSignedMessage = null;
 
+  DateTime getMessageSendTime() {
+    if (settingsController.useGpsTimestampForSendTime.value) {
+      return currentPosition!.timestamp.toUtc();
+    }
+    return timingService.getTime();
+  }
+
   void sendMessage() async {
     if (currentPosition == null) {
       loggingService.addToAppLog("Cannot Send BSM. Location is Null");
@@ -1483,6 +1490,7 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     DateTime sendTime = timingService.getTime();
+    DateTime msgTime = getMessageSendTime(); // Use GPS timestamp if configured
     String hex = "";
     int psid = PSID.BSM.code;
     MsgType messageType = MsgType.BSM;
@@ -1492,7 +1500,7 @@ class MapState extends State<MapPage> with RouteAware {
     if (configController.isVehicleConfig.value) {
       bsmBuilder.setPosition(currentPosition!);
       bsmBuilder.incrementMsgCnt();
-      bsmBuilder.setTime(sendTime);
+      bsmBuilder.setTime(msgTime);
 
       bsmBuilder.setVehicleClass(
           BasicVehicleClass(VehicleType.toVehicleClass(configController.selectedVehicle.value.classification).code));
@@ -1515,7 +1523,7 @@ class MapState extends State<MapPage> with RouteAware {
     } else {
       psmBuilder.setPosition(currentPosition!);
       psmBuilder.incrementMsgCnt();
-      psmBuilder.setTime(sendTime);
+      psmBuilder.setTime(msgTime);
       psmBuilder.setPersonalDeviceUserType(configController.selectedPedestrian);
       if (configController.selectedPedestrian == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
         psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
@@ -1562,10 +1570,11 @@ class MapState extends State<MapPage> with RouteAware {
       return false;
     }
 
+    DateTime msgTime = getMessageSendTime();
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, msgTime);
     if (!tumResult.isSuccess) {
       loggingService.showError(tumResult.errorMessage!);
       return false;
