@@ -169,7 +169,6 @@ class MapState extends State<MapPage> with RouteAware {
   Uuid uuid = const Uuid();
 
   AugmentedPosition? currentPosition;
-  late String deviceID;
 
   Timer? sendMessageTimer;
   late BsmMessageBuilder bsmBuilder;
@@ -257,8 +256,6 @@ class MapState extends State<MapPage> with RouteAware {
     super.initState();
 
     _mqttDecodeSettings = MqttDecodeSettings.fromSettingsController(settingsController);
-
-    deviceID = uuid.v4();
 
     vehicleId = randomizeId();
 
@@ -488,7 +485,7 @@ class MapState extends State<MapPage> with RouteAware {
       stream = gpsdService.locationStream.stream;
       loggingService.addToAppLog("Using GPSD location stream");
     } else {
-      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
+      loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${await locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
     }
 
@@ -867,7 +864,7 @@ class MapState extends State<MapPage> with RouteAware {
     createMessageDataQueues();
     uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
       await rotateAndUploadMessageLogs();
-      await loggingService.rotateAndUploadAppLog(deviceID);
+      await loggingService.rotateAndUploadAppLog(settingsController.deviceID.value);
     });
 
     return 0;
@@ -940,6 +937,8 @@ class MapState extends State<MapPage> with RouteAware {
       case MsgType.TUMACK:
         TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex ?? hex);
         processNewTumAck(broker, topic, trimmedHex ?? hex, recTime, sendTime, source, validity, tumAck);
+        break;
+      case MsgType.RTCM:
         break;
       default:
         loggingService.showError("Unknown message type: $msgType");
@@ -1124,6 +1123,9 @@ class MapState extends State<MapPage> with RouteAware {
           validity,
           decodedTumAck,
         );
+        break;
+      case MsgType.RTCM:
+        print("RTCM Message Received: $hex");
         break;
       default:
         loggingService.addToAppLog("Unable to Identify Message Type: $msgType $hex");
@@ -1473,6 +1475,13 @@ class MapState extends State<MapPage> with RouteAware {
 
   List<int>? lastSignedMessage = null;
 
+  DateTime getMessageSendTime() {
+    if (settingsController.useGpsTimestampForSendTime.value) {
+      return currentPosition!.timestamp.toUtc();
+    }
+    return timingService.getTime();
+  }
+
   void sendMessage() async {
     if (currentPosition == null) {
       loggingService.addToAppLog("Cannot Send BSM. Location is Null");
@@ -1481,6 +1490,7 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     DateTime sendTime = timingService.getTime();
+    DateTime msgTime = getMessageSendTime(); // Use GPS timestamp if configured
     String hex = "";
     int psid = PSID.BSM.code;
     MsgType messageType = MsgType.BSM;
@@ -1490,7 +1500,7 @@ class MapState extends State<MapPage> with RouteAware {
     if (configController.isVehicleConfig.value) {
       bsmBuilder.setPosition(currentPosition!);
       bsmBuilder.incrementMsgCnt();
-      bsmBuilder.setTime(sendTime);
+      bsmBuilder.setTime(msgTime);
 
       bsmBuilder.setVehicleClass(
           BasicVehicleClass(VehicleType.toVehicleClass(configController.selectedVehicle.value.classification).code));
@@ -1513,7 +1523,7 @@ class MapState extends State<MapPage> with RouteAware {
     } else {
       psmBuilder.setPosition(currentPosition!);
       psmBuilder.incrementMsgCnt();
-      psmBuilder.setTime(sendTime);
+      psmBuilder.setTime(msgTime);
       psmBuilder.setPersonalDeviceUserType(configController.selectedPedestrian);
       if (configController.selectedPedestrian == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
         psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
@@ -1560,10 +1570,11 @@ class MapState extends State<MapPage> with RouteAware {
       return false;
     }
 
+    DateTime msgTime = getMessageSendTime();
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, msgTime);
     if (!tumResult.isSuccess) {
       loggingService.showError(tumResult.errorMessage!);
       return false;
@@ -2273,6 +2284,8 @@ class MapState extends State<MapPage> with RouteAware {
     }
   }
 
+  
+
   Future<bool> rotateAndUploadMessageLogs() async {
     loggingService.addToAppLog(
         "Rotating Log File. Current Time ${timingService.getTime()}");
@@ -2288,33 +2301,20 @@ class MapState extends State<MapPage> with RouteAware {
     loggingService.addToAppLog(
         "Log Rotation Complete. Current Time ${timingService.getTime()}");
 
-    if (settingsController.deviceID.value.isNotEmpty) {
-      final results = await Future.wait<bool>([
-        awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}"),
-        awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}"),
-        awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}"),
-        if (latencyDataPath != null)
-          awsService.uploadFile(latencyDataPath, "latency/${settingsController.deviceID.value}"),
-      ]);
-      final recSuccess = results[0];
-      final pubSuccess = results[1];
-      final timSuccess = results[2];
-      final latencySuccess = latencyDataPath == null || results[3];
-      return recSuccess && pubSuccess && timSuccess && latencySuccess;
-    } else {
-      final results = await Future.wait<bool>([
-        awsService.uploadFile(recDataPath, "subscribe/$deviceID"),
-        awsService.uploadFile(pubDataPath, "publish/$deviceID"),
-        awsService.uploadFile(timDataPath, "tim/$deviceID"),
-        if (latencyDataPath != null)
-          awsService.uploadFile(latencyDataPath, "latency/$deviceID"),
-      ]);
-      final recSuccess = results[0];
-      final pubSuccess = results[1];
-      final timSuccess = results[2];
-      final latencySuccess = latencyDataPath == null || results[3];
-      return recSuccess && pubSuccess && timSuccess && latencySuccess;
-    }
+    
+    final results = await Future.wait<bool>([
+      awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}"),
+      awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}"),
+      awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}"),
+      if (latencyDataPath != null)
+        awsService.uploadFile(latencyDataPath, "latency/${settingsController.deviceID.value}"),
+    ]);
+    final recSuccess = results[0];
+    final pubSuccess = results[1];
+    final timSuccess = results[2];
+    final latencySuccess = latencyDataPath == null || results[3];
+    return recSuccess && pubSuccess && timSuccess && latencySuccess;
+    
   }
 
   String enumToString(Object o) => o.toString().split('.').last;
@@ -2680,7 +2680,7 @@ class MapState extends State<MapPage> with RouteAware {
                   final messageUploadSuccess =
                       await rotateAndUploadMessageLogs();
                   final appUploadSuccess =
-                      await loggingService.rotateAndUploadAppLog(deviceID);
+                      await loggingService.rotateAndUploadAppLog(settingsController.deviceID.value);
                   final uploadSuccess =
                       messageUploadSuccess && appUploadSuccess;
 

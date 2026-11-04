@@ -4,6 +4,7 @@ import 'package:cv_mec/models/api_responses/mqtt_permission.dart';
 
 import 'package:cv_mec/models/etx/full_registration.dart';
 import 'package:cv_mec/models/etx/registration.dart';
+import 'package:cv_mec/models/etx/registration_retrieval_exception.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/utils.dart';
@@ -45,22 +46,36 @@ class EtxMqttAgent extends MqttAgent{
     if (await fileService.checkIfRegistrationExists()) {
       loggingService.addToAppLog("Loading Registration from Cache");
       registration = await fileService.getRegistration();
-      fullRegistration = await apiService.checkRegistration(registration.deviceID);
+      try{
+        fullRegistration = await apiService.checkRegistration(registration.deviceID);
+      } on RegistrationRetrievalException catch (e) {
+        loggingService.showError("Error retrieving full registration: $e");
+        // This case handles the scenario where the app fails to retrieve the full registration from the API. Connect should exit prematurely and allow the retry logic to attempt again later.
+        return 4;
+      }
     }
 
     if(registration == null || fullRegistration == null){
-      loggingService.addToAppLog("Loading Registration from Partner API");
+      loggingService.addToAppLog("Unable to retrieve full registration from cache. Registration Status: ${registration != null ? "Valid" : 'Unknown'}, Full Registration Status ${fullRegistration!= null ? "Valid" : 'Unknown'}. Loading Registration from Partner API");
       registration = await apiService.getRegistration(paramController.clientType.value, paramController.clientSubtype.value);
       if(registration != null){
-        fullRegistration = await apiService.checkRegistration(registration!.deviceID);
+        loggingService.addToAppLog("Successfully retrieved registration from Partner API for Device ID: ${registration.deviceID}");
+        try{
+          fullRegistration = await apiService.checkRegistration(registration.deviceID);
+        } on RegistrationRetrievalException catch (e) {
+          loggingService.showError("Error retrieving full registration: $e");
+          return 5;
+        }
       }else{
         loggingService.showWarning("Unable to retrieve registration information from partner API");
         return 1;
       }
-      
     }
+      
+    
     
     if(fullRegistration != null){
+      loggingService.addToAppLog("Successfully retrieved full registration for Device ID: ${fullRegistration!.deviceID}");
       fileService.saveRegistration(registration);
     }else{
       loggingService.showWarning("Unable to retrieve full registration information from partner API");
@@ -69,7 +84,7 @@ class EtxMqttAgent extends MqttAgent{
 
 
 
-    loggingService.addToAppLog("Acquired Certificates for DeviceID: ${fullRegistration!.deviceID}");
+    loggingService.addToAppLog("Acquired Certificates for Client ID: ${fullRegistration!.deviceID}");
 
     String vzString = paramController.networkType.value;
 
@@ -79,6 +94,7 @@ class EtxMqttAgent extends MqttAgent{
       vzString = "non-VZ";
     }
 
+    loggingService.addToAppLog("Determined network type as $vzString for Client ID: ${fullRegistration!.deviceID}");
     if(paramController.manualRegistrationMode.value || currentPosition == null){
       connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
@@ -86,6 +102,7 @@ class EtxMqttAgent extends MqttAgent{
       connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         currentPosition!.latitude, currentPosition!.longitude, vzString);
     }
+    loggingService.addToAppLog("Acquired connection URL for Client ID: ${fullRegistration!.deviceID}. Connection URL: $connectionUrl");
 
     int result = await mqttService.connect(connectionUrl!, registration);
     if (result != 0) {
@@ -94,6 +111,8 @@ class EtxMqttAgent extends MqttAgent{
 
     return 0;
   }
+
+  
 
   @override
   Future<int> setupSubscribers() async{
@@ -257,7 +276,7 @@ class EtxMqttAgent extends MqttAgent{
 
   void onClientInfo(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
     final recMess = message.payload as MqttPublishMessage;
-    loggingService.addToAppLog("On Client Info Decoded ${ascii.decode(recMess.payload.message)}");
+    loggingService.addToAppLog("ETX Session ID reported by ETX:  ${ascii.decode(recMess.payload.message)} - Note this may be different than the V2X-Mobile-Apps internal Session ID");
   }
 
 

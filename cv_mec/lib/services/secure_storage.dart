@@ -4,6 +4,7 @@ import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/gps_type.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:uuid/uuid.dart';
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
@@ -49,6 +50,7 @@ class SecureStorage {
 
   static const _keyTollingEnabled = "tollingEnabled";
   static const _keyShowTims = "showTims";
+  static const _keyUseGpsTimestampForSendTime = "useGpsTimestampForSendTime";
 
   static const _keyDisableTUMRetry = "disableTUMRetry";
 
@@ -57,7 +59,7 @@ class SecureStorage {
   static final _startPassword = dotenv.env['PASSWORD'] ?? "";
 
   static final _startISSMqttBrokerUrl = dotenv.env['ISS_MQTT_BROKER'] ?? "";
-  static final _startDeviceID = "";
+  static final _startDeviceID = Uuid().v4().substring(0, 16);
 
   static final _startVzMode = false;
   static final _startNotificationsEnabled = false;
@@ -84,6 +86,9 @@ class SecureStorage {
   static final _startShowTims = dotenv.env['SHOW_TIMS'] != null ? (dotenv.env['SHOW_TIMS']!.toLowerCase() == 'true') : true;
 
   static final _startDisableTUMRetry = dotenv.env['DISABLE_TUM_RETRY'] != null ? (dotenv.env['DISABLE_TUM_RETRY']!.toLowerCase() == 'true') : false;
+  static final _startUseGpsTimestampForSendTime = dotenv.env['USE_GPS_TIMESTAMP_FOR_SEND_TIME'] != null
+      ? (dotenv.env['USE_GPS_TIMESTAMP_FOR_SEND_TIME']!.toLowerCase() == 'true')
+      : false;
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -130,6 +135,8 @@ class SecureStorage {
   Future<bool> getTollingEnabled() async => (await _storage.read(key: _keyTollingEnabled) ?? _startTollingEnabled.toString()) == "true";
   Future<bool> getShowTims() async => (await _storage.read(key: _keyShowTims) ?? _startShowTims.toString()) == "true";
   Future<bool> getDisableTUMRetry() async => (await _storage.read(key: _keyDisableTUMRetry) ?? _startDisableTUMRetry.toString()) == "true";
+  Future<bool> getUseGpsTimestampForSendTime() async =>
+      (await _storage.read(key: _keyUseGpsTimestampForSendTime) ?? _startUseGpsTimestampForSendTime.toString()) == "true";
 
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
@@ -266,6 +273,14 @@ class SecureStorage {
       await _storage.write(key: _keyDisableTUMRetry, value: "true");
     } else {
       await _storage.write(key: _keyDisableTUMRetry, value: "false");
+    }
+  }
+
+  Future setUseGpsTimestampForSendTime(bool useGpsTimestampForSendTime) async {
+    if (useGpsTimestampForSendTime) {
+      await _storage.write(key: _keyUseGpsTimestampForSendTime, value: "true");
+    } else {
+      await _storage.write(key: _keyUseGpsTimestampForSendTime, value: "false");
     }
   }
 

@@ -21,7 +21,8 @@ class IssMqttAgent extends MqttAgent{
     DsrcMsgId.mapData.code,
     DsrcMsgId.travelerInformation.code,
     DsrcMsgId.signalStatusMessage.code,
-    DsrcMsgId.signalRequestMessage.code
+    DsrcMsgId.signalRequestMessage.code,
+    DsrcMsgId.rtcmCorrections.code
   ];
 
   final int bsmPSID = DsrcMsgId.basicSafetyMessage.code;

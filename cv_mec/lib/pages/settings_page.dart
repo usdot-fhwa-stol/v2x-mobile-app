@@ -387,6 +387,15 @@ class SettingsPage extends StatelessWidget {
         ),
         controller.showPathGPSType ? verticalSpaceSmall : Container(),
         controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
+        SwitchListTile(
+            title: const Text("Use GPS Timestamp for Sent Messages"),
+            value: controller.useGpsTimestampForSendTime.value,
+            onChanged: (value) async {
+              if (value != controller.useGpsTimestampForSendTime.value) {
+                controller.useGpsTimestampForSendTime.value = value;
+                await controller.secureStorage.setUseGpsTimestampForSendTime(value);
+              }
+            }),
         controller.showBroadcastRate ? Padding(
           padding: const EdgeInsets.only(bottom: 10.0),
           child: TextField(

@@ -22,36 +22,39 @@ class LoggingService extends GetxService {
     awsService = Get.find<S3Service>();
     timingService = Get.find<Timing>();
     initialized = true;
+    addToAppLog("Logging Service Initialized. Timestamps before this point use system time. Timestamps after this point use synchronized time from Timing service.");
   }
 
   void createAppDataQueue() {
-    late DateTime logTime;
+    appDataQueue = DataQueue("APP_LOG_${getLogTime().millisecondsSinceEpoch}.log");
+  }
+
+  DateTime getLogTime(){
     if (!initialized) {
-      logTime = DateTime.now().toUtc();
+      return DateTime.now().toUtc();
     } else {
-      logTime = timingService.getTime();
+      return timingService.getTime();
     }
-    appDataQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
   }
 
   void addToAppLog(String message) {
-    _logger.i("APPLOG: $message");
-    appDataQueue.addItem("$message\n");
+    _logger.i("INFO ${getLogTime()}: $message");
+    appDataQueue.addItem("INFO    ${getLogTime()}: $message\n");
   }
 
   void showError(String message) {
-    _logger.e("ERROR: $message");
-    addToAppLog("ERROR: $message");
+    _logger.e("ERROR ${getLogTime()}: $message");
+    appDataQueue.addItem("ERROR   ${getLogTime()}: $message\n");
   }
 
   void showWarning(String message) {
-    _logger.w("WARNING: $message");
-    addToAppLog("WARNING: $message");
+    _logger.w("WARNING ${getLogTime()}: $message");
+    appDataQueue.addItem("WARNING ${getLogTime()}: $message\n");
   }
 
   Future<bool> rotateAndUploadAppLog(String deviceID) async {
     addToAppLog(
-        "Rotating App Log File. Current Time ${timingService.getTime()}");
+        "Rotating App Log File.");
 
     String appLogPath = appDataQueue.filePath;
 
@@ -59,7 +62,7 @@ class LoggingService extends GetxService {
     createAppDataQueue();
 
     addToAppLog(
-        "App Log Rotation Complete. Current Time ${timingService.getTime()}");
+        "App Log Rotation Complete.");
 
     if (settingsController.deviceID.value.isNotEmpty) {
       return await awsService.uploadFile(
