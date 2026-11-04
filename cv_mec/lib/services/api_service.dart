@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cv_mec/models/etx/registration_retrieval_exception.dart';
 import 'package:cv_mec/services/logging_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
@@ -90,6 +91,9 @@ class ApiService extends GetxController {
     }
   }
 
+  // This function checks the registration for a given device ID and provides the full registration details if available.
+  // If registration is not found, it returns null to indicate that a new registration is needed.
+  // Throws RegistrationRetrievalException if there is an error while checking the registration.
   Future<FullRegistration?> checkRegistration(String deviceID) async {
     if(token == null){
       await setupToken();
@@ -107,17 +111,20 @@ class ApiService extends GetxController {
         FullRegistration registration = FullRegistration.fromJson(registrationDynamic);
 
         return registration;
+      } else if (response.statusCode == 404) {
+        loggingService.showError("Registration not found for Device ID: $deviceID");
+        return null; // Return null only if the registration is not available. This will indicate to caller that a new registration is needed.
       } else {
         loggingService.showError("Error Code ${response.statusCode} ${response.body.toString()}");
+        throw Exception("Error checking registration: ${response.statusCode} ${response.body.toString()}");
       }
     } on SocketException catch (e) {
       loggingService.showError("Caught exception when attempting to register app with API: $e");
-      return null;
+      throw RegistrationRetrievalException("Error checking registration: $e");
     } catch (e) {
       loggingService.showError("Unable to Register app for unknown reasons $e");
-      return null;
+      throw RegistrationRetrievalException("Unable to Register app for unknown reasons $e");
     }
-    return null;
   }
 
 

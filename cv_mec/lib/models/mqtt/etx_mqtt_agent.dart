@@ -4,6 +4,7 @@ import 'package:cv_mec/models/api_responses/mqtt_permission.dart';
 
 import 'package:cv_mec/models/etx/full_registration.dart';
 import 'package:cv_mec/models/etx/registration.dart';
+import 'package:cv_mec/models/etx/registration_retrieval_exception.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/utils.dart';
@@ -45,7 +46,13 @@ class EtxMqttAgent extends MqttAgent{
     if (await fileService.checkIfRegistrationExists()) {
       loggingService.addToAppLog("Loading Registration from Cache");
       registration = await fileService.getRegistration();
-      fullRegistration = await apiService.checkRegistration(registration.deviceID);
+      try{
+        fullRegistration = await apiService.checkRegistration(registration.deviceID);
+      } on RegistrationRetrievalException catch (e) {
+        loggingService.showError("Error retrieving full registration: $e");
+        // This case handles the scenario where the app fails to retrieve the full registration from the API. Connect should exit prematurely and allow the retry logic to attempt again later.
+        return 4;
+      }
     }
 
     if(registration == null || fullRegistration == null){
@@ -53,13 +60,19 @@ class EtxMqttAgent extends MqttAgent{
       registration = await apiService.getRegistration(paramController.clientType.value, paramController.clientSubtype.value);
       if(registration != null){
         loggingService.addToAppLog("Successfully retrieved registration from Partner API for Device ID: ${registration.deviceID}");
-        fullRegistration = await apiService.checkRegistration(registration!.deviceID);
+        try{
+          fullRegistration = await apiService.checkRegistration(registration.deviceID);
+        } on RegistrationRetrievalException catch (e) {
+          loggingService.showError("Error retrieving full registration: $e");
+          return 5;
+        }
       }else{
         loggingService.showWarning("Unable to retrieve registration information from partner API");
         return 1;
       }
-      
     }
+      
+    
     
     if(fullRegistration != null){
       loggingService.addToAppLog("Successfully retrieved full registration for Device ID: ${fullRegistration!.deviceID}");
@@ -98,6 +111,8 @@ class EtxMqttAgent extends MqttAgent{
 
     return 0;
   }
+
+  
 
   @override
   Future<int> setupSubscribers() async{
