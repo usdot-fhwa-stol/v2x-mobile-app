@@ -49,9 +49,10 @@ class EtxMqttAgent extends MqttAgent{
     }
 
     if(registration == null || fullRegistration == null){
-      loggingService.addToAppLog("Loading Registration from Partner API");
+      loggingService.addToAppLog("Unable to retrieve full registration from cache. Registration Status: ${registration != null ? "Valid" : 'Unknown'}, Full Registration Status ${fullRegistration!= null ? "Valid" : 'Unknown'}. Loading Registration from Partner API");
       registration = await apiService.getRegistration(paramController.clientType.value, paramController.clientSubtype.value);
       if(registration != null){
+        loggingService.addToAppLog("Successfully retrieved registration from Partner API for Device ID: ${registration.deviceID}");
         fullRegistration = await apiService.checkRegistration(registration!.deviceID);
       }else{
         loggingService.showWarning("Unable to retrieve registration information from partner API");
@@ -61,6 +62,7 @@ class EtxMqttAgent extends MqttAgent{
     }
     
     if(fullRegistration != null){
+      loggingService.addToAppLog("Successfully retrieved full registration for Device ID: ${fullRegistration!.deviceID}");
       fileService.saveRegistration(registration);
     }else{
       loggingService.showWarning("Unable to retrieve full registration information from partner API");
@@ -69,7 +71,7 @@ class EtxMqttAgent extends MqttAgent{
 
 
 
-    loggingService.addToAppLog("Acquired Certificates for DeviceID: ${fullRegistration!.deviceID}");
+    loggingService.addToAppLog("Acquired Certificates for Client ID: ${fullRegistration!.deviceID}");
 
     String vzString = paramController.networkType.value;
 
@@ -79,6 +81,7 @@ class EtxMqttAgent extends MqttAgent{
       vzString = "non-VZ";
     }
 
+    loggingService.addToAppLog("Determined network type as $vzString for Client ID: ${fullRegistration!.deviceID}");
     if(paramController.manualRegistrationMode.value || currentPosition == null){
       connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
@@ -86,6 +89,7 @@ class EtxMqttAgent extends MqttAgent{
       connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         currentPosition!.latitude, currentPosition!.longitude, vzString);
     }
+    loggingService.addToAppLog("Acquired connection URL for Client ID: ${fullRegistration!.deviceID}. Connection URL: $connectionUrl");
 
     int result = await mqttService.connect(connectionUrl!, registration);
     if (result != 0) {
