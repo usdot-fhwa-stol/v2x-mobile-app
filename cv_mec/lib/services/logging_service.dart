@@ -5,11 +5,19 @@ import 'package:cv_mec/services/timing.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
+enum LoggingLevel {
+  debug,
+  info,
+  warning,
+  error
+}
+
 class LoggingService extends GetxService {
   late Timing timingService;
   late SettingsController settingsController;
   late S3Service awsService;
   final Logger _logger = Logger();
+  LoggingLevel loggingLevel = LoggingLevel.info;
   late DataQueue appDataQueue;
   bool initialized = false;
 
@@ -21,6 +29,7 @@ class LoggingService extends GetxService {
     settingsController = Get.find<SettingsController>();
     awsService = Get.find<S3Service>();
     timingService = Get.find<Timing>();
+    loggingLevel = parseLoggingLevel(settingsController.loggingLevel);
     initialized = true;
     addToAppLog("Logging Service Initialized. Timestamps before this point use system time. Timestamps after this point use synchronized time from Timing service.");
   }
@@ -37,19 +46,79 @@ class LoggingService extends GetxService {
     }
   }
 
-  void addToAppLog(String message) {
+  LoggingLevel parseLoggingLevel(String level) {
+    switch (level.toLowerCase()) {
+      case 'debug':
+        return LoggingLevel.debug;
+      case 'warning':
+      case 'warn':
+        return LoggingLevel.warning;
+      case 'error':
+        return LoggingLevel.error;
+      case 'info':
+      default:
+        return LoggingLevel.info;
+    }
+  }
+
+  bool shouldLog(LoggingLevel level) {
+    return level.index >= loggingLevel.index;
+  }
+
+  void logInfo(String message) {
+    if (!shouldLog(LoggingLevel.info)) {
+      return;
+    }
     _logger.i("INFO ${getLogTime()}: $message");
     appDataQueue.addItem("INFO    ${getLogTime()}: $message\n");
   }
 
-  void showError(String message) {
+  void logDebug(String message) {
+    if (!shouldLog(LoggingLevel.debug)) {
+      return;
+    }
+    _logger.d("DEBUG ${getLogTime()}: $message");
+    appDataQueue.addItem("DEBUG   ${getLogTime()}: $message\n");
+  }
+
+  void logError(String message) {
+    if (!shouldLog(LoggingLevel.error)) {
+      return;
+    }
     _logger.e("ERROR ${getLogTime()}: $message");
     appDataQueue.addItem("ERROR   ${getLogTime()}: $message\n");
   }
 
-  void showWarning(String message) {
+  void logWarning(String message) {
+    if (!shouldLog(LoggingLevel.warning)) {
+      return;
+    }
     _logger.w("WARNING ${getLogTime()}: $message");
     appDataQueue.addItem("WARNING ${getLogTime()}: $message\n");
+  }
+
+  @deprecated
+  /// Use [logInfo] instead.
+  void addToAppLog(String message) {
+    logInfo(message);
+  }
+
+  @deprecated
+  /// Use [logDebug] instead.
+  void addToDebugLog(String message) {
+    logDebug(message);
+  }
+
+  @deprecated
+  /// Use [logError] instead.
+  void showError(String message) {
+    logError(message);
+  }
+
+  @deprecated
+  /// Use [logWarning] instead.
+  void showWarning(String message) {
+    logWarning(message);
   }
 
   Future<bool> rotateAndUploadAppLog(String deviceID) async {
