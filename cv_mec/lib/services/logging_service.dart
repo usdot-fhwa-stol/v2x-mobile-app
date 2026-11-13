@@ -31,7 +31,9 @@ class LoggingService extends GetxService {
     timingService = Get.find<Timing>();
     loggingLevel = parseLoggingLevel(settingsController.loggingLevel);
     initialized = true;
-    addToAppLog("Logging Service Initialized. Timestamps before this point use system time. Timestamps after this point use synchronized time from Timing service.");
+    logInfo("Logging Service Initialized. Timestamps before this point use system time. Timestamps after this point use synchronized time from Timing service.");
+    logInfo("Logging level set to $loggingLevel.");
+    
   }
 
   void createAppDataQueue() {
@@ -122,7 +124,7 @@ class LoggingService extends GetxService {
   }
 
   Future<bool> rotateAndUploadAppLog(String deviceID) async {
-    addToAppLog(
+    logInfo(
         "Rotating App Log File.");
 
     String appLogPath = appDataQueue.filePath;
@@ -130,7 +132,7 @@ class LoggingService extends GetxService {
     // Assigns new Data Queue objects for the app log. Rotate before upload to ensure no data is lost
     createAppDataQueue();
 
-    addToAppLog(
+    logInfo(
         "App Log Rotation Complete.");
 
     if (settingsController.deviceID.value.isNotEmpty) {

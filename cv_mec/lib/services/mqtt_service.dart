@@ -42,7 +42,7 @@ class MqttService extends GetxService {
     deviceId = settingsController.deviceID.value;
     clientId = 'v2x-mobile-app-$deviceId';
     sessionId = 'v2x-mobile-app-session-${const Uuid().v4().substring(0, 16)}';
-    loggingService.addToAppLog("MQTT Service::Connecting to: $connectionURL, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
+    loggingService.logInfo("MQTT Service::Connecting to: $connectionURL, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
     pongCount=0;
     try {
       
@@ -86,28 +86,28 @@ class MqttService extends GetxService {
 
       client!.pongCallback = pong;
     } catch (e) {
-      loggingService.showError('MQTT Service::Failed to Configure MQTT Connection. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId with error: $e');
+      loggingService.logError('MQTT Service::Failed to Configure MQTT Connection. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId with error: $e');
       return 1;
     }
 
     try {
-      loggingService.addToAppLog("MQTT Service::Attempting to connect to $connectionURL, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
+      loggingService.logDebug("MQTT Service::Attempting to connect to $connectionURL, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
       MqttClientConnectionStatus? status = await client!.connect();
-      loggingService.addToAppLog("MQTT Service::Connection attempt complete with status: $status, Client ID: $clientId, Session ID: $sessionId");
+      loggingService.logDebug("MQTT Service::Connection attempt complete with status: $status, Client ID: $clientId, Session ID: $sessionId");
     } on NoConnectionException catch (e) {
       // Raised by the client when connection fails.
-      loggingService.showError('MQTT Service::Failed to connect client exception - $e, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+      loggingService.logError('MQTT Service::Failed to connect client exception - $e, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
     } on SocketException catch (e) {
       // Raised by the socket layer
-      loggingService.showError('MQTT Service::Connection failed with socket exception - $e, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+      loggingService.logError('MQTT Service::Connection failed with socket exception - $e, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
     }
 
     /// Check we are connected
     if ((client!.connectionStatus?.state ?? MqttConnectionState.disconnected) == MqttConnectionState.connected) {
-      loggingService.addToAppLog('MQTT Service::Mosquitto client connected, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+      loggingService.logDebug('MQTT Service::Mosquitto client connected, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
     } else {
       /// Use status here rather than state if you also want the broker return code.
-      loggingService.showError('MQTT Service::ERROR Mosquitto client connection failed - disconnecting, status is ${client!.connectionStatus}, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+      loggingService.logError('MQTT Service::ERROR Mosquitto client connection failed - disconnecting, status is ${client!.connectionStatus}, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
       client!.disconnect();
       return 2;
     }
@@ -125,16 +125,16 @@ class MqttService extends GetxService {
               }
             }
         }else{
-          loggingService.showWarning("MQTT Service::Received Null Message List from Broker at $recTime, Client ID: $clientId, Session ID: $sessionId");
+          loggingService.logWarning("MQTT Service::Received Null Message List from Broker at $recTime, Client ID: $clientId, Session ID: $sessionId");
         }
       });
     }else{
-      loggingService.showWarning("MQTT Service::Client Updates Stream is Null. No Messages will be received, Client ID: $clientId, Session ID: $sessionId");
+      loggingService.logWarning("MQTT Service::Client Updates Stream is Null. No Messages will be received, Client ID: $clientId, Session ID: $sessionId");
     }
 
    
 
-    loggingService.addToAppLog("Completed MQTT Connection to $connectionURL, Client ID: $clientId, Session ID: $sessionId");
+    loggingService.logInfo("Completed MQTT Connection to $connectionURL, Client ID: $clientId, Session ID: $sessionId");
 
     return 0;
   }
@@ -164,7 +164,7 @@ class MqttService extends GetxService {
     final status = client?.connectionStatus;
     final origin = status?.disconnectionOrigin;
 
-    loggingService.showWarning(
+    loggingService.logWarning(
       'MQTT Service::Disconnected. '
       'Origin: $origin, '
       'State: ${status?.state}'
@@ -172,35 +172,35 @@ class MqttService extends GetxService {
 
     switch (origin) {
       case MqttDisconnectionOrigin.solicited:
-        loggingService.addToAppLog(
+        loggingService.logInfo(
           'MQTT Service::Client initiated the disconnection - This is normal if the app was closed, or the user switched away from the map page in the app. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId'
         );
         break;
 
       case MqttDisconnectionOrigin.unsolicited:
-        loggingService.showWarning(
+        loggingService.logWarning(
           'MQTT Service::Unexpected disconnection. - This may indicate a network issue or broker problem. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId'
         );
         break;
 
       case MqttDisconnectionOrigin.none:
-        loggingService.showWarning(
+        loggingService.logWarning(
           'MQTT Service::Disconnection origin is None. - This should not happen, and may indicate that the client was never connected properly to the broker. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId'
         );
         break;
       case null:
-        loggingService.showWarning(
+        loggingService.logWarning(
           'MQTT Service::Disconnection origin is Null. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId'
         );
         break;
     }
 
     if (pongCount == 3) {
-      loggingService.addToAppLog(
+      loggingService.logInfo(
         'MQTT Service::Pong count is correct, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId'
       );
     } else {
-      loggingService.showWarning(
+      loggingService.logWarning(
         'MQTT Service::Pong count is $pongCount, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId'
       );
     }
@@ -208,16 +208,16 @@ class MqttService extends GetxService {
   }
 
   void onConnected() {
-    loggingService.addToAppLog('MQTT Service::OnConnected client callback - Client connection was successful for Client ID: $clientId, Session ID: $sessionId');
+    loggingService.logInfo('MQTT Service::OnConnected client callback - Client connection was successful for Client ID: $clientId, Session ID: $sessionId');
   }
 
   void pong() {
     pongCount++;
-    loggingService.addToAppLog('MQTT Service::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()} Current number of Subscriptions: ${subscriberList.keys.length}, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+    loggingService.logInfo('MQTT Service::Ping response client callback invoked Keep Alive Count: $pongCount ${timingService.getTime()} Current number of Subscriptions: ${subscriberList.keys.length}, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-    loggingService.addToAppLog("MQTT Service::Subscribing to Topic: $topicName, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
+    loggingService.logInfo("MQTT Service::Subscribing to Topic: $topicName, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId");
     int retryCount = 0;
 
     if (client != null) {
@@ -225,7 +225,7 @@ class MqttService extends GetxService {
         await MqttUtilities.asyncSleep(1);
         retryCount += 1;
         if (retryCount > 3) {
-          loggingService.showError('MQTT Service::Unable to Subscribe to Topic. Client is not Connected to Broker');
+          loggingService.logError('MQTT Service::Unable to Subscribe to Topic. Client is not Connected to Broker');
           return;
         }
       }
@@ -233,17 +233,17 @@ class MqttService extends GetxService {
       client!.subscribe(topicName, MqttQos.atMostOnce);
       subscriberList[topicName] = callback;
     } else {
-      loggingService.showWarning("Unable to subscribe to $topicName. Client is null");
+      loggingService.logWarning("Unable to subscribe to $topicName. Client is null");
     }
   }
 
   void unsubscribe(String topicName) {
     if (client != null && subscriberList.containsKey(topicName)) {
-      loggingService.addToAppLog("MQTT Service::Unsubscribing from Topic: $topicName");
+      loggingService.logInfo("MQTT Service::Unsubscribing from Topic: $topicName");
       client!.unsubscribe(topicName);
       subscriberList.remove(topicName);
     } else {
-      loggingService.showWarning('MQTT Service::Tried to unsubscribe from $topicName, but no active subscription exists.');
+      loggingService.logWarning('MQTT Service::Tried to unsubscribe from $topicName, but no active subscription exists.');
     }
   }
 
@@ -253,7 +253,7 @@ class MqttService extends GetxService {
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
       return client!.publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
     } else {
-      loggingService.showError('MQTT Service::Unable to Send Message. Client is not connected. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+      loggingService.logError('MQTT Service::Unable to Send Message. Client is not connected. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
       return -1;
     }
   }
@@ -264,20 +264,20 @@ class MqttService extends GetxService {
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
       return client!.publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
     } else {
-      loggingService.showError('MQTT Service::Unable to Send Message. Client is not connected. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
+      loggingService.logError('MQTT Service::Unable to Send Message. Client is not connected. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
       return -1;
     }
   }
 
   void disconnect() {
-    loggingService.addToAppLog("Attempting to Disconnect MQTT Client");
+    loggingService.logInfo("Attempting to Disconnect MQTT Client");
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
-      loggingService.addToAppLog('MQTT Service::Disconnecting from MQTT Broker');
+      loggingService.logInfo('MQTT Service::Disconnecting from MQTT Broker');
       client!.disconnect();
       subscriberList.clear();
-      loggingService.addToAppLog('MQTT Service::Disconnection Complete');
+      loggingService.logInfo('MQTT Service::Disconnection Complete');
     } else {
-      loggingService.showWarning('MQTT Service::Cannot Disconnect. MQTT Client Already Disconnected');
+      loggingService.logWarning('MQTT Service::Cannot Disconnect. MQTT Client Already Disconnected');
     }
   }
 }
