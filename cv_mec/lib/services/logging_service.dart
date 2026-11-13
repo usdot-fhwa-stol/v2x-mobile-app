@@ -106,12 +106,6 @@ class LoggingService extends GetxService {
   }
 
   @deprecated
-  /// Use [logDebug] instead.
-  void addToDebugLog(String message) {
-    logDebug(message);
-  }
-
-  @deprecated
   /// Use [logError] instead.
   void showError(String message) {
     logError(message);
