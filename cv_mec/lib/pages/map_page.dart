@@ -1125,10 +1125,10 @@ class MapState extends State<MapPage> with RouteAware {
         );
         break;
       case MsgType.RTCM:
-        print("RTCM Message Received: $hex");
+        loggingService.logInfo("RTCM Message Received: $hex");
         break;
       default:
-        loggingService.addToAppLog("Unable to Identify Message Type: $msgType $hex");
+        loggingService.logWarning("Unable to Identify Message Type: $msgType $hex");
     }
   }
 
