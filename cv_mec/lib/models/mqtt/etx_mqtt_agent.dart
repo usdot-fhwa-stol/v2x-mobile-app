@@ -38,6 +38,15 @@ class EtxMqttAgent extends MqttAgent{
 
   EtxMqttAgent(Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction): super("ETX", processingFunction);
 
+  /// Connects this ETX MQTT agent.
+  ///
+  /// Returns:
+  /// - `0`: Connected successfully.
+  /// - `1`: Registration could not be retrieved from Partner API.
+  /// - `2`: Full registration is unavailable after registration lookup.
+  /// - `3`: MQTT broker connection failed. This occurs when the agent is unable to establish a connection with the MQTT broker.
+  /// - `4`: Cached registration exists, but full registration lookup failed. This is generally caused by a weak network connection or temporary API unavailability.
+  /// - `5`: Partner registration succeeded, but full registration lookup failed.
   @override
   Future<int> connect() async{
 
@@ -113,7 +122,11 @@ class EtxMqttAgent extends MqttAgent{
   }
 
   
-
+  /// Sets up the MQTT topic subscribers for this ETX MQTT agent.
+  ///
+  /// Returns:
+  /// - `0`: Subscribers set up successfully.
+  /// - `1`: Failed to retrieve ACL rules from Partner API. App will attempt to subscribe to the fallback topic set. This case is uncommon and indicates a potential issue with the Partner API or network connectivity. Depending on ETX ACL rules, it is likely that the ETX connection will fail and the app will retry the ETX connection entirely.
   @override
   Future<int> setupSubscribers() async{
 
@@ -142,6 +155,15 @@ class EtxMqttAgent extends MqttAgent{
     return 0;
   }
 
+  /// Sends a Message via the ETX MQTT agent.
+  ///
+  /// Parameters:
+  /// - `message`: The message payload as a list of bytes.
+  /// - `messageType`: The type of message being sent (e.g., BSM, PSM, TUM).
+  /// - `sendTime`: The timestamp indicating when the message is sent.
+  ///
+  /// Returns:
+  /// - The MQTT topic to which the message was published.
   @override 
   String sendMessage(List<int> message, MsgType messageType, DateTime sendTime){
 
@@ -368,6 +390,11 @@ class EtxMqttAgent extends MqttAgent{
     return messageTypes;
   }
 
+
+  /// Updates the MQTT topic subscribers for this ETX MQTT agent. This function is not required by the ETX agent and will always succeed with result 0
+  ///
+  /// Returns:
+  /// - `0`: This function always returns 0 for the ETX broker and performs no operations.
   @override
   Future<int> updateSubscribers() async{
     return 0;

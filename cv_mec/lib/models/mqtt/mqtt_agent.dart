@@ -22,7 +22,7 @@ class MqttAgent{
 
   MqttAgent(this.agentName, this.processingFunction){}
 
-  // Template function to connect this agent to the specified broker. 
+  // Template function to connect this agent to the specified broker.
   Future<int> connect() async{
     throw UnimplementedError('connect method not implemented for mqtt agent $agentName');
   }

@@ -28,6 +28,16 @@ class MqttService extends GetxService {
   late String clientId = '';
   String sessionId = '';
 
+  /// Connects to the specified MQTT broker using the provided connection URL and optional registration information.
+  ///
+  /// Parameters:
+  /// - `connectionURL`: The URL of the MQTT broker to connect to.
+  /// - `registration`: Optional registration information containing device ID and certificates.
+  ///
+  /// Returns:
+  /// - `0`: Connected successfully.
+  /// - `1`: Failed to configure the connection to the MQTT broker. This is likely do to invalid certificates, or bad connection parameters
+  /// - `2`: Failed to connect to the MQTT broker after configuration. This means the connection parameters are valid, but the broker could not be reached or refused the connection.
   Future<int> connect(String connectionURL, Registration? registration) async {
     deviceId = settingsController.deviceID.value;
     clientId = 'v2x-mobile-app-$deviceId';
@@ -77,7 +87,7 @@ class MqttService extends GetxService {
       client!.pongCallback = pong;
     } catch (e) {
       loggingService.showError('MQTT Service::Failed to Configure MQTT Connection. Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId with error: $e');
-      return -1;
+      return 1;
     }
 
     try {
@@ -99,7 +109,7 @@ class MqttService extends GetxService {
       /// Use status here rather than state if you also want the broker return code.
       loggingService.showError('MQTT Service::ERROR Mosquitto client connection failed - disconnecting, status is ${client!.connectionStatus}, Device ID: $deviceId, Client ID: $clientId, Session ID: $sessionId');
       client!.disconnect();
-      return -1;
+      return 2;
     }
 
     if(client!.updates != null){
