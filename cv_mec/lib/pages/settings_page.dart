@@ -135,6 +135,30 @@ class SettingsPage extends StatelessWidget {
     return shouldDisable ?? false;
   }
 
+  Future<bool> confirmEnableEtxWhenBsmDisabled() async {
+    final shouldEnable = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Enable ETX MQTT Broker?'),
+        content: const Text(
+          'The ETX MQTT Broker does not work properly when BSM / PSM Message Sending is disabled. '
+          'Are you sure you want to enable ETX MQTT Broker while BSM / PSM Message Sending is disabled?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Enable'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    return shouldEnable ?? false;
+  }
+
   configurationSection() {
     if (Platform.isLinux) {
       //don't show mobile GPS option on Linux since it's not supported
@@ -552,6 +576,13 @@ class SettingsPage extends StatelessWidget {
                     value: controller.enableEtxMqtt.value,
                     onChanged: (value) async {
                       if (value != controller.enableEtxMqtt.value) {
+                        if (value && !controller.enableBsmPsmMessages.value) {
+                          final confirmed =
+                              await confirmEnableEtxWhenBsmDisabled();
+                          if (!confirmed) {
+                            return;
+                          }
+                        }
                         controller.enableEtxMqtt.value = value;
                         await controller.secureStorage.setEtxMqttEnabled(value);
                         controller.changedBrokerSettings.value = true;
