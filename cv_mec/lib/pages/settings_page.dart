@@ -473,21 +473,24 @@ class SettingsPage extends StatelessWidget {
                     .setUseGpsTimestampForSendTime(value);
               }
             }),
-        SwitchListTile(
-            title: const Text("Enable BSM / PSM Message Sending"),
-            value: controller.enableBsmPsmMessages.value,
-            onChanged: (value) async {
-              if (value != controller.enableBsmPsmMessages.value) {
-                if (!value && controller.enableEtxMqtt.value) {
-                  final confirmed = await confirmDisableBsmWhenEtxEnabled();
-                  if (!confirmed) {
-                    return;
+        controller.showBsmPsmMessageSending
+            ? SwitchListTile(
+                title: const Text("Enable BSM / PSM Message Sending"),
+                value: controller.enableBsmPsmMessages.value,
+                onChanged: (value) async {
+                  if (value != controller.enableBsmPsmMessages.value) {
+                    if (!value && controller.enableEtxMqtt.value) {
+                      final confirmed = await confirmDisableBsmWhenEtxEnabled();
+                      if (!confirmed) {
+                        return;
+                      }
+                    }
+                    controller.enableBsmPsmMessages.value = value;
+                    await controller.secureStorage
+                        .setEnableBsmPsmMessages(value);
                   }
-                }
-                controller.enableBsmPsmMessages.value = value;
-                await controller.secureStorage.setEnableBsmPsmMessages(value);
-              }
-            }),
+                })
+            : Container(),
         (controller.showBroadcastRate && controller.enableBsmPsmMessages.value)
             ? Padding(
                 padding: const EdgeInsets.only(bottom: 10.0),

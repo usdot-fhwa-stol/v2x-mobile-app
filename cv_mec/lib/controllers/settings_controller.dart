@@ -35,6 +35,7 @@ class SettingsController extends GetxController {
   bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showBsmPsmMessageSending = (dotenv.env['SHOW_BSM_PSM_MESSAGE_SENDING'] ?? 'true').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
