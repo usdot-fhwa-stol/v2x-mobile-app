@@ -58,8 +58,7 @@ class Pc5MqttAgent extends MqttAgent{
       return "";
     }
 
-    // Ettifos topics use the hex PSID without leading zeros. e.g. BSM (0x20) -> Ettifos/V2X/req/J2735/20
-    String topic = "$topicPrefix/req/J2735/${psid.toRadixString(16)}";
+    String topic = "$topicPrefix/req/J2735/$psid";
 
     Uint8Buffer buffer = Uint8Buffer();
     buffer.addAll(messageFrame);
