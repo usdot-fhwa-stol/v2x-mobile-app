@@ -22,7 +22,7 @@ class MqttAgent{
 
   MqttAgent(this.agentName, this.processingFunction){}
 
-  // Template function to connect this agent to the specified broker. 
+  // Template function to connect this agent to the specified broker.
   Future<int> connect() async{
     throw UnimplementedError('connect method not implemented for mqtt agent $agentName');
   }
@@ -51,7 +51,7 @@ class MqttAgent{
         reconnectAttempts++;
         
         if(!isConnected()){
-          int delayMilliseconds = min(1000 * (1 << reconnectAttempts), 60000); // Exponential backoff: 2s, 4s, 8s, 16s, max 60s
+          int delayMilliseconds = 1000;
           loggingService.addToAppLog("Reconnection attempt $reconnectAttempts failed. Waiting ${delayMilliseconds}ms before retry...");
           await Future.delayed(Duration(milliseconds: delayMilliseconds));
         }

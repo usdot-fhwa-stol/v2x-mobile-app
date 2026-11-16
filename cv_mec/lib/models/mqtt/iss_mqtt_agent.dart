@@ -21,7 +21,8 @@ class IssMqttAgent extends MqttAgent{
     DsrcMsgId.mapData.code,
     DsrcMsgId.travelerInformation.code,
     DsrcMsgId.signalStatusMessage.code,
-    DsrcMsgId.signalRequestMessage.code
+    DsrcMsgId.signalRequestMessage.code,
+    DsrcMsgId.rtcmCorrections.code
   ];
 
   final int bsmPSID = DsrcMsgId.basicSafetyMessage.code;
@@ -29,6 +30,11 @@ class IssMqttAgent extends MqttAgent{
   SettingsController settingsController = Get.find<SettingsController>();
   LoggingService loggingService = Get.find<LoggingService>();
 
+  /// Connects this ETX MQTT agent.
+  ///
+  /// Returns:
+  /// - `0`: Connected successfully.
+  /// - `1`: MQTT broker connection failed. This occurs when the agent is unable to establish a connection with the MQTT broker.
   @override
   Future<int> connect() async{
     connectionUrl = settingsController.issMqttBrokerUrl.value;
@@ -43,6 +49,11 @@ class IssMqttAgent extends MqttAgent{
     return 0;
   }
 
+  /// Updates the MQTT topic subscribers for this ISS MQTT agent based on the current geohash.
+  ///
+  /// Returns:
+  /// - `0`: Subscribers updated successfully.
+  /// - `1`: Geohash is too short or an error occurred during the update process.
   @override
   Future<int> setupSubscribers() async{
     currentGeohash = geohashInBaseThirtyTwo(currentPosition?.latitude ?? 0.0, currentPosition?.longitude ?? 0.0);
@@ -61,6 +72,11 @@ class IssMqttAgent extends MqttAgent{
     return 0;
   }
 
+  /// Updates the MQTT topic subscribers for this ISS MQTT agent based on the current geohash.
+  ///
+  /// Returns:
+  /// - `0`: Subscribers updated successfully.
+  /// - `1`: Geohash is too short or an error occurred during the update process.
   @override
   Future<int> updateSubscribers() async{
     if (isConnected()) {
@@ -95,6 +111,15 @@ class IssMqttAgent extends MqttAgent{
     return 0;
   }
 
+  /// Sends a Message via the ISS MQTT agent.
+  ///
+  /// Parameters:
+  /// - `message`: The message payload as a list of bytes.
+  /// - `messageType`: The type of message being sent (e.g., BSM, PSM).
+  /// - `sendTime`: The timestamp indicating when the message is sent.
+  ///
+  /// Returns:
+  /// - The MQTT topic to which the message was published.
   @override 
   String sendMessage(List<int> message, MsgType messageType, DateTime sendTime){
     Uint8Buffer buffer = Uint8Buffer();

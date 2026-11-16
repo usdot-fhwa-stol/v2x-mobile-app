@@ -40,6 +40,7 @@ class ASNService extends GetxController {
   final String TAM_START_FLAG = "0025";  
   final String TUM_START_FLAG = "0026";
   final String TUMACK_START_FLAG = "0027";
+  final String RTCM_START_FLAG = "001C";
 
   late final List<String> checkStartFlags;
   late final Map<String, MsgType> messageTypeMap;
@@ -68,6 +69,7 @@ class ASNService extends GetxController {
       TAM_START_FLAG, 
       TUM_START_FLAG,
       TUMACK_START_FLAG,
+      RTCM_START_FLAG
     ];
 
     messageTypeMap = {
@@ -82,6 +84,7 @@ class ASNService extends GetxController {
       TAM_START_FLAG: MsgType.TAM,  
       TUM_START_FLAG: MsgType.TUM,
       TUMACK_START_FLAG: MsgType.TUMACK,
+      RTCM_START_FLAG: MsgType.RTCM,
     };
   }
 

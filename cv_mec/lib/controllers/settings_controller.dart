@@ -53,6 +53,7 @@ class SettingsController extends GetxController {
   bool showTimsSettings = (dotenv.env['SHOW_TIMS_SETTINGS'] ?? 'false').toLowerCase() == 'true';
 
   bool latencyLoggingEnabled = (dotenv.env['ENABLE_LATENCY_LOGGING'] ?? 'false').toLowerCase() == 'true';
+  String loggingLevel = (dotenv.env['LOGGING_LEVEL'] ?? 'info').toLowerCase();
 
   Rx<bool> darkModeState = Get.isDarkMode.obs;
   Rx<bool> developerMode = false.obs;
@@ -87,6 +88,7 @@ class SettingsController extends GetxController {
   Rx<double> staticGPSLongitude = 0.0.obs;
 
   Rx<bool> disableTUMRetry = false.obs;
+  Rx<bool> useGpsTimestampForSendTime = false.obs;
 
   //GPS Mode
   Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
@@ -140,6 +142,7 @@ class SettingsController extends GetxController {
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
     broadcastRate.value = await secureStorage.getBroadcastRate();
     gpsType.value = toGPSType(await secureStorage.getGPSType());
+    useGpsTimestampForSendTime.value = await secureStorage.getUseGpsTimestampForSendTime();
 
     if (gpsType.value == GPSType.mobile && Platform.isLinux) {
       gpsType.value = GPSType.cradle;
