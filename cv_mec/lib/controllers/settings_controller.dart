@@ -80,6 +80,7 @@ class SettingsController extends GetxController {
   Rx<bool> readMessages = false.obs;
   Rx<bool> enableIssMqtt = false.obs;
   Rx<bool> enableEtxMqtt = false.obs;
+  Rx<bool> enableBsmPsmMessages = true.obs;
   RxInt broadcastRate = 10.obs;
 
   RxList<String> availablePaths = <String>[].obs;
@@ -140,6 +141,7 @@ class SettingsController extends GetxController {
     issMqttBrokerUrl.value = await secureStorage.getISSMqttBrokerUrl();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
+    enableBsmPsmMessages.value = await secureStorage.getEnableBsmPsmMessages();
     broadcastRate.value = await secureStorage.getBroadcastRate();
     gpsType.value = toGPSType(await secureStorage.getGPSType());
     useGpsTimestampForSendTime.value = await secureStorage.getUseGpsTimestampForSendTime();

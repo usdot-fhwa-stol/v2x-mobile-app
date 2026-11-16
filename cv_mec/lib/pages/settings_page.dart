@@ -396,7 +396,16 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setUseGpsTimestampForSendTime(value);
               }
             }),
-        controller.showBroadcastRate ? Padding(
+        SwitchListTile(
+            title: const Text("Enable BSM / PSM Message Sending"),
+            value: controller.enableBsmPsmMessages.value,
+            onChanged: (value) async {
+              if (value != controller.enableBsmPsmMessages.value) {
+                controller.enableBsmPsmMessages.value = value;
+                await controller.secureStorage.setEnableBsmPsmMessages(value);
+              }
+            }),
+        (controller.showBroadcastRate && controller.enableBsmPsmMessages.value) ? Padding(
           padding: const EdgeInsets.only(bottom: 10.0),
           child: TextField(
             decoration: const InputDecoration(labelText: 'Broadcast Rate'),
