@@ -38,36 +38,69 @@ This application requires multiple environment variables in order to connect to 
 cp sample.env .env
 ```
 
-| Variable              | Purpose                                                           | Default Value | Required | Changeable in App|
-| :-------------------- | :---------------------------------------------------------------- | :------------ | -------- | -------- |
-| NOAA_GEOMAG_API_TOKEN | Allow the App to query current magnetic offsets                   | zNEw7         | Yes      | No |
-| MAPBOX_ACCESS_TOKEN   | Required for Rendering MAP tiles. Acquired from MapBox account    |               | Yes      | No |
-| API_ENDPOINT          | Location of the CV-MEC partner API.                               |               | Yes      | Yes |
-| USERNAME              | Username for the app to login to the partner API with             |               | Yes      | Yes |
-| PASSWORD              | Password for the app to login to the partner API with             |               | Yes      | Yes |
-| S3_ACCESS_KEY         | An AWS IAM access key for connecting to an S3 Bucket              |               | No       | No |
-| S3_SECRET_KEY         | An AWS IAM secret Key for connecting to an S3 Bucket              |               | No       | No |
-| S3_BUCKET_NAME        | The Name of the S3 Bucket to offload log files to                 |               | No       | No |
-| S3_REGION             | The AWS region hosting the S3 Bucket and IAM credentials          |               | No       | No |
-| S3_DESTINATION        | A subfolder within the Bucket to Place Log files                  |               | No       | No |
-| PC5_MQTT_BROKER       | Ettifos OBU Server location. Should be formatted as mqtt://<hostname>:1883 | | No | Yes |
-| ENABLE_ISS_BROKER     | Default for if the ISS broker should be used or not               | false         | No       | Yes |
-| ENABLE_ETX_BROKER     | Default for if the ETX broker should be used or not               | false         | No       | Yes |
-| Enable_PC5_BROKER     | Default for if the PC% broker should be used or not               | false         | No       | Yes |
-| GPS_TYPE              | Specifies the default GPS type to use within the app, valid values: mobile, obu, cradle | | No | Yes |
-| GPS_USERNAME | If using a remote GPS (Cradlepoint), username to use when connecting | | No | Yes |
-| GPS_PASSWORD | If using a remote GPS (Cradlepoint), password to use when connecting | | No | Yes |
-| GPS_IP | If using a remote GPS (Cradlepoint), the IP address of the GPSD server | | No | Yes |
-| OBU_IP | If using an OBU GPS (Ettifos), the IP address of the OBU | | No |  Yes |
-| ISS_SCMS_TOKEN | Token for SCMS if signing is enabled. Will automatically enable signing if set | | No | Yes |
-| BROADCAST_RATE | Number of messages to broadcast each second. Value must be between 1 and 10 (inclusive) | 10 | No | Yes |
-| ENABLE_BSM_PSM_MESSAGES | If true, app sends outbound BSM/PSM messages. If unset, defaults to true | true | No | Yes |
-| USE_GPS_TIMESTAMP_FOR_SEND_TIME | If true, outbound message send time uses the latest GPS timestamp instead of timing service time | false | No | Yes |
-| LOGGING_LEVEL | Minimum log level to write (`debug`, `info`, `warning`, `error`) | info | No | No |
-| ENABLE_LATENCY_LOGGING | Logs the latency between receiving a message and rendering it on the map to a LATENCY_LOG csv file. Each row has a status: RENDERED (received and drawn), SUPERSEDED (replaced by a newer message for the same source before being drawn), or EXPIRED (removed before being drawn). | false | No | No |
-
-The following variables can be set to true or false. Setting them to true will make that setting appear on the settings menu in the application. 
-SHOW_BASE_URI, SHOW_DEVICE-ID, MOBILE_GPS_ALLOWED, CRADLE_GPS_ALLOWED, OBU_GPS_ALLOWED, PATH_GPS_ALLOWED, SHOW_BROADCAST_RATE, SHOW_PC5_BROKER, SHOW_ISS_BROKER, SHOW_ETX_BROKER, SHOW_MANUAL_REGISTRATION, SHOW_VZ_MODE, SHOW_DEMO_MODE, SHOW_SIGNING, SHOW_DISABLE_TUM_RETRY, SHOW_TOLLING_SETTINGS, SHOW_TIMS_SETTINGS
+| Variable | Purpose | Default Value | Required | Changeable in App |
+| :--- | :--- | :--- | :--- | :--- |
+| NOAA_GEOMAG_API_TOKEN | Allows the app to query current geomagnetic offsets. | zNEw7 | Yes | No |
+| MAPBOX_ACCESS_TOKEN | Required to render map tiles (Mapbox account token). |  | Yes | No |
+| USERNAME | Username used to authenticate to the partner API. |  | Yes | Yes |
+| PASSWORD | Password used to authenticate to the partner API. |  | Yes | Yes |
+| API_ENDPOINT | Base URL for the CV-MEC partner API. |  | Yes | Yes |
+| VENDOR_ID | Vendor identifier sent with partner API requests. |  | No | No |
+| ALLOW_INVALID_API_CERTIFICATE | Allows self-signed/invalid HTTPS certs for API calls (dev/test only). |  | No | No |
+| REGISTRATION_LATITUDE | Default registration latitude used for ETX targeting and initial map location. | 38.9555 | No | Yes |
+| REGISTRATION_LONGITUDE | Default registration longitude used for ETX targeting and initial map location. | -77.1494 | No | Yes |
+| PC5_MQTT_BROKER | PC5 MQTT broker URL (`mqtt://<host>:<port>`). |  | No | Yes |
+| ENABLE_ISS_BROKER | Default state for ISS broker enablement. | true | No | Yes |
+| ENABLE_ETX_BROKER | Default state for ETX broker enablement. | true | No | Yes |
+| ENABLE_PC5_BROKER | Default state for PC5 broker enablement. | true | No | Yes |
+| GPS_TYPE | Default GPS type (`mobile`, `obu`, `cradle`, `path`, or `static`). | mobile | No | Yes |
+| GPS_USERNAME | Username for remote GPS (Cradlepoint) connection. |  | No | Yes |
+| GPS_PASSWORD | Password for remote GPS (Cradlepoint) connection. |  | No | Yes |
+| GPS_IP | IP address for remote GPS (Cradlepoint) server. |  | No | Yes |
+| OBU_IP | IP address for OBU GPS endpoint. |  | No | Yes |
+| BROADCAST_RATE | Outbound broadcast rate in Hz (1-10). | 10 | No | Yes |
+| ENABLE_BSM_PSM_MESSAGES | If true, outbound BSM/PSM messages are sent. | true | No | Yes |
+| USE_GPS_TIMESTAMP_FOR_SEND_TIME | If true, outbound send time uses the latest GPS timestamp. | false | No | Yes |
+| TOLLING_ENABLED | Default tolling feature state. | true | No | Yes |
+| SHOW_TIMS | Default TIMS display state. | true | No | Yes |
+| DISABLE_TUM_RETRY | If true, retry behavior for TUM is disabled. | false | No | Yes |
+| LOGGING_LEVEL | Minimum log level (`debug`, `info`, `warning`, `error`). | info | No | No |
+| ENABLE_LATENCY_LOGGING | Enables LATENCY_LOG CSV output for receive-to-render latency. | false | No | No |
+| SHOW_BASE_URI | Shows Base URI setting in the app settings page when true. | false | No | No |
+| SHOW_DEVICE_ID | Shows Device ID setting in the app settings page when true. | false | No | No |
+| MOBILE_GPS_ALLOWED | Shows Mobile GPS mode in settings when true. | true | No | No |
+| CRADLE_GPS_ALLOWED | Shows Cradle GPS mode in settings when true. | false | No | No |
+| OBU_GPS_ALLOWED | Shows OBU GPS mode in settings when true. | false | No | No |
+| PATH_GPS_ALLOWED | Shows Path GPS mode in settings when true. | false | No | No |
+| SHOW_BSM_PSM_MESSAGE_SENDING | Shows the BSM/PSM sending toggle in settings when true. | false | No | No |
+| SHOW_BROADCAST_RATE | Shows broadcast rate setting in settings when true. | true | No | No |
+| SHOW_PC5_BROKER | Shows PC5 broker setting in settings when true. | false | No | No |
+| SHOW_ISS_BROKER | Shows ISS broker setting in settings when true. | false | No | No |
+| SHOW_ISS_BROKER_URL | Shows ISS broker URL setting in settings when true. | false | No | No |
+| SHOW_ETX_BROKER | Shows ETX broker setting in settings when true. | false | No | No |
+| SHOW_MANUAL_REGISTRATION | Shows manual registration settings when true. | false | No | No |
+| SHOW_VZ_MODE | Shows VZ mode setting when true. | false | No | No |
+| SHOW_DEMO_MODE | Shows demo mode setting when true. | false | No | No |
+| SHOW_SIGNING | Shows message signing setting when true. | false | No | No |
+| SHOW_DISABLE_TUM_RETRY | Shows Disable TUM Retry setting when true. | false | No | No |
+| SHOW_TOLLING_SETTINGS | Shows tolling settings in the Appearance section when true. | false | No | No |
+| SHOW_TIMS_SETTINGS | Shows TIMS settings in the Appearance section when true. | false | No | No |
+| APP_NAME | Application display name used in branding. | V2X Mobile App | No | No |
+| LOGO_PATH | Path to the app logo asset. | assets/images/Default/logo.png | No | No |
+| LOAD_PAGE_PATH | Path to the load/splash image asset. | assets/images/Default/load_page.png | No | No |
+| LIGHT_BACKGROUND_COLOR | Light theme background color (ARGB hex). | 0xFFF0F3F7 | No | No |
+| DARK_BACKGROUND_COLOR | Dark theme background color (ARGB hex). | 0xFF010E1F | No | No |
+| PRIMARY_COLOR | Light theme primary color (ARGB hex). | 0xFF0F2F76 | No | No |
+| DARK_PRIMARY_COLOR | Dark theme primary color (ARGB hex). | 0xFF0F2F76 | No | No |
+| SELECTED_COLOR | Light theme selected color (ARGB hex). | 0xFF2D4A8A | No | No |
+| DARK_SELECTED_COLOR | Dark theme selected color (ARGB hex). | 0xFF2D4A8A | No | No |
+| DISABLED_COLOR | Light theme disabled color (ARGB hex). | 0xFF868686 | No | No |
+| DARK_DISABLED_COLOR | Dark theme disabled color (ARGB hex). | 0xFF333333 | No | No |
+| TEXT_PRIMARY_COLOR | Light theme primary text color (ARGB hex). | 0xFF000000 | No | No |
+| DARK_TEXT_PRIMARY_COLOR | Dark theme primary text color (ARGB hex). | 0xFFFFFFFF | No | No |
+| LIGHT_GREY | Light grey palette color (ARGB hex). | 0xFFD1D7E0 | No | No |
+| MEDIUM_GREY | Medium grey palette color (ARGB hex). | 0xFF909EB0 | No | No |
+| DARK_GREY | Dark grey palette color (ARGB hex). | 0xFF4B5D75 | No | No |
 
 The NOAA_GEOMAG_API_TOKEN included in the sample.env file is currently set to the publically available token specified on the NOAA site. This doesn't need to be changed at this time. For more information on this service please see the NOAA site here:
 https://www.ncei.noaa.gov/maps/historical-declination/
