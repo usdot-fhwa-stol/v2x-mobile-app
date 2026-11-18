@@ -28,23 +28,24 @@ class SettingsPage extends StatelessWidget {
   final TextEditingController obuIPController = TextEditingController();
   final TextEditingController pc5BrokerUrlController = TextEditingController();
   final TextEditingController issScmsTokenController = TextEditingController();
-  final TextEditingController registrationLatitudeController = TextEditingController();
-  final TextEditingController registrationLongitudeController = TextEditingController();
+  final TextEditingController registrationLatitudeController =
+      TextEditingController();
+  final TextEditingController registrationLongitudeController =
+      TextEditingController();
   final TextEditingController scmsApiTokenController = TextEditingController();
   final TextEditingController broadcastRateController = TextEditingController();
-  final TextEditingController staticGPSLatitudeController = TextEditingController();
-  final TextEditingController staticGPSLongitudeController = TextEditingController();
-  final TextEditingController issMqttBrokerUrlController = TextEditingController();
+  final TextEditingController staticGPSLatitudeController =
+      TextEditingController();
+  final TextEditingController staticGPSLongitudeController =
+      TextEditingController();
+  final TextEditingController issMqttBrokerUrlController =
+      TextEditingController();
   final TextEditingController screenWidthController = TextEditingController();
   final TextEditingController screenHeightController = TextEditingController();
 
   final FileService fileService = Get.find<FileService>();
-  
-
-  
 
   SettingsPage({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -59,39 +60,42 @@ class SettingsPage extends StatelessWidget {
     pc5BrokerUrlController.text = controller.pc5BrokerUrl.value;
     issScmsTokenController.text = controller.issScmsToken.value;
     broadcastRateController.text = controller.broadcastRate.value.toString();
-    registrationLatitudeController.text = paramController.manualLatitude.toString();
-    registrationLongitudeController.text = paramController.manualLongitude.toString();
-    staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
-    staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
+    registrationLatitudeController.text =
+        paramController.manualLatitude.toString();
+    registrationLongitudeController.text =
+        paramController.manualLongitude.toString();
+    staticGPSLatitudeController.text =
+        controller.staticGPSLatitude.value.toString();
+    staticGPSLongitudeController.text =
+        controller.staticGPSLongitude.value.toString();
     issMqttBrokerUrlController.text = controller.issMqttBrokerUrl.value;
     screenWidthController.text = controller.screenWidth.value.toString();
     screenHeightController.text = controller.screenHeight.value.toString();
 
     return Obx(() => Align(
-      alignment: controller.screenLocation.value,
-      child: SizedBox(
-        width: screenWidth(context),
-        height: screenHeight(context),
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text("Settings Page"),
+          alignment: controller.screenLocation.value,
+          child: SizedBox(
+            width: screenWidth(context),
+            height: screenHeight(context),
+            child: Scaffold(
+                appBar: AppBar(
+                  title: const Text("Settings Page"),
+                ),
+                body: Container(
+                    child: Obx(
+                  () => Padding(
+                    padding: const EdgeInsets.all(30.0),
+                    child: ListView(children: [
+                      versionHeader(),
+                      verticalSpaceMedium,
+                      configurationSection(),
+                      verticalSpaceMedium,
+                      appearanceSection(),
+                    ]),
+                  ),
+                ))),
           ),
-          body: Container(
-              child: Obx(
-            () => Padding(
-              padding: const EdgeInsets.all(30.0),
-              child: ListView(children: [
-                versionHeader(),
-                verticalSpaceMedium,
-                configurationSection(),
-                verticalSpaceMedium,
-                appearanceSection(),
-              ]),
-            ),
-          ))
-        ),
-      ),
-    ));
+        ));
   }
 
   versionHeader() {
@@ -107,8 +111,57 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  Future<bool> confirmDisableBsmWhenEtxEnabled() async {
+    final shouldDisable = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Disable BSM / PSM Message Sending?'),
+        content: const Text(
+          'The ETX MQTT Broker does not work properly when BSM / PSM Message Sending is disabled. '
+          'Are you sure you want to disable BSM / PSM Message Sending while ETX is enabled?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    return shouldDisable ?? false;
+  }
+
+  Future<bool> confirmEnableEtxWhenBsmDisabled() async {
+    final shouldEnable = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Enable ETX MQTT Broker?'),
+        content: const Text(
+          'The ETX MQTT Broker does not work properly when BSM / PSM Message Sending is disabled. '
+          'Are you sure you want to enable ETX MQTT Broker while BSM / PSM Message Sending is disabled?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Enable'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    return shouldEnable ?? false;
+  }
+
   configurationSection() {
-    if (Platform.isLinux) { //don't show mobile GPS option on Linux since it's not supported
+    if (Platform.isLinux) {
+      //don't show mobile GPS option on Linux since it's not supported
       bool hasMobile = controller.gpsTypes.contains(GPSType.mobile);
       if (hasMobile) {
         controller.gpsTypes.remove(GPSType.mobile);
@@ -167,59 +220,64 @@ class SettingsPage extends StatelessWidget {
         ),
         verticalSpaceMedium,
         controller.gpsTypes.isNotEmpty
-          ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    final bool useStackedLayout =
-                        MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
+            ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final bool useStackedLayout =
+                      MediaQuery.textScalerOf(context).scale(16) >= 20 ||
+                          constraints.maxWidth < 420;
 
-                    Widget gpsTypeDropdown = DropdownButton<GPSType>(
-                      isExpanded: true,
-                      dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(8),
-                      value: controller.gpsType.value,
-                      items: (controller.gpsTypes).map((GPSType type) {
-                        return DropdownMenuItem<GPSType>(
-                          value: type,
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: Text(
-                              type.toString().split('.').last.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                  Widget gpsTypeDropdown = DropdownButton<GPSType>(
+                    isExpanded: true,
+                    dropdownColor:
+                        Theme.of(Get.context!).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(8),
+                    value: controller.gpsType.value,
+                    items: (controller.gpsTypes).map((GPSType type) {
+                      return DropdownMenuItem<GPSType>(
+                        value: type,
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Text(
+                            type.toString().split('.').last.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          controller.gpsType.value = value;
-                          controller.secureStorage.setGPSType(value);
-                        }
-                      },
-                    );
-
-                    if (useStackedLayout) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("GPS Mode:", style: TextStyle(fontSize: 16)),
-                          const SizedBox(height: 8),
-                          gpsTypeDropdown,
-                        ],
+                        ),
                       );
-                    }
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        controller.gpsType.value = value;
+                        controller.secureStorage.setGPSType(value);
+                      }
+                    },
+                  );
 
-                    return Row(
+                  if (useStackedLayout) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text("GPS Mode:", style: TextStyle(fontSize: 16)),
-                        const SizedBox(width: 12),
-                        Expanded(child: gpsTypeDropdown),
+                        const SizedBox(height: 8),
+                        gpsTypeDropdown,
                       ],
                     );
-                  }),
-                )
-            : Text('No GPS types available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
+                  }
+
+                  return Row(
+                    children: [
+                      const Text("GPS Mode:", style: TextStyle(fontSize: 16)),
+                      const SizedBox(width: 12),
+                      Expanded(child: gpsTypeDropdown),
+                    ],
+                  );
+                }),
+              )
+            : Text('No GPS types available',
+                style: TextStyle(
+                    color:
+                        Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
         verticalSpaceSmall,
         Obx(() => controller.gpsType.value == GPSType.cradle
             ? Column(children: [
@@ -281,49 +339,58 @@ class SettingsPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: LayoutBuilder(builder: (context, constraints) {
                   final bool useStackedLayout =
-                      MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
+                      MediaQuery.textScalerOf(context).scale(16) >= 20 ||
+                          constraints.maxWidth < 420;
 
                   Widget pathSelector = controller.availablePaths.isNotEmpty
                       ? Obx(() => DropdownButton<String>(
-                          isExpanded: true,
-                          value: controller.pathToFollow.value,
-                          hint: const Text('Select an option'),
-                          dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(8),
-                          items: controller.availablePaths.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: Text(
-                                  value,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            isExpanded: true,
+                            value: controller.pathToFollow.value,
+                            hint: const Text('Select an option'),
+                            dropdownColor:
+                                Theme.of(Get.context!).scaffoldBackgroundColor,
+                            borderRadius: BorderRadius.circular(8),
+                            items:
+                                controller.availablePaths.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    value,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            if (newValue != controller.pathToFollow.value) {
-                              if (newValue != null) {
-                                controller.pathToFollow.value = newValue;
-                                controller.secureStorage.setPathToFollow(newValue);
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != controller.pathToFollow.value) {
+                                if (newValue != null) {
+                                  controller.pathToFollow.value = newValue;
+                                  controller.secureStorage
+                                      .setPathToFollow(newValue);
+                                }
                               }
-                            }
-                          },
-                        ))
+                            },
+                          ))
                       : Text(
                           'No paths available',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!),
+                          style: TextStyle(
+                              color: Theme.of(Get.context!)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .color!),
                         );
 
                   if (useStackedLayout) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Path Selection:", style: TextStyle(fontSize: 16)),
+                        const Text("Path Selection:",
+                            style: TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
                         pathSelector,
                       ],
@@ -348,86 +415,121 @@ class SettingsPage extends StatelessWidget {
                 }),
               )
             : const SizedBox.shrink()),
-        Obx(() => controller.gpsType.value == GPSType.static
-            ? Padding(
-              padding: const EdgeInsets.only(bottom: 10.0),
-              child: Column(children: [
-                  TextField(
-                    decoration: const InputDecoration(labelText: 'Static GPS Latitude'),
-                    controller: staticGPSLatitudeController,
-                    obscureText: false,
-                    onChanged: (value) async {
-                      if (value != controller.staticGPSLatitude.value.toString()) {
-                        final parsed = double.tryParse(value);
-                        if (parsed != null) {
-                          controller.staticGPSLatitude.value = parsed;
-                          await controller.secureStorage.setStaticGPSLatitude(parsed);
+        Obx(
+          () => controller.gpsType.value == GPSType.static
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Column(children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                          labelText: 'Static GPS Latitude'),
+                      controller: staticGPSLatitudeController,
+                      obscureText: false,
+                      onChanged: (value) async {
+                        if (value !=
+                            controller.staticGPSLatitude.value.toString()) {
+                          final parsed = double.tryParse(value);
+                          if (parsed != null) {
+                            controller.staticGPSLatitude.value = parsed;
+                            await controller.secureStorage
+                                .setStaticGPSLatitude(parsed);
+                          }
                         }
-                      }
-                    },
-                  ),
-                  verticalSpaceSmall,
-                  TextField(
-                    decoration: const InputDecoration(labelText: 'Static GPS Longitude'),
-                    controller: staticGPSLongitudeController,
-                    obscureText: false,
-                    onChanged: (value) async {
-                      if (value != controller.staticGPSLongitude.value.toString()) {
-                        final parsed = double.tryParse(value);
-                        if (parsed != null) {
-                          controller.staticGPSLongitude.value = parsed;
-                          await controller.secureStorage.setStaticGPSLongitude(parsed);
+                      },
+                    ),
+                    verticalSpaceSmall,
+                    TextField(
+                      decoration: const InputDecoration(
+                          labelText: 'Static GPS Longitude'),
+                      controller: staticGPSLongitudeController,
+                      obscureText: false,
+                      onChanged: (value) async {
+                        if (value !=
+                            controller.staticGPSLongitude.value.toString()) {
+                          final parsed = double.tryParse(value);
+                          if (parsed != null) {
+                            controller.staticGPSLongitude.value = parsed;
+                            await controller.secureStorage
+                                .setStaticGPSLongitude(parsed);
+                          }
                         }
-                      }
-                    },
-                  ),
-                ]),
-            )
-            : const SizedBox.shrink(),
+                      },
+                    ),
+                  ]),
+                )
+              : const SizedBox.shrink(),
         ),
         controller.showPathGPSType ? verticalSpaceSmall : Container(),
-        controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
+        controller.gpsType.value == GPSType.path
+            ? verticalSpaceMedium
+            : Container(), //add spacing if path GPS type is selected to keep spacing consistent
         SwitchListTile(
             title: const Text("Use GPS Timestamp for Sent Messages"),
             value: controller.useGpsTimestampForSendTime.value,
             onChanged: (value) async {
               if (value != controller.useGpsTimestampForSendTime.value) {
                 controller.useGpsTimestampForSendTime.value = value;
-                await controller.secureStorage.setUseGpsTimestampForSendTime(value);
+                await controller.secureStorage
+                    .setUseGpsTimestampForSendTime(value);
               }
             }),
-        controller.showBroadcastRate ? Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Broadcast Rate'),
-            controller: broadcastRateController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
-              RangeInputFormatter(min: 1, max: 10),
-            ],
-            onChanged: (value) async {
-              final parsed = int.tryParse(value);
-              if (parsed != null && parsed != controller.broadcastRate.value) {
-                controller.broadcastRate.value = parsed;
-                await controller.secureStorage.setBroadcastRate(parsed);
-              }
-            },
-          ),
-        ) : Container(),
-        controller.showPc5 ? SwitchListTile(
-            title: const Text("Enable PC5 MQTT Broker"),
-            value: controller.enablePC5.value,
-            onChanged: (value) async {
-              if (value != controller.enablePC5.value) {
-                controller.enablePC5.value = value;
-                await controller.secureStorage.setPC5Enabled(value);
-                controller.changedBrokerSettings.value = true; 
-              }
-            }) : Container(),
+        controller.showBsmPsmMessageSending
+            ? SwitchListTile(
+                title: const Text("Enable BSM / PSM Message Sending"),
+                value: controller.enableBsmPsmMessages.value,
+                onChanged: (value) async {
+                  if (value != controller.enableBsmPsmMessages.value) {
+                    if (!value && controller.enableEtxMqtt.value) {
+                      final confirmed = await confirmDisableBsmWhenEtxEnabled();
+                      if (!confirmed) {
+                        return;
+                      }
+                    }
+                    controller.enableBsmPsmMessages.value = value;
+                    await controller.secureStorage
+                        .setEnableBsmPsmMessages(value);
+                  }
+                })
+            : Container(),
+        (controller.showBroadcastRate && controller.enableBsmPsmMessages.value)
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: TextField(
+                  decoration:
+                      const InputDecoration(labelText: 'Broadcast Rate'),
+                  controller: broadcastRateController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
+                    RangeInputFormatter(min: 1, max: 10),
+                  ],
+                  onChanged: (value) async {
+                    final parsed = int.tryParse(value);
+                    if (parsed != null &&
+                        parsed != controller.broadcastRate.value) {
+                      controller.broadcastRate.value = parsed;
+                      await controller.secureStorage.setBroadcastRate(parsed);
+                    }
+                  },
+                ),
+              )
+            : Container(),
+        controller.showPc5
+            ? SwitchListTile(
+                title: const Text("Enable PC5 MQTT Broker"),
+                value: controller.enablePC5.value,
+                onChanged: (value) async {
+                  if (value != controller.enablePC5.value) {
+                    controller.enablePC5.value = value;
+                    await controller.secureStorage.setPC5Enabled(value);
+                    controller.changedBrokerSettings.value = true;
+                  }
+                })
+            : Container(),
         Obx(() => (controller.enablePC5.value && controller.showPc5)
             ? TextField(
-                decoration: const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
+                decoration:
+                    const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
                 controller: pc5BrokerUrlController,
                 obscureText: false,
                 onChanged: (value) async {
@@ -438,100 +540,131 @@ class SettingsPage extends StatelessWidget {
                 },
               )
             : Container()),
-        controller.showIss ? Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: SwitchListTile(
-              title: const Text("Enable ISS MQTT Broker"),
-              value: controller.enableIssMqtt.value,
-              onChanged: (value) async {
-                if (value != controller.enableIssMqtt.value) {
-                  controller.enableIssMqtt.value = value;
-                  await controller.secureStorage.setIssMqttEnabled(value);
-                  controller.changedBrokerSettings.value = true; 
-                }
-              }
-            ),
-        ) : Container(),
-        (controller.showIssBrokerUrl && controller.enableIssMqtt.value) ? Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'ISS MQTT Broker URL'),
-            controller: issMqttBrokerUrlController,
-            onChanged: (value) async {
-              if (value != controller.issMqttBrokerUrl.value) {
-                controller.issMqttBrokerUrl.value = value;
-                await controller.secureStorage.setISSMqttBrokerUrl(value);
-              }
-            },
-          ),
-        ) : Container(),
-        controller.showEtx ? Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: SwitchListTile(
-              title: const Text("Enable ETX MQTT Broker"),
-              value: controller.enableEtxMqtt.value,
-              onChanged: (value) async {
-                if (value != controller.enableEtxMqtt.value) {
-                  controller.enableEtxMqtt.value = value;
-                  await controller.secureStorage.setEtxMqttEnabled(value);
-                  controller.changedBrokerSettings.value = true; 
-                }
-              }),
-        ) : Container(),
-        controller.showManualRegistration ? Obx(() => SwitchListTile(
-            title: const Text("Enable Manual Registration"),
-            value: paramController.manualRegistrationMode.value,
-            onChanged: (value) async {
-              if (value != paramController.manualRegistrationMode.value) {
-                //paramController.manualRegistrationMode.value = value;
-                await paramController.switchManualRegistrationMode();
-                await controller.secureStorage.setManualRegistrationModeEnabled(value);
-                controller.changedBrokerSettings.value = true; 
-              }
-            })) : Container(),
-        Obx(() => (paramController.manualRegistrationMode.value && controller.showManualRegistration)
+        controller.showIss
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: SwitchListTile(
+                    title: const Text("Enable ISS MQTT Broker"),
+                    value: controller.enableIssMqtt.value,
+                    onChanged: (value) async {
+                      if (value != controller.enableIssMqtt.value) {
+                        controller.enableIssMqtt.value = value;
+                        await controller.secureStorage.setIssMqttEnabled(value);
+                        controller.changedBrokerSettings.value = true;
+                      }
+                    }),
+              )
+            : Container(),
+        (controller.showIssBrokerUrl && controller.enableIssMqtt.value)
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: TextField(
+                  decoration:
+                      const InputDecoration(labelText: 'ISS MQTT Broker URL'),
+                  controller: issMqttBrokerUrlController,
+                  onChanged: (value) async {
+                    if (value != controller.issMqttBrokerUrl.value) {
+                      controller.issMqttBrokerUrl.value = value;
+                      await controller.secureStorage.setISSMqttBrokerUrl(value);
+                    }
+                  },
+                ),
+              )
+            : Container(),
+        controller.showEtx
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: SwitchListTile(
+                    title: const Text("Enable ETX MQTT Broker"),
+                    value: controller.enableEtxMqtt.value,
+                    onChanged: (value) async {
+                      if (value != controller.enableEtxMqtt.value) {
+                        if (value && !controller.enableBsmPsmMessages.value) {
+                          final confirmed =
+                              await confirmEnableEtxWhenBsmDisabled();
+                          if (!confirmed) {
+                            return;
+                          }
+                        }
+                        controller.enableEtxMqtt.value = value;
+                        await controller.secureStorage.setEtxMqttEnabled(value);
+                        controller.changedBrokerSettings.value = true;
+                      }
+                    }),
+              )
+            : Container(),
+        controller.showManualRegistration
+            ? Obx(() => SwitchListTile(
+                title: const Text("Enable Manual Registration"),
+                value: paramController.manualRegistrationMode.value,
+                onChanged: (value) async {
+                  if (value != paramController.manualRegistrationMode.value) {
+                    //paramController.manualRegistrationMode.value = value;
+                    await paramController.switchManualRegistrationMode();
+                    await controller.secureStorage
+                        .setManualRegistrationModeEnabled(value);
+                    controller.changedBrokerSettings.value = true;
+                  }
+                }))
+            : Container(),
+        Obx(() => (paramController.manualRegistrationMode.value &&
+                controller.showManualRegistration)
             ? Column(
-              children: [
-                TextField(
-                    decoration: const InputDecoration(labelText: 'Registration Latitude'),
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                        labelText: 'Registration Latitude'),
                     controller: registrationLatitudeController,
                     onChanged: (value) async {
-                      if (value != paramController.registrationLatitude.value.toString()) {
-                        paramController.manualLatitude = double.tryParse(value) ?? 0.0;
-                        paramController.registrationLatitude.value = double.tryParse(value) ?? 0.0;
-                        await controller.secureStorage.setRegistrationLatitude(paramController.registrationLatitude.value);
+                      if (value !=
+                          paramController.registrationLatitude.value
+                              .toString()) {
+                        paramController.manualLatitude =
+                            double.tryParse(value) ?? 0.0;
+                        paramController.registrationLatitude.value =
+                            double.tryParse(value) ?? 0.0;
+                        await controller.secureStorage.setRegistrationLatitude(
+                            paramController.registrationLatitude.value);
                       }
                     },
                   ),
-                verticalSpaceSmall,
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Registration Longitude'),
-                  controller: registrationLongitudeController,
-                  onChanged: (value) async {
-                    if (value != paramController.registrationLongitude.value.toString()) {
-                      paramController.manualLongitude = double.tryParse(value) ?? 0.0;
-                      paramController.registrationLongitude.value = double.tryParse(value) ?? 0.0;
-                      await controller.secureStorage.setRegistrationLongitude(paramController.registrationLongitude.value);
-                    }
-                  },
-                )
-              ],
-            )
+                  verticalSpaceSmall,
+                  TextField(
+                    decoration: const InputDecoration(
+                        labelText: 'Registration Longitude'),
+                    controller: registrationLongitudeController,
+                    onChanged: (value) async {
+                      if (value !=
+                          paramController.registrationLongitude.value
+                              .toString()) {
+                        paramController.manualLongitude =
+                            double.tryParse(value) ?? 0.0;
+                        paramController.registrationLongitude.value =
+                            double.tryParse(value) ?? 0.0;
+                        await controller.secureStorage.setRegistrationLongitude(
+                            paramController.registrationLongitude.value);
+                      }
+                    },
+                  )
+                ],
+              )
             : Container()),
-        controller.showVzMode ? Obx(() => Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: SwitchListTile(
-              title: const Text("VZ Mode"),
-              value: controller.vzMode.value,
-              onChanged: (value) async {
-                if (value != controller.vzMode.value) {
-                  controller.vzMode.value = value;
-                  await controller.secureStorage.setVZMode(value);
-                }
-              }),
-        )) : Container(),
+        controller.showVzMode
+            ? Obx(() => Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: SwitchListTile(
+                      title: const Text("VZ Mode"),
+                      value: controller.vzMode.value,
+                      onChanged: (value) async {
+                        if (value != controller.vzMode.value) {
+                          controller.vzMode.value = value;
+                          await controller.secureStorage.setVZMode(value);
+                        }
+                      }),
+                ))
+            : Container(),
         Obx(() => SwitchListTile(
-            title: const Text("Enable Notifications"), 
+            title: const Text("Enable Notifications"),
             value: controller.notificationsEnabled.value,
             onChanged: (value) async {
               if (value != controller.notificationsEnabled.value) {
@@ -539,19 +672,21 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setNotificationsEnabled(value);
                 if (controller.notificationsEnabled.value) {
                   VehicleNotificationManager.notifyVehicleFromMessageAndImage(
-                      "Notifications Enabled!", AssetImage(dotenv.env["NOTIFICATION_ICON_PATH"] ?? 'assets/images/Sample/notification_icon.png')); 
+                      "Notifications Enabled!",
+                      AssetImage(dotenv.env["NOTIFICATION_ICON_PATH"] ??
+                          'assets/images/Sample/notification_icon.png'));
                 }
               }
             })),
         verticalSpaceSmall,
         SwitchListTile(
-                title: const Text("Allow Sound Effects"),
-                value: controller.soundEffectsEnabled.value,
-                onChanged: (value) async {
-                  controller.soundEffectsEnabled.value = value;
-                  await controller.secureStorage.setSoundEffectsEnabled(value);
-                }),
-            verticalSpaceSmall,
+            title: const Text("Allow Sound Effects"),
+            value: controller.soundEffectsEnabled.value,
+            onChanged: (value) async {
+              controller.soundEffectsEnabled.value = value;
+              await controller.secureStorage.setSoundEffectsEnabled(value);
+            }),
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Read Messages"),
             value: controller.readMessages.value,
@@ -562,64 +697,75 @@ class SettingsPage extends StatelessWidget {
               }
             })),
         verticalSpaceSmall,
-        controller.showDemoMode ? Obx(() => SwitchListTile(
-            title: const Text("Enable Demo Mode"),
-            value: controller.demoMode.value,
-            onChanged: (value) async {
-              if (value != controller.demoMode.value) {
-                controller.demoMode.value = value;
-                await controller.secureStorage.setDemoMode(value);
-              }
-            })) : Container(),
+        controller.showDemoMode
+            ? Obx(() => SwitchListTile(
+                title: const Text("Enable Demo Mode"),
+                value: controller.demoMode.value,
+                onChanged: (value) async {
+                  if (value != controller.demoMode.value) {
+                    controller.demoMode.value = value;
+                    await controller.secureStorage.setDemoMode(value);
+                  }
+                }))
+            : Container(),
         controller.showDemoMode ? verticalSpaceSmall : Container(),
-        controller.showSigning ? SwitchListTile(
-            title: const Text("Enable Signing"),
-            value: controller.enableIssScmsSigning.value,
-            onChanged: (value) async {
-              if (value != controller.enableIssScmsSigning.value) {
-                controller.enableIssScmsSigning.value = value;
-                await controller.secureStorage.setIssScmsSigningEnabled(value);
-              }
-            }) : Container(),
+        controller.showSigning
+            ? SwitchListTile(
+                title: const Text("Enable Signing"),
+                value: controller.enableIssScmsSigning.value,
+                onChanged: (value) async {
+                  if (value != controller.enableIssScmsSigning.value) {
+                    controller.enableIssScmsSigning.value = value;
+                    await controller.secureStorage
+                        .setIssScmsSigningEnabled(value);
+                  }
+                })
+            : Container(),
         controller.showSigning ? verticalSpaceSmall : Container(),
-        controller.showDisableTUMRetry ? SwitchListTile(
-            title: const Text("Disable TUM Message Retry"),
-            value: controller.disableTUMRetry.value,
-            onChanged: (value) async {
-              if (value != controller.disableTUMRetry.value) {
-                controller.disableTUMRetry.value = value;
-                await controller.secureStorage.setDisableTUMRetry(value);
-              }
-            }) : Container(),            
+        controller.showDisableTUMRetry
+            ? SwitchListTile(
+                title: const Text("Disable TUM Message Retry"),
+                value: controller.disableTUMRetry.value,
+                onChanged: (value) async {
+                  if (value != controller.disableTUMRetry.value) {
+                    controller.disableTUMRetry.value = value;
+                    await controller.secureStorage.setDisableTUMRetry(value);
+                  }
+                })
+            : Container(),
         controller.showDisableTUMRetry ? verticalSpaceMedium : Container(),
-        controller.showBaseUri ? Padding(
-          padding: const EdgeInsets.only(bottom: 20.0, top: 10.0),
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Base URI'),
-            controller: baseUriController,
-            obscureText: true,
-            onChanged: (value) async {
-              if (value != controller.baseUri.value) {
-                controller.baseUri.value = value;
-                await controller.secureStorage.setBaseURI(value);
-              }
-            },
-          ),
-        ) : Container(),
-        controller.showDeviceID ? Padding(
-          padding: const EdgeInsets.only(bottom: 20.0),
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Device ID'),
-            controller: deviceIDController,
-            obscureText: false,
-            onChanged: (value) async {
-              if (value != controller.deviceID.value) {
-                controller.deviceID.value = value;
-                await controller.secureStorage.setDeviceID(value);
-              }
-            },
-          ),
-        ) : Container(),
+        controller.showBaseUri
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 20.0, top: 10.0),
+                child: TextField(
+                  decoration: const InputDecoration(labelText: 'Base URI'),
+                  controller: baseUriController,
+                  obscureText: true,
+                  onChanged: (value) async {
+                    if (value != controller.baseUri.value) {
+                      controller.baseUri.value = value;
+                      await controller.secureStorage.setBaseURI(value);
+                    }
+                  },
+                ),
+              )
+            : Container(),
+        controller.showDeviceID
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: TextField(
+                  decoration: const InputDecoration(labelText: 'Device ID'),
+                  controller: deviceIDController,
+                  obscureText: false,
+                  onChanged: (value) async {
+                    if (value != controller.deviceID.value) {
+                      controller.deviceID.value = value;
+                      await controller.secureStorage.setDeviceID(value);
+                    }
+                  },
+                ),
+              )
+            : Container(),
       ],
     );
   }
@@ -633,8 +779,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  
-
   appearanceSettings() {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -647,133 +791,166 @@ class SettingsPage extends StatelessWidget {
                   controller.switchModeState();
                 }),
             verticalSpaceSmall,
-            Platform.isLinux ? Obx(() => Row(
-              children: [
-                const SizedBox(width: 14),
-                const Text("Icon Size: ", style: TextStyle(fontSize: 16)),
-                Expanded(child: Container()),
-                DropdownButton<IconSize>(  
-                  dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(8),
-                  value: controller.iconSize.value,
-                  items: IconSize.values.map((IconSize size) {
-                    return DropdownMenuItem<IconSize>(
-                      value: size,
-                      child: Text(size.toString().split('.').last.toUpperCase()),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      controller.iconSize.value = value;
-                      controller.setIconSize();
-                    }
-                  },
-                ),
-              ],
-            )) : Container(),
+            Platform.isLinux
+                ? Obx(() => Row(
+                      children: [
+                        const SizedBox(width: 14),
+                        const Text("Icon Size: ",
+                            style: TextStyle(fontSize: 16)),
+                        Expanded(child: Container()),
+                        DropdownButton<IconSize>(
+                          dropdownColor:
+                              Theme.of(Get.context!).scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(8),
+                          value: controller.iconSize.value,
+                          items: IconSize.values.map((IconSize size) {
+                            return DropdownMenuItem<IconSize>(
+                              value: size,
+                              child: Text(size
+                                  .toString()
+                                  .split('.')
+                                  .last
+                                  .toUpperCase()),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              controller.iconSize.value = value;
+                              controller.setIconSize();
+                            }
+                          },
+                        ),
+                      ],
+                    ))
+                : Container(),
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: SwitchListTile(  
-                title: const Text("Change Screen Size"),
-                value: controller.showScreenSizeSettings.value,
-                onChanged: (value) async {
-                  controller.setShowScreenSizeSettings(value);
-                  if (value && (controller.screenWidth.value == 0 || controller.screenHeight.value == 0)) {
-                    controller.setScreenHeight(screenHeight(Get.context!).toInt());
-                    controller.setScreenWidth(screenWidth(Get.context!).toInt());
-                  }
-                }
-              ),
+              child: SwitchListTile(
+                  title: const Text("Change Screen Size"),
+                  value: controller.showScreenSizeSettings.value,
+                  onChanged: (value) async {
+                    controller.setShowScreenSizeSettings(value);
+                    if (value &&
+                        (controller.screenWidth.value == 0 ||
+                            controller.screenHeight.value == 0)) {
+                      controller
+                          .setScreenHeight(screenHeight(Get.context!).toInt());
+                      controller
+                          .setScreenWidth(screenWidth(Get.context!).toInt());
+                    }
+                  }),
             ),
-            controller.showScreenSizeSettings.value ? Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Column(
-                children: [
-                  TextField(
-                    decoration: const InputDecoration(labelText: 'Screen Width'),
-                    controller: screenWidthController,
-                    obscureText: false,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) async {
-                      if (value != controller.screenWidth.value.toString()) {
-                        if ((int.tryParse(value) ?? 0) < 400) {
-                          controller.setScreenWidth(400);
-                        } else {
-                          controller.setScreenWidth(int.tryParse(value) ?? 0);
-                        }
-                      }
-                    },
-                  ),
-                  verticalSpaceSmall,
-                  TextField(
-                    decoration: const InputDecoration(labelText: 'Screen Height'),
-                    controller: screenHeightController,
-                    obscureText: false,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) async {
-                      if (value != controller.screenHeight.value.toString()) {
-                        if ((int.tryParse(value) ?? 0) < 700) {
-                          controller.setScreenHeight(700);
-                        } else {
-                          controller.setScreenHeight(int.tryParse(value) ?? 0);
-                        }
-                      }
-                    },
-                  ),
-                  verticalSpaceSmall,
-                  Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      const Text("Screen Alignment: ", style: TextStyle(fontSize: 16)),
-                      Expanded(child: Container()),
-                      DropdownButton<Alignment>(
-                        dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(8),
-                        value: controller.screenLocation.value,
-                        items: [
-                          Alignment.topLeft,
-                          Alignment.topRight,
-                          Alignment.bottomLeft,
-                          Alignment.bottomRight,
-                          Alignment.center,
-                          Alignment.centerLeft,
-                          Alignment.centerRight,
-                          Alignment.topCenter,
-                          Alignment.bottomCenter
-                        ].map((Alignment location) {
-                          return DropdownMenuItem<Alignment>(
-                            value: location,
-                            child: Text(location.toString().split('.').last.toUpperCase()),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            controller.setScreenLocation(value);
-                          }
-                        },
-                      ),
-                    ],
+            controller.showScreenSizeSettings.value
+                ? Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Column(
+                      children: [
+                        TextField(
+                          decoration:
+                              const InputDecoration(labelText: 'Screen Width'),
+                          controller: screenWidthController,
+                          obscureText: false,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          onChanged: (value) async {
+                            if (value !=
+                                controller.screenWidth.value.toString()) {
+                              if ((int.tryParse(value) ?? 0) < 400) {
+                                controller.setScreenWidth(400);
+                              } else {
+                                controller
+                                    .setScreenWidth(int.tryParse(value) ?? 0);
+                              }
+                            }
+                          },
+                        ),
+                        verticalSpaceSmall,
+                        TextField(
+                          decoration:
+                              const InputDecoration(labelText: 'Screen Height'),
+                          controller: screenHeightController,
+                          obscureText: false,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          onChanged: (value) async {
+                            if (value !=
+                                controller.screenHeight.value.toString()) {
+                              if ((int.tryParse(value) ?? 0) < 700) {
+                                controller.setScreenHeight(700);
+                              } else {
+                                controller
+                                    .setScreenHeight(int.tryParse(value) ?? 0);
+                              }
+                            }
+                          },
+                        ),
+                        verticalSpaceSmall,
+                        Row(
+                          children: [
+                            const SizedBox(width: 14),
+                            const Text("Screen Alignment: ",
+                                style: TextStyle(fontSize: 16)),
+                            Expanded(child: Container()),
+                            DropdownButton<Alignment>(
+                              dropdownColor: Theme.of(Get.context!)
+                                  .scaffoldBackgroundColor,
+                              borderRadius: BorderRadius.circular(8),
+                              value: controller.screenLocation.value,
+                              items: [
+                                Alignment.topLeft,
+                                Alignment.topRight,
+                                Alignment.bottomLeft,
+                                Alignment.bottomRight,
+                                Alignment.center,
+                                Alignment.centerLeft,
+                                Alignment.centerRight,
+                                Alignment.topCenter,
+                                Alignment.bottomCenter
+                              ].map((Alignment location) {
+                                return DropdownMenuItem<Alignment>(
+                                  value: location,
+                                  child: Text(location
+                                      .toString()
+                                      .split('.')
+                                      .last
+                                      .toUpperCase()),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  controller.setScreenLocation(value);
+                                }
+                              },
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
                   )
-                ],
-              ),
-            ) : Container(),
-            controller.showTollingSettings ? SwitchListTile(
-                title: const Text("Show Tolling"),
-                value: controller.tollingEnabled.value,
-                onChanged: (value) async {
-                  controller.tollingEnabled.value = value;
-                  await controller.secureStorage.setTollingEnabled(value);
-                }) : Container(),
+                : Container(),
+            controller.showTollingSettings
+                ? SwitchListTile(
+                    title: const Text("Show Tolling"),
+                    value: controller.tollingEnabled.value,
+                    onChanged: (value) async {
+                      controller.tollingEnabled.value = value;
+                      await controller.secureStorage.setTollingEnabled(value);
+                    })
+                : Container(),
             verticalSpaceSmall,
-            controller.showTimsSettings ? SwitchListTile(
-                title: const Text("Show TIMs"),
-                value: controller.showTims.value,
-                onChanged: (value) async {
-                  controller.showTims.value = value;
-                  await controller.secureStorage.setShowTims(value);
-                }) : Container(),
+            controller.showTimsSettings
+                ? SwitchListTile(
+                    title: const Text("Show TIMs"),
+                    value: controller.showTims.value,
+                    onChanged: (value) async {
+                      controller.showTims.value = value;
+                      await controller.secureStorage.setShowTims(value);
+                    })
+                : Container(),
           ],
         ));
   }
@@ -798,10 +975,13 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         Row(children: [
-            Icon(icon,
-              color: controller.darkModeState.value ? darkPrimaryColor : primaryColor),
+          Icon(icon,
+              color: controller.darkModeState.value
+                  ? darkPrimaryColor
+                  : primaryColor),
           const SizedBox(width: 10),
-          Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(sectionTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         const Divider(height: 20, thickness: 1),
       ],
