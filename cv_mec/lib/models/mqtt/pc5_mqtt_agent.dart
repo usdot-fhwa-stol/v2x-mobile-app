@@ -19,6 +19,11 @@ class Pc5MqttAgent extends MqttAgent{
 
   Pc5MqttAgent(Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction): super("PC5", processingFunction);
 
+  /// Connects this PC5 MQTT agent.
+  ///
+  /// Returns:
+  /// - `0`: Connected successfully.
+  /// - `non-zero`: the result code from the [MqttService.connect] method indicating the connect failure type
   @override
   Future<int> connect() async{
     connectionUrl = settingsController.pc5BrokerUrl.value;
@@ -26,6 +31,9 @@ class Pc5MqttAgent extends MqttAgent{
     return result;
   }
 
+  /// Sets up the subscribers for this PC5 MQTT agent.
+  /// Returns:
+  /// - `0`: Subscribers set up successfully.
   @override
   Future<int> setupSubscribers() async{
     print("Subscribing to PC5 Topics");
@@ -33,6 +41,17 @@ class Pc5MqttAgent extends MqttAgent{
     return 0;
   }
 
+  /// Sends a BSM or PSM over PC5 by publishing it to the connected Ettifos OBU, which rebroadcasts it.
+  /// The message is published as a bare UPER encoded J2735 MessageFrame to $topicPrefix/req/J2735/{PSID},
+  /// where PSID is in decimal (e.g. BSM = 32). Any 1609.2 envelope is removed since the OBU adds its own.
+  ///
+  /// Parameters:
+  /// - `message`: The message payload as a list of bytes. May be a bare MessageFrame or 1609.2 signed.
+  /// - `messageType`: The type of the message. Only [MsgType.BSM] and [MsgType.PSM] are supported.
+  /// - `sendTime`: The time the message is sent.
+  ///
+  /// Returns:
+  /// - The topic the message was published to, or an empty string if the message was not sent.
   @override
   String sendMessage(List<int> message, MsgType messageType, DateTime sendTime){
     int psid;
@@ -46,7 +65,7 @@ class Pc5MqttAgent extends MqttAgent{
       default:
         // Only log once per type, this function is called at the broadcast rate
         if (_unsupportedTypesLogged.add(messageType)) {
-          loggingService.addToAppLog('$agentName does not support sending ${messageType.name} messages');
+          loggingService.logInfo('$agentName does not support sending ${messageType.name} messages');
         }
         return "";
     }
@@ -112,6 +131,9 @@ class Pc5MqttAgent extends MqttAgent{
     return bytes.sublist(start, end);
   }
 
+  /// Updates the subscribers for this PC5 MQTT agent. This method is not required for the PC5 interface as it does not dynamically change subscriptions.
+  /// Returns:
+  /// - `0`: Subscribers updated successfully.
   @override
   Future<int> updateSubscribers() async{
     return 0;
