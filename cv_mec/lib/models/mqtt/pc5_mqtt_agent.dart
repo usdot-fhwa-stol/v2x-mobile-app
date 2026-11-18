@@ -73,7 +73,7 @@ class Pc5MqttAgent extends MqttAgent{
     // The OBU expects a bare UPER encoded J2735 MessageFrame. It adds the WSMP / 1609.2 layers itself.
     List<int>? messageFrame = _extractMessageFrame(message, messageType);
     if (messageFrame == null) {
-      loggingService.showWarning("$agentName unable to extract ${messageType.name} MessageFrame. Message not sent.");
+      loggingService.logWarning("$agentName unable to extract ${messageType.name} MessageFrame. Message not sent.");
       return "";
     }
 
