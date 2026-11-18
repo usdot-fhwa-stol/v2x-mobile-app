@@ -71,7 +71,7 @@ class Pc5MqttAgent extends MqttAgent{
     }
 
     // The OBU expects a bare UPER encoded J2735 MessageFrame. It adds the WSMP / 1609.2 layers itself.
-    List<int>? messageFrame = _extractMessageFrame(message, messageType);
+    List<int>? messageFrame = asnService.extractMessageFrame(message, messageType);
     if (messageFrame == null) {
       loggingService.logWarning("$agentName unable to extract ${messageType.name} MessageFrame. Message not sent.");
       return "";
@@ -83,52 +83,6 @@ class Pc5MqttAgent extends MqttAgent{
     buffer.addAll(messageFrame);
     mqttService.publishBytes(buffer, topic);
     return topic;
-  }
-
-  // Returns the UPER encoded MessageFrame contained in [bytes].
-  // [bytes] may already be a bare MessageFrame, or may be wrapped in a 1609.2 signed envelope
-  // (when SCMS signing is enabled), in which case the header and signature trailer are removed.
-  // Returns null if no valid MessageFrame can be found.
-  List<int>? _extractMessageFrame(List<int> bytes, MsgType messageType) {
-    String? startFlag = asnService.getStartFlagForMessageType(messageType);
-    if (startFlag == null || startFlag.isEmpty) {
-      return null;
-    }
-
-    int hexIndex = asnService.findValidStartFlagLocation(ASNService.bytesToHex(bytes).toUpperCase(), startFlag);
-    if (hexIndex < 0) {
-      return null;
-    }
-    int start = hexIndex ~/ 2;
-
-    // MessageFrame layout: 2 byte DSRCmsgID, UPER length determinant (1 or 2 bytes), message value
-    int lengthIndex = start + 2;
-    if (lengthIndex >= bytes.length) {
-      return null;
-    }
-
-    int length;
-    int lengthBytes;
-    int firstLengthByte = bytes[lengthIndex];
-    if ((firstLengthByte & 0x80) == 0) {
-      length = firstLengthByte;
-      lengthBytes = 1;
-    } else if ((firstLengthByte & 0xC0) == 0x80) {
-      if (lengthIndex + 1 >= bytes.length) {
-        return null;
-      }
-      length = ((firstLengthByte & 0x3F) << 8) | bytes[lengthIndex + 1];
-      lengthBytes = 2;
-    } else {
-      // Fragmented encoding (length >= 16384), not expected for BSM / PSM
-      return null;
-    }
-
-    int end = lengthIndex + lengthBytes + length;
-    if (end > bytes.length) {
-      return null;
-    }
-    return bytes.sublist(start, end);
   }
 
   /// Updates the subscribers for this PC5 MQTT agent. This method is not required for the PC5 interface as it does not dynamically change subscriptions.
