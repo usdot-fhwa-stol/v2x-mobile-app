@@ -1,6 +1,6 @@
 # Enable Message Sending Design
 
-For some users, it may be preferable that the V2X-Mobile-App does not broadcast BSM / PSM messages on the users behalf. Possible reasons include
+For some users, it may be preferable that the V2X-Mobile-App does not broadcast BSM / PSM messages on the user's behalf. Possible reasons include
 - Disabling location broadcasting for privacy sensitive users
 - Disable sending BSM messages if the vehicle already has another BSM source
 - Disable BSM sending for simulated "ghost" vehicles that do not actually exist
