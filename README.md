@@ -1,3 +1,4 @@
+Sample Test for PR template (DONOT MERGE)
 # V2X Mobile App
 This is the main repository for all code related to the V2X Mobile App. 
 
