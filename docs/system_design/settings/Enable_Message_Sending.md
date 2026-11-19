@@ -4,7 +4,6 @@ For some users, it may be preferable that the V2X-Mobile-App does not broadcast 
 - Disabling location broadcasting for privacy sensitive users
 - Disable sending BSM messages if the vehicle already has another BSM source
 - Disable BSM sending for simulated "ghost" vehicles that do not actually exist
-- Disable BSM broadcasting if another source is providing the location of the vehicle to the system (such as an SDSM equipped corridor)
 
 
 To support these use cases, a new setting is added to the V2X-Mobile-App Settings menu. This setting will allow for users to enable or disable BSM and PSM broadcasting. When enabled, this setting will cause the MAP page to disable generating and transmitting BSM or PSM messages. Note - Since messages generation is blocked as well as transmission, no log entries will be created for sent messages while this setting is enabled.
