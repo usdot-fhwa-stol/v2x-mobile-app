@@ -25,6 +25,8 @@ Each GPS source can be individually enabled or disabled using the following envi
 | `OBU_GPS_ALLOWED` | OBU | Controls whether the direct OBU integration GPS is available as a selection option | `true` | `OBU_IP` | Requires network connectivity to OBU device |
 | `PATH_GPS_ALLOWED` | Path | Controls whether the recorded path playback GPS is available as a selection option | `true` | None | Requires pre-built GPS paths to be uploaded to Partner API |
 | `STATIC_GPS_ALLOWED` | Static | Controls whether the fixed/static position GPS is available as a selection option | `true` | None | Useful for testing and development |
+| `BSM_GPS_ALLOWED` | BSM | Controls whether a remote BSM is available as a selection option | `true` | None | Useful for testing and development |
+| `RAVEN_GPS_ALLOWED` | RAVEN | Controls whether a remote BSM from a Raven device is available as a selection option | `true` | None | Useful for testing and development |
 
 To set which GPS source should be used by default, make sure to also set the `GPS_TYPE` environment variable. Valid values are
 MOBILE, CRADLE, OBU, PATH, STATIC, BSM, RAVEN
@@ -277,3 +279,4 @@ These settings can also be changed in the settings menu.
 - Service: `RavenLocationService` 
 - This GPS type is built on top of the BSM location type. Please reference details in section [6. BSM (Basic Safety Message)](#6-bsm-basic-safety-message) for additional details on how the service works internally
 - This GPS type will add one additional mapping layer to the application to allow the app to convert Raven UUIDs to BSM IDs. This may introduce occasional position jumps when the raven device rotates its BSM ID. These jumps are caused by the delay between when a device rotates its ID and when the mobile app receives the updated mapping so that it can continue following. However, unlike directly following a BSM this will allow to continue following a device even after its BSM ID has been rotated.
+- This GPS type will continue to work properly even if the `BSM` GPS type it builds upon is disabled.
