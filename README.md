@@ -23,6 +23,7 @@ For developers looking to get started with building and running the V2X Mobile A
 
 For developers looking for higher level architectural and app background information please review the following.
 - [System Architecture](docs/system_design/Architecture_and_High_Level_Design.md) 
+- [GPS Sources Guide](docs/system_design/Configurable_Location_Source.md)
 - [Adding New TIM messages to the app](docs/system_design/Adding_additional_TIM%20messages.md)
 - [Adding new MQTT servers to the app](docs/system_design/Modular_MQTT_Connections.md)
 - [Managed Dependencies](docs/system_design/Managed_Packages.md)
