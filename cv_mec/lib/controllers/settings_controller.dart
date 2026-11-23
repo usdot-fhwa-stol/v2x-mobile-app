@@ -1,6 +1,7 @@
 import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/path_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -22,6 +23,7 @@ enum IconSize {
 class SettingsController extends GetxController {
   SettingsController();
   SharedPrefs sharedPrefs = SharedPrefs();
+  LoggingService log = Get.find<LoggingService>();
   final SecureStorage secureStorage = SecureStorage();
   late ApiService apiService;
   late PathService pathService;
@@ -152,10 +154,6 @@ class SettingsController extends GetxController {
     gpsType.value = toGPSType(await secureStorage.getGPSType());
     useGpsTimestampForSendTime.value = await secureStorage.getUseGpsTimestampForSendTime();
 
-    if (gpsType.value == GPSType.mobile && Platform.isLinux) {
-      gpsType.value = GPSType.cradle;
-    }
-
     //filter gps types based on environment variables
     List<GPSType> filteredGPSTypes = [];
     if(showMobileGPSType) filteredGPSTypes.add(GPSType.mobile);
@@ -165,6 +163,12 @@ class SettingsController extends GetxController {
     if(showStaticGPSType) filteredGPSTypes.add(GPSType.static);
     if(showRemoteGPSType) filteredGPSTypes.add(GPSType.remote);
     gpsTypes = filteredGPSTypes;
+
+    // The static GPS Type does not require any external hardware, or add any API dependencies and is thus a safe fallback option if no other GPS type is specified
+    if(gpsTypes.isEmpty){
+      log.logWarning("No GPS types specified, adding static as fallback.");
+      gpsTypes.add(GPSType.static);
+    }
 
     //check if the current gps type is in the filtered list, if not set to first available
     if(!gpsTypes.contains(gpsType.value) && gpsTypes.isNotEmpty){
