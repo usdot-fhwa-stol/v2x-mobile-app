@@ -209,8 +209,6 @@ Users can also change these variables in the settings menu.
 
 ---
 
-## Upcoming GPS Sources
-
 ### 6. REMOTE (BSM, PSM, SDSM)
 
 **Type:** V2X Vehicle-to-Everything Communication
@@ -251,6 +249,8 @@ These settings can also be changed in the settings menu.
 - The device will have a starting position defined by the REMOTE_GPS_DEFAULT_LATITUDE and REMOTE_GPS_DEFAULT_LONGITUDE settings. If the device is moved from this coordinate (by following a remote message) it will stay at its remote coordinate unless the user initiates a position reset.
 
 ---
+
+## Upcoming GPS Sources
 
 ### 7. Raven
 

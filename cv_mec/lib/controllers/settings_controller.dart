@@ -35,6 +35,7 @@ class SettingsController extends GetxController {
   bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showRemoteGPSType = (dotenv.env['REMOTE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
@@ -87,6 +88,10 @@ class SettingsController extends GetxController {
   Rx<double> staticGPSLatitude = 0.0.obs;
   Rx<double> staticGPSLongitude = 0.0.obs;
 
+  Rx<double> remoteGPSDefaultLatitude = 0.0.obs;
+  Rx<double> remoteGPSDefaultLongitude = 0.0.obs;
+  RxString remoteGPSID = (dotenv.env['REMOTE_GPS_ID'] ?? "").obs;
+
   Rx<bool> disableTUMRetry = false.obs;
   Rx<bool> useGpsTimestampForSendTime = false.obs;
 
@@ -135,6 +140,9 @@ class SettingsController extends GetxController {
     showTims.value = await secureStorage.getShowTims();
     staticGPSLatitude.value = await secureStorage.getStaticGPSLatitude();
     staticGPSLongitude.value = await secureStorage.getStaticGPSLongitude();
+    remoteGPSDefaultLatitude.value = await secureStorage.getRemoteGPSDefaultLatitude();
+    remoteGPSDefaultLongitude.value = await secureStorage.getRemoteGPSDefaultLongitude();
+    remoteGPSID.value = await secureStorage.getRemoteGPSID();
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     issMqttBrokerUrl.value = await secureStorage.getISSMqttBrokerUrl();
@@ -155,6 +163,7 @@ class SettingsController extends GetxController {
     if(showOBUGPSType) filteredGPSTypes.add(GPSType.obu);
     if(showPathGPSType) filteredGPSTypes.add(GPSType.path);
     if(showStaticGPSType) filteredGPSTypes.add(GPSType.static);
+    if(showRemoteGPSType) filteredGPSTypes.add(GPSType.remote);
     gpsTypes = filteredGPSTypes;
 
     //check if the current gps type is in the filtered list, if not set to first available
@@ -279,6 +288,8 @@ class SettingsController extends GetxController {
         return GPSType.path;
       case 'static':
         return GPSType.static;
+      case 'remote':
+        return GPSType.remote;
       default:
         return GPSType.mobile; // Default to mobile if unknown
     }
