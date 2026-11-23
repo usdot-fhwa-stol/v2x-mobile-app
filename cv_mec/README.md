@@ -72,7 +72,7 @@ cp sample.env .env
 | CRADLE_GPS_ALLOWED | Shows Cradle GPS mode in settings when true. | false | No | No |
 | OBU_GPS_ALLOWED | Shows OBU GPS mode in settings when true. | false | No | No |
 | PATH_GPS_ALLOWED | Shows Path GPS mode in settings when true. | false | No | No |
-| SHOW_BSM_PSM_MESSAGE_SENDING | Shows the BSM/PSM sending toggle in settings when true. | false | No | No |
+| SHOW_BSM_PSM_MESSAGE_SENDING | Shows the BSM/PSM sending toggle in settings when true. | true | No | No |
 | SHOW_BROADCAST_RATE | Shows broadcast rate setting in settings when true. | true | No | No |
 | SHOW_PC5_BROKER | Shows PC5 broker setting in settings when true. | false | No | No |
 | SHOW_ISS_BROKER | Shows ISS broker setting in settings when true. | false | No | No |
