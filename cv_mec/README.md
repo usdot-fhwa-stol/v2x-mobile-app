@@ -74,6 +74,11 @@ cp sample.env .env
 | TOLLING_ENABLED | Enable or disable tolling features in the application | true | No | No |
 | SHOW_TIMS | Show TIMS-related settings and features (alias for SHOW_TIMS_SETTINGS) | true | No | No |
 | SHOW_ISS_BROKER_URL | Show the ISS broker URL setting field | false | No | No |
+| REMOTE_GPS_DEFAULT_LATITUDE | The default latitude to use when in remote mode | 0.0 | false | No | Yes |
+| REMOTE_GPS_DEFAULT_LONGITUDE | The default longitude to use when in remote mode | 0.0 | false | No | Yes |
+| REMOTE_GPS_ID | The default remote GPS ID to follow |  | false | no | Yes | 
+
+
 
 #### Settings Page Visibility Variables
 
@@ -88,6 +93,8 @@ The following variables can be set to `true` or `false` to control which setting
 | OBU_GPS_ALLOWED | Allow OBU GPS as a GPS mode option | true | No |
 | PATH_GPS_ALLOWED | Allow Path GPS as a GPS mode option | true | No |
 | STATIC_GPS_ALLOWED | Allow Static GPS as a GPS mode option | true | No |
+| REMOTE_GPS_ALLOWED | Allow remote BSM as a GPS mode option | true | No |
+| RAVEN_GPS_ALLOWED | Allow Raven GPS as a GPS mode option | true | No |
 | SHOW_BROADCAST_RATE | Show the message broadcast rate setting | true | No |
 | SHOW_PC5_BROKER | Show the PC5 MQTT broker setting | true | No |
 | SHOW_ISS_BROKER | Show the ISS MQTT broker setting | true | No |

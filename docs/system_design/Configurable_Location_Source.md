@@ -25,13 +25,13 @@ Each GPS source can be individually enabled or disabled using the following envi
 | `OBU_GPS_ALLOWED` | OBU | Controls whether the direct OBU integration GPS is available as a selection option | `true` | `OBU_IP` | Requires network connectivity to OBU device |
 | `PATH_GPS_ALLOWED` | Path | Controls whether the recorded path playback GPS is available as a selection option | `true` | None | Requires pre-built GPS paths to be uploaded to Partner API |
 | `STATIC_GPS_ALLOWED` | Static | Controls whether the fixed/static position GPS is available as a selection option | `true` | None | Useful for testing and development |
-| `BSM_GPS_ALLOWED` | BSM | Controls whether a remote BSM is available as a selection option | `true` | None | Useful for testing and development |
+| `REMOTE_GPS_ALLOWED` | BSM | Controls whether a remote BSM is available as a selection option | `true` | None | Useful for testing and development |
 | `RAVEN_GPS_ALLOWED` | RAVEN | Controls whether a remote BSM from a Raven device is available as a selection option | `true` | None | Useful for testing and development |
 
 To set which GPS source should be used by default, make sure to also set the `GPS_TYPE` environment variable. Valid values are
-MOBILE, CRADLE, OBU, PATH, STATIC, BSM, RAVEN
+MOBILE, CRADLE, OBU, PATH, STATIC, REMOTE, RAVEN
 
-If not set the GPS will default to the first enabled value in the list [MOBILE, CRADLE, OBU, PATH, STATIC, BSM, RAVEN]
+If not set the GPS will default to the first enabled value in the list [MOBILE, CRADLE, OBU, PATH, STATIC, REMOTE, RAVEN]
 
 
 ## Current GPS Sources
@@ -211,43 +211,44 @@ Users can also change these variables in the settings menu.
 
 ## Upcoming GPS Sources
 
-### 6. BSM (Basic Safety Message)
+### 6. REMOTE (BSM, PSM, SDSM)
 
 **Type:** V2X Vehicle-to-Everything Communication
 
 **Description:**
-The BSM source will extract position information from SAE J2735 Basic Safety Messages (BSM) received over V2X communications. This allows positioning based on other vehicles' self-reported locations. The purpose of this system is to allow for other V2X-Mobile-Devices to "follow along" with another device already available in a vehicle. 
+The REMOTE source will extract position information from SAE J2735 BSM, PSM and SDSM messages received over V2X communications. This allows positioning based on other vehicle and users self-reported locations. The purpose of this system is to allow for other V2X-Mobile-Devices to "follow along" with another device already available in a vehicle. 
 
 **Usage Notes**
-- It is recommended that users disable their own BSM broadcast when using this GPS mode. 
-- This system will only be able to follow BSM's that are forwarding data to this device. When used on Geo-routed brokers (NMI, ETX) this means that the remote device must start nearby to the host device in order for the host to receive BSM's from the remote.
-- It is recommended that the remote device uses a static BSM ID to avoid losing a connection when the remote device rotates its BSM ID
-- It is recommended to use a non-geo-routed MQTT system for delivering remote BSM messages to the host device. This will help prevent issues where the two devices may not start in the same place, or where the devices become separated causing the flow of BSM messages to stop.
+- It is recommended that users disable their own BSM / PSM broadcast when using this GPS mode. 
+- This system will only be able to follow remote messages that are forwarding data to this device. When used on Geo-routed brokers (NMI, ETX) this means that the remote device must start nearby to the host device in order for the host to receive messages from the remote.
+- It is recommended that the remote device uses a static message ID to avoid losing a connection when the remote device rotates its ID
+- It is recommended to use a non-geo-routed MQTT system for delivering remote messages to the host device. This will help prevent issues where the two devices may not start in the same place, or where the devices become separated causing the flow of messages to stop.
+- This feature was designed to be primarily used with BSM messages; however, the internal code structure of the application makes it easy to allow the user to follow SDSM and PSM messages as well. 
 
 
 **Characteristics:**
-- **Availability:** Requires other devices broadcasting BSM's on the network
+- **Availability:** Requires other devices broadcasting BSM / PSM / SDSM on the network
 - **Accuracy:** Variable depending on source vehicle accuracy
 - **Update Rate:** Variable depending on source vehicle accuracy
-- **Requirements:** Other device broadcasting valid J2735 BSM messages on the network.
+- **Requirements:** Other device broadcasting valid J2735 messages on the network.
 
 **Configuration:**
-The BSM GPS type allows the user to enter a BSM ID to attempt to follow.
+The REMOTE GPS type allows the user to enter an ID to attempt to follow.
 
 | Environment Variable | Purpose | Notes |
 |---|---|---|
-| BSM_GPS_ID | BSM ID of the BSMs to follow | |
-| BSM_GPS_DEFAULT_LATITUDE | The default position to use if the device has not yet seen the remote BSM | This value is shared between the Raven and BSM data sources |
-| BSM_GPS_DEFAULT_LONGITUDE | The default position to use if the device has not yet seen the remote BSM | This value is shared between the Raven and BSM data sources |
+| REMOTE_GPS_ID | Remote ID of the message to follow | |
+| REMOTE_GPS_DEFAULT_LATITUDE | The default position to use if the device has not yet seen the remote | This value is shared between the Raven and Remote data sources |
+| REMOTE_GPS_DEFAULT_LONGITUDE | The default position to use if the device has not yet seen the remote | This value is shared between the Raven and Remote data sources |
 
 These settings can also be changed in the settings menu.
 
 **Implementation:**
-- Service: `BSMLocationService` 
+- Service: `RemoteLocationService` 
 - Updates will be tied to receiving updates from the remote device
-- If no new BSM updates are received, the device will use the remote devices last known BSM to continue to its operations
-- The device is treating the remote BSM as a GPS source - not as its own BSM. The device will not rebroadcast the remote BSM as if it were its own. Instead the device will extract the GPS and speed information from the remote BSM and use that as if it were a GPS source. If the user leaves BSM Broadcasting enabled, the device will send out its own BSM with its own ID and vehicle information.
-- The device will have a starting position defined by the BSM_GPS_DEFAULT_LATITUDE and BSM_GPS_DEFAULT_LONGITUDE settings. If the device is moved from this coordinate (by following a remote BSM) it will stay at its remote coordinate unless the user initiates a position reset.
+- If no new updates are received, the device will use the remote devices last known position to continue to its operations
+- The device is treating the remote message as a GPS source - not as its own message. For example, The device will not rebroadcast a remote BSM as if it were its own. Instead the device will extract the GPS and speed information from the remote BSM and use that as if it were a GPS source. If the user leaves BSM Broadcasting enabled, the device will send out its own BSM with its own ID and vehicle information.
+- The device will have a starting position defined by the REMOTE_GPS_DEFAULT_LATITUDE and REMOTE_GPS_DEFAULT_LONGITUDE settings. If the device is moved from this coordinate (by following a remote message) it will stay at its remote coordinate unless the user initiates a position reset.
 
 ---
 
@@ -256,7 +257,7 @@ These settings can also be changed in the settings menu.
 **Type:** External Location Service Integration
 
 **Description:**
-The Raven source will allow for the V2X-Mobile-Device to follow a remote Raven Connected Smart Dashcam. This GPS mode is an extension on the BSM GPS source mode and functions by following BSM messages sent by the provided raven device. The key difference between this operating mode and the BSM operating mode is that this operating mode allows the user to enter a raven device ID instead of a BSM ID. The app then internally remaps the raven UUID to a BSM device ID based upon metadata broadcast by Raven from another topic.
+The Raven source will allow for the V2X-Mobile-Device to follow a remote Raven Connected Smart Dashcam. This GPS mode is an extension on the Remote GPS source mode and functions by following BSM messages sent by the provided raven device. The key difference between this operating mode and the BSM operating mode is that this operating mode allows the user to enter a raven device ID instead of a BSM ID. The app then internally remaps the raven UUID to a BSM device ID based upon metadata broadcast by Raven from another topic.
 
 **Characteristics:**
 - **Availability:** Requires other devices broadcasting BSM's on the network
@@ -270,8 +271,8 @@ The RAVEN GPS type allows the user to enter a RAVEN UUID to attempt to follow.
 | Environment Variable | Purpose | Notes |
 |---|---|---|
 | RAVEN_GPS_UUID | Raven UUID of the Raven to follow | |
-| BSM_GPS_DEFAULT_LATITUDE | The default position to use if the device has not yet seen the remote BSM | This value is shared between the Raven and BSM data sources |
-| BSM_GPS_DEFAULT_LONGITUDE | The default position to use if the device has not yet seen the remote BSM | This value is shared between the Raven and BSM data sources |
+| REMOTE_GPS_DEFAULT_LATITUDE | The default position to use if the device has not yet seen the remote BSM | This value is shared between the Raven and Remote data sources |
+| REMOTE_GPS_DEFAULT_LONGITUDE | The default position to use if the device has not yet seen the remote BSM | This value is shared between the Raven and Remote data sources |
 
 These settings can also be changed in the settings menu.
 
