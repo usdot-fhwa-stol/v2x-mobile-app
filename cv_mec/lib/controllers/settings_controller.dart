@@ -32,12 +32,12 @@ class SettingsController extends GetxController {
   bool showBaseUri = (dotenv.env['SHOW_BASE_URI'] ?? 'false').toLowerCase() == 'true';
   bool showDeviceID = (dotenv.env['SHOW_DEVICE_ID'] ?? 'false').toLowerCase() == 'true';
   
-  bool showMobileGPSType = (dotenv.env['MOBILE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showRemoteGPSType = (dotenv.env['REMOTE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showMobileGPSType = (dotenv.env['MOBILE_GPS_ALLOWED'] ?? (Platform.isLinux ? 'false' : 'true')).toLowerCase() == 'true';
+  bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showRemoteGPSType = (dotenv.env['REMOTE_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
