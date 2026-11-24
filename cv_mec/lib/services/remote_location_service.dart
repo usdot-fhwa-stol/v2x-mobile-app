@@ -13,19 +13,11 @@ class RemoteLocationService extends GetxController {
   Timing timingService = Get.find<Timing>();
 
   Position? remotePosition;
-  
-  /// Stream controller for position updates
-  late Stream<AugmentedPosition> _positionStream;
-  bool _streamInitialized = false;
 
-  /// Initialize the position stream
-  /// This should be called by the map page when REMOTE GPS type is selected
+  /// Get the position stream for remote GPS tracking
+  /// Creates a new stream instance to support multiple subscriptions across navigation
   Stream<AugmentedPosition> get positionStream {
-    if (!_streamInitialized) {
-      _positionStream = _createPositionStream();
-      _streamInitialized = true;
-    }
-    return _positionStream;
+    return _createPositionStream();
   }
 
   /// Create the position stream from remote BSM messages
@@ -69,18 +61,10 @@ class RemoteLocationService extends GetxController {
             );
           }
         });
-        // Cast back to non-nullable
-        // .cast<AugmentedPosition>();
   }
 
   /// Update the remote position with data from a received message
   void updateRemotePosition(Position newRemotePosition) {
     remotePosition = newRemotePosition;
-  }
-
-  @override
-  void onClose() {
-    _streamInitialized = false;
-    super.onClose();
   }
 }
