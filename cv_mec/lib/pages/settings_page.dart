@@ -34,6 +34,9 @@ class SettingsPage extends StatelessWidget {
   final TextEditingController broadcastRateController = TextEditingController();
   final TextEditingController staticGPSLatitudeController = TextEditingController();
   final TextEditingController staticGPSLongitudeController = TextEditingController();
+  final TextEditingController remoteGPSDefaultLatitudeController = TextEditingController();
+  final TextEditingController remoteGPSDefaultLongitudeController = TextEditingController();
+  final TextEditingController remoteGPSIDController = TextEditingController();
   final TextEditingController issMqttBrokerUrlController = TextEditingController();
   final TextEditingController screenWidthController = TextEditingController();
   final TextEditingController screenHeightController = TextEditingController();
@@ -63,6 +66,9 @@ class SettingsPage extends StatelessWidget {
     registrationLongitudeController.text = paramController.manualLongitude.toString();
     staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
+    remoteGPSDefaultLatitudeController.text = controller.remoteGPSDefaultLatitude.value.toString();
+    remoteGPSDefaultLongitudeController.text = controller.remoteGPSDefaultLongitude.value.toString();
+    remoteGPSIDController.text = controller.remoteGPSID.value;
     issMqttBrokerUrlController.text = controller.issMqttBrokerUrl.value;
     screenWidthController.text = controller.screenWidth.value.toString();
     screenHeightController.text = controller.screenHeight.value.toString();
@@ -382,6 +388,55 @@ class SettingsPage extends StatelessWidget {
                         if (parsed != null) {
                           controller.staticGPSLongitude.value = parsed;
                           await controller.secureStorage.setStaticGPSLongitude(parsed);
+                        }
+                      }
+                    },
+                  ),
+                ]),
+            )
+            : const SizedBox.shrink(),
+        ),
+        Obx(() => controller.gpsType.value == GPSType.remote
+            ? Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: Column(children: [
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Remote GPS ID'),
+                    controller: remoteGPSIDController,
+                    obscureText: false,
+                    onChanged: (value) async {
+                      if (value != controller.remoteGPSID.value) {
+                        controller.remoteGPSID.value = value;
+                        await controller.secureStorage.setRemoteGPSID(value);
+                      }
+                    },
+                  ),
+                  verticalSpaceSmall,
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Default Latitude'),
+                    controller: remoteGPSDefaultLatitudeController,
+                    obscureText: false,
+                    onChanged: (value) async {
+                      if (value != controller.remoteGPSDefaultLatitude.value.toString()) {
+                        final parsed = double.tryParse(value);
+                        if (parsed != null) {
+                          controller.remoteGPSDefaultLatitude.value = parsed;
+                          await controller.secureStorage.setRemoteGPSDefaultLatitude(parsed);
+                        }
+                      }
+                    },
+                  ),
+                  verticalSpaceSmall,
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Default Longitude'),
+                    controller: remoteGPSDefaultLongitudeController,
+                    obscureText: false,
+                    onChanged: (value) async {
+                      if (value != controller.remoteGPSDefaultLongitude.value.toString()) {
+                        final parsed = double.tryParse(value);
+                        if (parsed != null) {
+                          controller.remoteGPSDefaultLongitude.value = parsed;
+                          await controller.secureStorage.setRemoteGPSDefaultLongitude(parsed);
                         }
                       }
                     },

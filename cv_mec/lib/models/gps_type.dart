@@ -4,5 +4,6 @@ enum GPSType {
   static,
   obu,
   cradle,
+  remote,
   unknown
 }

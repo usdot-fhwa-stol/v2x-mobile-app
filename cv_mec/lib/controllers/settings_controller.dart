@@ -1,6 +1,7 @@
 import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/models/gps_type.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/path_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -22,6 +23,7 @@ enum IconSize {
 class SettingsController extends GetxController {
   SettingsController();
   SharedPrefs sharedPrefs = SharedPrefs();
+  LoggingService log = Get.find<LoggingService>();
   final SecureStorage secureStorage = SecureStorage();
   late ApiService apiService;
   late PathService pathService;
@@ -30,11 +32,12 @@ class SettingsController extends GetxController {
   bool showBaseUri = (dotenv.env['SHOW_BASE_URI'] ?? 'false').toLowerCase() == 'true';
   bool showDeviceID = (dotenv.env['SHOW_DEVICE_ID'] ?? 'false').toLowerCase() == 'true';
   
-  bool showMobileGPSType = (dotenv.env['MOBILE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
-  bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showMobileGPSType = (dotenv.env['MOBILE_GPS_ALLOWED'] ?? (Platform.isLinux ? 'false' : 'true')).toLowerCase() == 'true';
+  bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
+  bool showRemoteGPSType = (dotenv.env['REMOTE_GPS_ALLOWED'] ?? 'true').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
@@ -87,6 +90,10 @@ class SettingsController extends GetxController {
   Rx<double> staticGPSLatitude = 0.0.obs;
   Rx<double> staticGPSLongitude = 0.0.obs;
 
+  Rx<double> remoteGPSDefaultLatitude = 0.0.obs;
+  Rx<double> remoteGPSDefaultLongitude = 0.0.obs;
+  RxString remoteGPSID = (dotenv.env['REMOTE_GPS_ID'] ?? "").obs;
+
   Rx<bool> disableTUMRetry = false.obs;
   Rx<bool> useGpsTimestampForSendTime = false.obs;
 
@@ -135,6 +142,9 @@ class SettingsController extends GetxController {
     showTims.value = await secureStorage.getShowTims();
     staticGPSLatitude.value = await secureStorage.getStaticGPSLatitude();
     staticGPSLongitude.value = await secureStorage.getStaticGPSLongitude();
+    remoteGPSDefaultLatitude.value = await secureStorage.getRemoteGPSDefaultLatitude();
+    remoteGPSDefaultLongitude.value = await secureStorage.getRemoteGPSDefaultLongitude();
+    remoteGPSID.value = await secureStorage.getRemoteGPSID();
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     issMqttBrokerUrl.value = await secureStorage.getISSMqttBrokerUrl();
@@ -144,10 +154,6 @@ class SettingsController extends GetxController {
     gpsType.value = toGPSType(await secureStorage.getGPSType());
     useGpsTimestampForSendTime.value = await secureStorage.getUseGpsTimestampForSendTime();
 
-    if (gpsType.value == GPSType.mobile && Platform.isLinux) {
-      gpsType.value = GPSType.cradle;
-    }
-
     //filter gps types based on environment variables
     List<GPSType> filteredGPSTypes = [];
     if(showMobileGPSType) filteredGPSTypes.add(GPSType.mobile);
@@ -155,7 +161,14 @@ class SettingsController extends GetxController {
     if(showOBUGPSType) filteredGPSTypes.add(GPSType.obu);
     if(showPathGPSType) filteredGPSTypes.add(GPSType.path);
     if(showStaticGPSType) filteredGPSTypes.add(GPSType.static);
+    if(showRemoteGPSType) filteredGPSTypes.add(GPSType.remote);
     gpsTypes = filteredGPSTypes;
+
+    // The static GPS Type does not require any external hardware, or add any API dependencies and is thus a safe fallback option if no other GPS type is specified
+    if(gpsTypes.isEmpty){
+      log.logWarning("No GPS types specified, adding static as fallback.");
+      gpsTypes.add(GPSType.static);
+    }
 
     //check if the current gps type is in the filtered list, if not set to first available
     if(!gpsTypes.contains(gpsType.value) && gpsTypes.isNotEmpty){
@@ -279,6 +292,8 @@ class SettingsController extends GetxController {
         return GPSType.path;
       case 'static':
         return GPSType.static;
+      case 'remote':
+        return GPSType.remote;
       default:
         return GPSType.mobile; // Default to mobile if unknown
     }
