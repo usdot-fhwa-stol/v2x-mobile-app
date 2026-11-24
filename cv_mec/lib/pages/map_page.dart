@@ -9,7 +9,6 @@ import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/special_vehicle_extensions.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/supplemental_vehicle_extensions.dart';
 import 'package:asn1_plugin/j2735/2024/common/basic_vehicle_class.dart';
-import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_day.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_hour.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_minute.dart';
@@ -17,10 +16,9 @@ import 'package:asn1_plugin/j2735/2024/common/d_month.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_second.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/intersection_reference_id.dart';
-import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/intersection_geometry.dart';
-import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
+
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
@@ -92,6 +90,7 @@ import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/logging_service.dart';
 import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
+import 'package:cv_mec/services/remote_location_service.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
@@ -144,6 +143,7 @@ class MapState extends State<MapPage> with RouteAware {
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   PathService pathService = Get.find<PathService>();
+  RemoteLocationService remoteLocationService = Get.find<RemoteLocationService>();
   StreamSubscription<AugmentedPosition>? positionSubscription;
 
   Timing timingService = Get.find<Timing>();
@@ -484,6 +484,9 @@ class MapState extends State<MapPage> with RouteAware {
       gpsdService.connectToGPSD(hostAndPort["host"], hostAndPort["port"]);
       stream = gpsdService.locationStream.stream;
       loggingService.addToAppLog("Using GPSD location stream");
+    } else if (settingsController.gpsType.value == GPSType.remote) {
+      loggingService.addToAppLog("Using Remote GPS Service - Following Remote Device ID: ${settingsController.remoteGPSID.value}");
+      stream = remoteLocationService.positionStream;
     } else {
       loggingService.addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${await locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
@@ -1168,6 +1171,22 @@ class MapState extends State<MapPage> with RouteAware {
     if (settingsController.latencyLoggingEnabled) {
       recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewBsm);
     }
+
+    if (settingsController.gpsType.value == GPSType.remote && vehicleID == settingsController.remoteGPSID) {
+      remoteLocationService.updateRemotePosition(Position(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude: bsm.coreData.elev.getDecimalElevation(),
+        speed: bsm.coreData.speed.getSpeedMps(),
+        heading: bsm.coreData.heading.getHeadingDegrees(),
+        timestamp: timingService.getTime(),
+        accuracy: bsm.coreData.accuracy.semiMajor.getDecimalAccuracy(),
+        altitudeAccuracy: 0.0,
+        headingAccuracy: 0.0,
+        speedAccuracy: 0.0
+      ));
+    }
+
     addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, hex, source, validity);
 
   }
@@ -1192,6 +1211,21 @@ class MapState extends State<MapPage> with RouteAware {
     invalidateMarkerLayer();
     if (settingsController.latencyLoggingEnabled) {
       recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewPsm);
+    }
+
+    if (settingsController.gpsType.value == GPSType.remote && pedestrianID == settingsController.remoteGPSID) {
+      remoteLocationService.updateRemotePosition(Position(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude: psm.position.elevation?.getDecimalElevation() ?? 0, // Use 0 as default for consistency with other position sources
+        speed: psm.speed.getVelocityMps(),
+        heading: psm.heading.getHeadingDegrees(),
+        timestamp: timingService.getTime(),
+        accuracy: psm.accuracy.semiMajor.getDecimalAccuracy(),
+        altitudeAccuracy: 0.0,
+        headingAccuracy: 0.0,
+        speedAccuracy: 0.0
+      ));
     }
     addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, hex, source, validity);
   }
@@ -1319,9 +1353,26 @@ class MapState extends State<MapPage> with RouteAware {
       if (settingsController.latencyLoggingEnabled) {
         recordAndLogReceived(receivedSdsm.type.name, receivedSdsm.getKey(), recTime, isNewSdsm);
       }
+
+      if (settingsController.gpsType.value == GPSType.remote && object.detObjCommon.objectID.objectID == settingsController.remoteGPSID) {
+        remoteLocationService.updateRemotePosition(Position(
+          latitude: shiftedPosition.latitude,
+          longitude: shiftedPosition.longitude,
+          altitude: object.detObjCommon.pos.offsetZ?.getDistanceInMeters() ?? -4096, // Value used in J2735 for an unknown elevation
+          speed: object.detObjCommon.speed.getSpeedMps(),
+          heading: object.detObjCommon.heading.getHeadingDegrees(),
+          timestamp: timingService.getTime(),
+          accuracy:  object.detObjCommon.posConfidence.pos.getAsMeters(),
+          altitudeAccuracy: object.detObjCommon.posConfidence.elevation.getAsMeters(),
+          headingAccuracy: object.detObjCommon.headingConf.getAsDegrees(),
+          speedAccuracy: object.detObjCommon.speedConfidence.getAsMps(),
+        ));
+      }
     }
 
     invalidateMarkerLayer();
+
+    
 
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), hex, source, validity);
   }

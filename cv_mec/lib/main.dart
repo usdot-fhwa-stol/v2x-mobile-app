@@ -25,6 +25,7 @@ import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
+import 'package:cv_mec/services/remote_location_service.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:iss_scms/iss_scms.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -56,6 +57,7 @@ void main() async {
   
   Get.put(ASNService());
   Get.put(RemoteGPSService());
+  Get.put(RemoteLocationService());
   Get.put(GPSDService());
   Get.put(OBDController());
   Get.put(S3Service());
