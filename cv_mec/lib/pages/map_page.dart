@@ -18,7 +18,6 @@ import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/intersection_reference_id.dart';
 import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/intersection_geometry.dart';
-
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
@@ -2098,8 +2097,9 @@ class MapState extends State<MapPage> with RouteAware {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 settingsController.remoteGPSID.value = deviceId;
+                await settingsController.secureStorage.setRemoteGPSID(deviceId);
                 Navigator.of(context).pop();
                 loggingService.addToAppLog(
                     'Now following remote device ID: $deviceId (from $messageType)');
