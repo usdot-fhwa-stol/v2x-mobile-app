@@ -195,29 +195,34 @@ class SettingsPage extends StatelessWidget {
           },
         ),
         verticalSpaceSmall,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Base URI'),
-          controller: baseUriController,
-          obscureText: false,
-          onChanged: (value) async {
-            if (value != controller.baseUri.value) {
-              controller.baseUri.value = value;
-              await controller.secureStorage.setBaseURI(value);
-            }
-          },
-        ),
-        verticalSpaceSmall,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Device ID'),
-          controller: deviceIDController,
-          obscureText: false,
-          onChanged: (value) async {
-            if (value != controller.deviceID.value) {
-              controller.deviceID.value = value;
-              await controller.secureStorage.setDeviceID(value);
-            }
-          },
-        ),
+        controller.showBaseUri ? Padding(
+          padding: const EdgeInsets.only(bottom: 20.0, top: 10.0),
+          child: TextField(
+            decoration: const InputDecoration(labelText: 'Base URI'),
+            controller: baseUriController,
+            obscureText: false,
+            onChanged: (value) async {
+              if (value != controller.baseUri.value) {
+                controller.baseUri.value = value;
+                await controller.secureStorage.setBaseURI(value);
+              }
+            },
+          ),
+        ) : Container(),
+        controller.showDeviceID ? Padding(
+          padding: const EdgeInsets.only(bottom: 20.0),
+          child: TextField(
+            decoration: const InputDecoration(labelText: 'Device ID'),
+            controller: deviceIDController,
+            obscureText: false,
+            onChanged: (value) async {
+              if (value != controller.deviceID.value) {
+                controller.deviceID.value = value;
+                await controller.secureStorage.setDeviceID(value);
+              }
+            },
+          ),
+        ) : Container(),
         verticalSpaceMedium,
         controller.gpsTypes.isNotEmpty
             ? Padding(
@@ -734,38 +739,6 @@ class SettingsPage extends StatelessWidget {
                 })
             : Container(),
         controller.showDisableTUMRetry ? verticalSpaceMedium : Container(),
-        controller.showBaseUri
-            ? Padding(
-                padding: const EdgeInsets.only(bottom: 20.0, top: 10.0),
-                child: TextField(
-                  decoration: const InputDecoration(labelText: 'Base URI'),
-                  controller: baseUriController,
-                  obscureText: true,
-                  onChanged: (value) async {
-                    if (value != controller.baseUri.value) {
-                      controller.baseUri.value = value;
-                      await controller.secureStorage.setBaseURI(value);
-                    }
-                  },
-                ),
-              )
-            : Container(),
-        controller.showDeviceID
-            ? Padding(
-                padding: const EdgeInsets.only(bottom: 20.0),
-                child: TextField(
-                  decoration: const InputDecoration(labelText: 'Device ID'),
-                  controller: deviceIDController,
-                  obscureText: false,
-                  onChanged: (value) async {
-                    if (value != controller.deviceID.value) {
-                      controller.deviceID.value = value;
-                      await controller.secureStorage.setDeviceID(value);
-                    }
-                  },
-                ),
-              )
-            : Container(),
       ],
     );
   }

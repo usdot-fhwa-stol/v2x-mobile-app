@@ -135,6 +135,61 @@ class ASNService extends GetxController {
     return index;
   }
 
+  /// Extracts the UPER encoded J2735 MessageFrame contained in [bytes].
+  ///
+  /// [bytes] may already be a bare MessageFrame, or may be wrapped in a 1609.2 envelope
+  /// (e.g. when SCMS signing is enabled), in which case the header and signature trailer are removed.
+  /// The MessageFrame is located using the start flag for [messageType] and its length is read from
+  /// the UPER length determinant that follows the 2 byte DSRCmsgID.
+  ///
+  /// Parameters:
+  /// - `bytes`: The encoded message bytes.
+  /// - `messageType`: The type of message to extract.
+  ///
+  /// Returns:
+  /// - The bytes of the MessageFrame, or `null` if no valid MessageFrame can be found.
+  List<int>? extractMessageFrame(List<int> bytes, MsgType messageType) {
+    String? startFlag = getStartFlagForMessageType(messageType);
+    if (startFlag == null || startFlag.isEmpty) {
+      return null;
+    }
+
+    int hexIndex = findValidStartFlagLocation(bytesToHex(bytes).toUpperCase(), startFlag);
+    if (hexIndex < 0) {
+      return null;
+    }
+    int start = hexIndex ~/ 2;
+
+    // MessageFrame layout: 2 byte DSRCmsgID, UPER length determinant (1 or 2 bytes), message value
+    int lengthIndex = start + 2;
+    if (lengthIndex >= bytes.length) {
+      return null;
+    }
+
+    int length;
+    int lengthBytes;
+    int firstLengthByte = bytes[lengthIndex];
+    if ((firstLengthByte & 0x80) == 0) {
+      length = firstLengthByte;
+      lengthBytes = 1;
+    } else if ((firstLengthByte & 0xC0) == 0x80) {
+      if (lengthIndex + 1 >= bytes.length) {
+        return null;
+      }
+      length = ((firstLengthByte & 0x3F) << 8) | bytes[lengthIndex + 1];
+      lengthBytes = 2;
+    } else {
+      // Fragmented encoding (length >= 16384), not expected for J2735 messages
+      return null;
+    }
+
+    int end = lengthIndex + lengthBytes + length;
+    if (end > bytes.length) {
+      return null;
+    }
+    return bytes.sublist(start, end);
+  }
+
   BasicSafetyMessage parseBSM(Pointer<Pointer<Void>> message) {
     Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
