@@ -1172,7 +1172,7 @@ class MapState extends State<MapPage> with RouteAware {
       recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewBsm);
     }
 
-    if (settingsController.gpsType.value == GPSType.remote && vehicleID == settingsController.remoteGPSID) {
+    if (settingsController.gpsType.value == GPSType.remote && vehicleID.toLowerCase() == settingsController.remoteGPSID.toLowerCase()) {
       remoteLocationService.updateRemotePosition(Position(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -1213,7 +1213,7 @@ class MapState extends State<MapPage> with RouteAware {
       recordAndLogReceived(msg.type.name, msg.getKey(), recTime, isNewPsm);
     }
 
-    if (settingsController.gpsType.value == GPSType.remote && pedestrianID == settingsController.remoteGPSID) {
+    if (settingsController.gpsType.value == GPSType.remote && pedestrianID.toLowerCase() == settingsController.remoteGPSID.toLowerCase()) {
       remoteLocationService.updateRemotePosition(Position(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -1354,7 +1354,7 @@ class MapState extends State<MapPage> with RouteAware {
         recordAndLogReceived(receivedSdsm.type.name, receivedSdsm.getKey(), recTime, isNewSdsm);
       }
 
-      if (settingsController.gpsType.value == GPSType.remote && object.detObjCommon.objectID.objectID == settingsController.remoteGPSID) {
+      if (settingsController.gpsType.value == GPSType.remote && "${object.detObjCommon.objectID.objectID}" == settingsController.remoteGPSID.toLowerCase()) {
         remoteLocationService.updateRemotePosition(Position(
           latitude: shiftedPosition.latitude,
           longitude: shiftedPosition.longitude,
@@ -1926,8 +1926,22 @@ class MapState extends State<MapPage> with RouteAware {
             point: msg.position,
             width: markerSize,
             height: markerSize,
-            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
-                sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
+            child: GestureDetector(
+              onTap: () => _onMessageMarkerTap(msg),
+              child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
+                  sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
+            ),
+          );
+          markerList.add(remoteMarker);
+        } else if (msg is ReceivedPsm || msg is ReceivedSdsm) {
+          Marker remoteMarker = Marker(
+            point: msg.position,
+            width: markerSize,
+            height: markerSize,
+            child: GestureDetector(
+              onTap: () => _onMessageMarkerTap(msg),
+              child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!),
+            ),
           );
           markerList.add(remoteMarker);
         } else {
@@ -1943,7 +1957,7 @@ class MapState extends State<MapPage> with RouteAware {
         removeKeys.add(key);
       }
     }
-
+    
     for (String key in removeKeys) {
       ReceivedMsg msg = messageManager.receivedMsgs.remove(key)!;
       if (messageManager.shown.containsKey(key)) {
@@ -2062,6 +2076,40 @@ class MapState extends State<MapPage> with RouteAware {
     }
 
     return markerList;
+  }
+
+  void _onMessageMarkerTap(ReceivedMsg msg) {
+    if (settingsController.gpsType.value != GPSType.remote) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String messageType = msg.type.name;
+        String deviceId = msg.id;
+
+        return AlertDialog(
+          title: const Text('Follow Device?'),
+          content: Text('Start following this $messageType device?\n\nDevice ID: $deviceId'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                settingsController.remoteGPSID.value = deviceId;
+                Navigator.of(context).pop();
+                loggingService.addToAppLog(
+                    'Now following remote device ID: $deviceId (from $messageType)');
+              },
+              child: const Text('Follow'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   IconData getSenderIcon() {
