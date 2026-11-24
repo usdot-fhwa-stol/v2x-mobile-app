@@ -6,4 +6,9 @@ class Heading{
   Heading.unavailable(){
     heading = 28800;
   }
+
+  double getHeadingDegrees() {
+    return heading * 0.0125;
+  }
+
 }

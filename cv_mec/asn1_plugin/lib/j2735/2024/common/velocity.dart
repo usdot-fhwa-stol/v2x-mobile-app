@@ -6,4 +6,8 @@ class Velocity{
   Velocity.Unknown(){
     velocity = 8191;
   }
+
+  double getVelocityMps() {
+    return velocity * 0.02;
+  }
 }

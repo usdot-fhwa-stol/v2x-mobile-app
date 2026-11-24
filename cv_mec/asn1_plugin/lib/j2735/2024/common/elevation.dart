@@ -6,4 +6,8 @@ class Elevation {
   Elevation.unknown(){
     elevation = -4096;
   }
+
+  double getDecimalElevation() {
+    return elevation * 0.1;
+  }
 }
