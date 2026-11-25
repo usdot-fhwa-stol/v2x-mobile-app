@@ -63,6 +63,7 @@ class SettingsController extends GetxController {
   Rx<bool> soundEffectsEnabled = true.obs;
   Rx<bool> tollingEnabled = true.obs;
   Rx<bool> showTims = true.obs;
+  Rx<bool> hideRemoteVehicleMessages = false.obs;
   Rx<bool> showScreenSizeSettings = false.obs;
 
   RxString username = dotenv.env['USERNAME']!.obs;
@@ -112,7 +113,7 @@ class SettingsController extends GetxController {
   RxString s3Region = (dotenv.env['S3_REGION'] ?? "").obs;
   RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
-  RxBool changedBrokerSettings = false.obs; 
+  RxBool changedBrokerSettings = false.obs;
 
   Rx<IconSize> iconSize = IconSize.small.obs;
   Rx<int> screenWidth = 0.obs;
@@ -121,7 +122,7 @@ class SettingsController extends GetxController {
 
   Rx<bool> enableIssScmsSigning = false.obs;
 
-  initialize() async {    
+  initialize() async {
     baseUri.value = await secureStorage.getBaseURI();
     username.value = await secureStorage.getUsername();
     password.value = await secureStorage.getPassword();
@@ -140,6 +141,7 @@ class SettingsController extends GetxController {
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
     tollingEnabled.value = await secureStorage.getTollingEnabled();
     showTims.value = await secureStorage.getShowTims();
+    hideRemoteVehicleMessages.value = await secureStorage.getHideRemoteVehicleMessages();
     staticGPSLatitude.value = await secureStorage.getStaticGPSLatitude();
     staticGPSLongitude.value = await secureStorage.getStaticGPSLongitude();
     remoteGPSDefaultLatitude.value = await secureStorage.getRemoteGPSDefaultLatitude();
@@ -234,7 +236,6 @@ class SettingsController extends GetxController {
       }
       pathToFollow.value = availablePaths[0];
     }
-    
   }
 
   Future logout() async {}
@@ -264,7 +265,7 @@ class SettingsController extends GetxController {
     showScreenSizeSettings.value = value;
     await sharedPrefs.saveShowScreenSizeSettingsToPrefs(value);
   }
-  
+
   void setScreenWidth(int width) async {
     screenWidth.value = width;
     await sharedPrefs.saveScreenWidthToPrefs(width);
@@ -278,6 +279,11 @@ class SettingsController extends GetxController {
   void setScreenLocation(Alignment location) async {
     screenLocation.value = location;
     await sharedPrefs.saveScreenLocationToPrefs(location);
+  }
+
+  void setHideRemoteVehicleMessages(bool value) async {
+    hideRemoteVehicleMessages.value = value;
+    await secureStorage.setHideRemoteVehicleMessages(value);
   }
 
   GPSType toGPSType(String type) {

@@ -1916,10 +1916,12 @@ class MapState extends State<MapPage> with RouteAware {
     for (String key in messageManager.receivedMsgs.keys) {
       ReceivedMsg msg = messageManager.receivedMsgs[key]!;
 
-      if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
+      if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime) && !(settingsController.hideRemoteVehicleMessages.value && (msg.id == settingsController.remoteGPSID.value))) {
         if (settingsController.latencyLoggingEnabled) {
           recordAndLogDraw(msg.type.name, msg.getKey(), compTime);
         }
+
+
         if (msg is ReceivedBsm) {
           Marker remoteMarker = Marker(
             point: msg.position,

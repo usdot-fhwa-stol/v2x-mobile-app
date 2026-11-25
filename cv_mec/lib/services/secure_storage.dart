@@ -54,6 +54,7 @@ class SecureStorage {
   static const _keyTollingEnabled = "tollingEnabled";
   static const _keyShowTims = "showTims";
   static const _keyUseGpsTimestampForSendTime = "useGpsTimestampForSendTime";
+  static const _keyHideRemoteVehicleMessages = "hideRemoteVehicleMessages";
 
   static const _keyDisableTUMRetry = "disableTUMRetry";
 
@@ -90,11 +91,10 @@ class SecureStorage {
 
   static final _startTollingEnabled = dotenv.env['TOLLING_ENABLED'] != null ? (dotenv.env['TOLLING_ENABLED']!.toLowerCase() == 'true') : true;
   static final _startShowTims = dotenv.env['SHOW_TIMS'] != null ? (dotenv.env['SHOW_TIMS']!.toLowerCase() == 'true') : true;
+  static final _startHideRemoteVehicleMessages = dotenv.env['HIDE_REMOTE_VEHICLE_MESSAGES'] != null ? (dotenv.env['HIDE_REMOTE_VEHICLE_MESSAGES']!.toLowerCase() == 'true') : false;
 
   static final _startDisableTUMRetry = dotenv.env['DISABLE_TUM_RETRY'] != null ? (dotenv.env['DISABLE_TUM_RETRY']!.toLowerCase() == 'true') : false;
-  static final _startUseGpsTimestampForSendTime = dotenv.env['USE_GPS_TIMESTAMP_FOR_SEND_TIME'] != null
-      ? (dotenv.env['USE_GPS_TIMESTAMP_FOR_SEND_TIME']!.toLowerCase() == 'true')
-      : false;
+  static final _startUseGpsTimestampForSendTime = dotenv.env['USE_GPS_TIMESTAMP_FOR_SEND_TIME'] != null ? (dotenv.env['USE_GPS_TIMESTAMP_FOR_SEND_TIME']!.toLowerCase() =='true'): false;
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -128,7 +128,7 @@ class SecureStorage {
   Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
   Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow;
   Future<double> getStaticGPSLatitude() async => double.tryParse(await _storage.read(key: _keyStaticGPSLatitude) ?? _startStaticGPSLatitude) ?? 0.0;
-  Future<double> getStaticGPSLongitude() async => double.tryParse(await _storage.read(key: _keyStaticGPSLongitude) ?? _startStaticGPSLongitude) ?? 0.0;
+  Future<double> getStaticGPSLongitude() async =>double.tryParse(await _storage.read(key: _keyStaticGPSLongitude) ??_startStaticGPSLongitude) ??0.0;
   Future<double> getRemoteGPSDefaultLatitude() async => double.tryParse(await _storage.read(key: _keyRemoteGPSDefaultLatitude) ?? _startRemoteGPSDefaultLatitude) ?? 0.0;
   Future<double> getRemoteGPSDefaultLongitude() async => double.tryParse(await _storage.read(key: _keyRemoteGPSDefaultLongitude) ?? _startRemoteGPSDefaultLongitude) ?? 0.0;
   Future<String> getRemoteGPSID() async => (await _storage.read(key: _keyRemoteGPSID)) ?? _startRemoteGPSID;
@@ -143,9 +143,9 @@ class SecureStorage {
       int.tryParse(await _storage.read(key: _keyBroadcastRate) ?? _startBroadcastRate.toString()) ?? 0;
   Future<bool> getTollingEnabled() async => (await _storage.read(key: _keyTollingEnabled) ?? _startTollingEnabled.toString()) == "true";
   Future<bool> getShowTims() async => (await _storage.read(key: _keyShowTims) ?? _startShowTims.toString()) == "true";
+  Future<bool> getHideRemoteVehicleMessages() async =>(await _storage.read(key: _keyHideRemoteVehicleMessages) ?? _startHideRemoteVehicleMessages.toString()) == "true";
   Future<bool> getDisableTUMRetry() async => (await _storage.read(key: _keyDisableTUMRetry) ?? _startDisableTUMRetry.toString()) == "true";
-  Future<bool> getUseGpsTimestampForSendTime() async =>
-      (await _storage.read(key: _keyUseGpsTimestampForSendTime) ?? _startUseGpsTimestampForSendTime.toString()) == "true";
+  Future<bool> getUseGpsTimestampForSendTime() async => (await _storage.read(key: _keyUseGpsTimestampForSendTime) ?? _startUseGpsTimestampForSendTime.toString()) == "true";
 
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
@@ -263,7 +263,6 @@ class SecureStorage {
     }
   }
 
-
   Future setTollingEnabled(bool tollingEnabled) async {
     if (tollingEnabled) {
       await _storage.write(key: _keyTollingEnabled, value: "true");
@@ -277,6 +276,14 @@ class SecureStorage {
       await _storage.write(key: _keyShowTims, value: "true");
     } else {
       await _storage.write(key: _keyShowTims, value: "false");
+    }
+  }
+
+  Future setHideRemoteVehicleMessages(bool hideRemoteVehicleMessages) async {
+    if (hideRemoteVehicleMessages) {
+      await _storage.write(key: _keyHideRemoteVehicleMessages, value: "true");
+    } else {
+      await _storage.write(key: _keyHideRemoteVehicleMessages, value: "false");
     }
   }
 
@@ -298,8 +305,7 @@ class SecureStorage {
 
   Future<String> getS3AccessKey() async => await _storage.read(key: _keyS3Accesskey) ?? Future.value(_startS3AccessKey);
   Future<String> getS3SecretKey() async => await _storage.read(key: _keyS3SecretKey) ?? Future.value(_startS3SecretKey);
-  Future<String> getS3BucketName() async =>
-      await _storage.read(key: _keyS3BucketName) ?? Future.value(_startS3BucketName);
+  Future<String> getS3BucketName() async => await _storage.read(key: _keyS3BucketName) ?? Future.value(_startS3BucketName);
   Future<String> getS3Region() async => await _storage.read(key: _keyS3Region) ?? Future.value(_startS3Region);
   Future<String> getS3DestDir() async => await _storage.read(key: _keyS3DestDir) ?? Future.value(_startS3DestDir);
 
@@ -308,5 +314,4 @@ class SecureStorage {
   Future setS3BucketName(String s3BucketName) async => await _storage.write(key: _keyS3BucketName, value: s3BucketName);
   Future setS3Region(String s3Region) async => await _storage.write(key: _keyS3Region, value: s3Region);
   Future setS3DestDir(String s3DestDir) async => await _storage.write(key: _keyS3DestDir, value: s3DestDir);
-
 }
