@@ -1533,6 +1533,10 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   void sendMessage() async {
+    if (!settingsController.enableBsmPsmMessages.value) {
+      return;
+    }
+
     if (currentPosition == null) {
       loggingService.addToAppLog("Cannot Send BSM. Location is Null");
       updateConnectedStatus(ConnectedStatus.PARTIAL);

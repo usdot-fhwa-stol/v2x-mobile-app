@@ -28,8 +28,10 @@ class SettingsPage extends StatelessWidget {
   final TextEditingController obuIPController = TextEditingController();
   final TextEditingController pc5BrokerUrlController = TextEditingController();
   final TextEditingController issScmsTokenController = TextEditingController();
-  final TextEditingController registrationLatitudeController = TextEditingController();
-  final TextEditingController registrationLongitudeController = TextEditingController();
+  final TextEditingController registrationLatitudeController =
+      TextEditingController();
+  final TextEditingController registrationLongitudeController =
+      TextEditingController();
   final TextEditingController scmsApiTokenController = TextEditingController();
   final TextEditingController broadcastRateController = TextEditingController();
   final TextEditingController staticGPSLatitudeController = TextEditingController();
@@ -44,7 +46,6 @@ class SettingsPage extends StatelessWidget {
   final FileService fileService = Get.find<FileService>();
 
   SettingsPage({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -110,8 +111,57 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  Future<bool> confirmDisableBsmWhenEtxEnabled() async {
+    final shouldDisable = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Disable BSM / PSM Message Sending?'),
+        content: const Text(
+          'The ETX MQTT Broker does not work properly when BSM / PSM Message Sending is disabled. '
+          'Are you sure you want to disable BSM / PSM Message Sending while ETX is enabled?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    return shouldDisable ?? false;
+  }
+
+  Future<bool> confirmEnableEtxWhenBsmDisabled() async {
+    final shouldEnable = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Enable ETX MQTT Broker?'),
+        content: const Text(
+          'The ETX MQTT Broker does not work properly when BSM / PSM Message Sending is disabled. '
+          'Are you sure you want to enable ETX MQTT Broker while BSM / PSM Message Sending is disabled?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Enable'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    return shouldEnable ?? false;
+  }
+
   configurationSection() {
-    if (Platform.isLinux) { //don't show mobile GPS option on Linux since it's not supported
+    if (Platform.isLinux) {
+      //don't show mobile GPS option on Linux since it's not supported
       bool hasMobile = controller.gpsTypes.contains(GPSType.mobile);
       if (hasMobile) {
         controller.gpsTypes.remove(GPSType.mobile);
@@ -289,7 +339,8 @@ class SettingsPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: LayoutBuilder(builder: (context, constraints) {
                   final bool useStackedLayout =
-                      MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
+                      MediaQuery.textScalerOf(context).scale(16) >= 20 ||
+                          constraints.maxWidth < 420;
 
                   Widget pathSelector = controller.availablePaths.isNotEmpty
                       ? Obx(() => DropdownButton<String>(
@@ -324,14 +375,19 @@ class SettingsPage extends StatelessWidget {
                           'No paths available',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!),
+                          style: TextStyle(
+                              color: Theme.of(Get.context!)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .color!),
                         );
 
                   if (useStackedLayout) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Path Selection:", style: TextStyle(fontSize: 16)),
+                        const Text("Path Selection:",
+                            style: TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
                         pathSelector,
                       ],
@@ -443,14 +499,17 @@ class SettingsPage extends StatelessWidget {
               : const SizedBox.shrink(),
         ),
         controller.showPathGPSType ? verticalSpaceSmall : Container(),
-        controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
+        controller.gpsType.value == GPSType.path
+            ? verticalSpaceMedium
+            : Container(), //add spacing if path GPS type is selected to keep spacing consistent
         SwitchListTile(
             title: const Text("Use GPS Timestamp for Sent Messages"),
             value: controller.useGpsTimestampForSendTime.value,
             onChanged: (value) async {
               if (value != controller.useGpsTimestampForSendTime.value) {
                 controller.useGpsTimestampForSendTime.value = value;
-                await controller.secureStorage.setUseGpsTimestampForSendTime(value);
+                await controller.secureStorage
+                    .setUseGpsTimestampForSendTime(value);
               }
             }),
         controller.showBroadcastRate ? Padding(
@@ -484,7 +543,8 @@ class SettingsPage extends StatelessWidget {
             }) : Container(),
         Obx(() => (controller.enablePC5.value && controller.showPc5)
             ? TextField(
-                decoration: const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
+                decoration:
+                    const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
                 controller: pc5BrokerUrlController,
                 obscureText: false,
                 onChanged: (value) async {
@@ -553,10 +613,15 @@ class SettingsPage extends StatelessWidget {
                     decoration: const InputDecoration(labelText: 'Registration Latitude'),
                     controller: registrationLatitudeController,
                     onChanged: (value) async {
-                      if (value != paramController.registrationLatitude.value.toString()) {
-                        paramController.manualLatitude = double.tryParse(value) ?? 0.0;
-                        paramController.registrationLatitude.value = double.tryParse(value) ?? 0.0;
-                        await controller.secureStorage.setRegistrationLatitude(paramController.registrationLatitude.value);
+                      if (value !=
+                          paramController.registrationLatitude.value
+                              .toString()) {
+                        paramController.manualLatitude =
+                            double.tryParse(value) ?? 0.0;
+                        paramController.registrationLatitude.value =
+                            double.tryParse(value) ?? 0.0;
+                        await controller.secureStorage.setRegistrationLatitude(
+                            paramController.registrationLatitude.value);
                       }
                     },
                   ),
@@ -596,7 +661,9 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setNotificationsEnabled(value);
                 if (controller.notificationsEnabled.value) {
                   VehicleNotificationManager.notifyVehicleFromMessageAndImage(
-                      "Notifications Enabled!", AssetImage(dotenv.env["NOTIFICATION_ICON_PATH"] ?? 'assets/images/Sample/notification_icon.png')); 
+                      "Notifications Enabled!",
+                      AssetImage(dotenv.env["NOTIFICATION_ICON_PATH"] ??
+                          'assets/images/Sample/notification_icon.png'));
                 }
               }
             })),
@@ -661,8 +728,6 @@ class SettingsPage extends StatelessWidget {
       ],
     );
   }
-
-  
 
   appearanceSettings() {
     return Padding(
@@ -843,7 +908,8 @@ class SettingsPage extends StatelessWidget {
           Icon(icon,
               color: controller.darkModeState.value ? darkPrimaryColor : primaryColor),
           const SizedBox(width: 10),
-          Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(sectionTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         const Divider(height: 20, thickness: 1),
       ],

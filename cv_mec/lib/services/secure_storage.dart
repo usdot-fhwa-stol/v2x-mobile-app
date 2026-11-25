@@ -34,6 +34,7 @@ class SecureStorage {
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
   static const _keyBroadcastRate = "broadcastRate";
+  static const _keyEnableBsmPsmMessages = "enableBsmPsmMessages";
   static const _keyISSMqttBrokerUrl = "issMqttBrokerUrl";
 
   static const _keyS3Accesskey = "s3AccessKey";
@@ -76,6 +77,9 @@ class SecureStorage {
   static final _startEnableEtxMqtt = dotenv.env['ENABLE_ETX_BROKER'] != null && (dotenv.env['ENABLE_ETX_BROKER']!.toLowerCase() == 'true') ? true : false;
   static final _startIssScmsSigningEnabled = dotenv.env['ISS_SCMS_TOKEN'] != null ? true : false;
   static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(10, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;
+  static final _startEnableBsmPsmMessages = dotenv.env['ENABLE_BSM_PSM_MESSAGES'] != null
+      ? (dotenv.env['ENABLE_BSM_PSM_MESSAGES']!.toLowerCase() == 'true')
+      : true;
 
   static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
   static final _startStaticGPSLatitude = dotenv.env['STATIC_GPS_LATITUDE'] ?? '0.0';
@@ -141,6 +145,8 @@ class SecureStorage {
       double.tryParse(await _storage.read(key: _keyRegistrationLongitude) ?? "0.0") ?? 0.0;
   Future<int> getBroadcastRate() async =>
       int.tryParse(await _storage.read(key: _keyBroadcastRate) ?? _startBroadcastRate.toString()) ?? 0;
+  Future<bool> getEnableBsmPsmMessages() async =>
+      (await _storage.read(key: _keyEnableBsmPsmMessages) ?? _startEnableBsmPsmMessages.toString()) == "true";
   Future<bool> getTollingEnabled() async => (await _storage.read(key: _keyTollingEnabled) ?? _startTollingEnabled.toString()) == "true";
   Future<bool> getShowTims() async => (await _storage.read(key: _keyShowTims) ?? _startShowTims.toString()) == "true";
   Future<bool> getHideRemoteVehicleMessages() async =>(await _storage.read(key: _keyHideRemoteVehicleMessages) ?? _startHideRemoteVehicleMessages.toString()) == "true";
@@ -167,6 +173,8 @@ class SecureStorage {
   Future<void> setGPSType(GPSType gpsType) async => 
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future<void> setBroadcastRate(int broadcastRate) async => await _storage.write(key: _keyBroadcastRate, value: broadcastRate.toString());
+  Future<void> setEnableBsmPsmMessages(bool enableBsmPsmMessages) async =>
+      await _storage.write(key: _keyEnableBsmPsmMessages, value: enableBsmPsmMessages.toString());
   Future setVZMode(bool vzMode) async {
     if (vzMode) {
       await _storage.write(key: _keyVzMode, value: "true");
