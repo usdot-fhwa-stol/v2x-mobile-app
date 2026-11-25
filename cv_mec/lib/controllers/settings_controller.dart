@@ -35,6 +35,7 @@ class SettingsController extends GetxController {
   bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showBsmPsmMessageSending = (dotenv.env['SHOW_BSM_PSM_MESSAGE_SENDING'] ?? 'true').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
@@ -80,6 +81,7 @@ class SettingsController extends GetxController {
   Rx<bool> readMessages = false.obs;
   Rx<bool> enableIssMqtt = false.obs;
   Rx<bool> enableEtxMqtt = false.obs;
+  Rx<bool> enableBsmPsmMessages = true.obs;
   RxInt broadcastRate = 10.obs;
 
   RxList<String> availablePaths = <String>[].obs;
@@ -140,6 +142,7 @@ class SettingsController extends GetxController {
     issMqttBrokerUrl.value = await secureStorage.getISSMqttBrokerUrl();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
+    enableBsmPsmMessages.value = await secureStorage.getEnableBsmPsmMessages();
     broadcastRate.value = await secureStorage.getBroadcastRate();
     gpsType.value = toGPSType(await secureStorage.getGPSType());
     useGpsTimestampForSendTime.value = await secureStorage.getUseGpsTimestampForSendTime();
